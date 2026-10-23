@@ -185,6 +185,8 @@ def register_comparison_contracts(registry):
     from .anchor_adapter import register_contracts as register_anchor_adapter
     register_anchor_adapter(registry)
     register_prunesid_contracts(registry)
+    from .learned_topk import register_contracts as register_learned_topk
+    register_learned_topk(registry)
 
 
 def register_prunesid_contracts(registry):
