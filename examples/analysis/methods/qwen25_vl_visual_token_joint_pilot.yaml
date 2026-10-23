@@ -1,0 +1,59 @@
+experiment:
+  name: qwen25_vl_visual_token_joint_pilot
+  seed: 42
+
+backbone:
+  name: qwen25_vl
+  model_path: /home/ZhouFengyu/fastv-repro/models/Qwen2.5-VL-3B-Instruct
+  model_revision: 1b5a7674d40a0ac9acef541a46fed12d710bd36b
+  trust_remote_code: false
+  config:
+    torch_dtype: bfloat16
+    attn_implementation: eager
+    model_load_kwargs: {local_files_only: true}
+    processor_load_kwargs:
+      local_files_only: true
+      use_fast: false
+      min_pixels: 200704
+      max_pixels: 1605632
+
+pipeline: {stages: []}
+
+analysis:
+  backend: lmms_eval
+  compression_mode: none
+  phase: pre_compression
+  runtime_batch_size: 1
+  tasks: [chartqa, textvqa_val, gqa, pope_random]
+  task_include_path: [/home/ZhouFengyu/fastv-repro/lmms_eval/tasks]
+  streaming_datasets: true
+  sample_limit: 8
+  probes:
+    - name: visual_token_phenomena
+      enabled: true
+      layers: [0]
+      intervention_layer: 0
+      target_units: 64
+      max_intervention_units: 64
+      interventions: [global_mean]
+      random_seeds: [11, 23, 47]
+      run_causal_interventions: false
+      run_unit_deletion: true
+      run_joint_deletion: true
+      joint_deletion_fractions: [0.25, 0.5, 0.75]
+      stability_repeats: 2
+      save_region_maps: true
+      sample_ids: ["chartqa:4", "chartqa:5", "textvqa_val:2", "textvqa_val:5", "gqa:0", "gqa:6", "pope_random:0", "pope_random:1"]
+      selection_note: "Purposive E1 extremes and controls: eight questions, six images. Exploratory, not an independent confirmation set."
+      identity_max_abs_logit_tolerance: 0.05
+      run_budget_frontier: false
+      run_layer_trajectory: false
+      budgets: [64]
+      compression_operators: [prune, cluster_mean]
+      spatial_bins: 4
+      save_raw: false
+
+train: {}
+eval: {}
+data: {}
+output: {}

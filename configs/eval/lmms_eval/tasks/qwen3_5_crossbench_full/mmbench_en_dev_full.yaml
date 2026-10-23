@@ -1,0 +1,32 @@
+task: qwen3_5_mmbench_en_dev_full
+dataset_path: parquet
+dataset_kwargs:
+  data_files:
+    dev: /home/YinPeiran/datasets/lmms_eval_datasets/MMBench/en/dev-00000-of-00001.parquet
+  cache_dir: /home/ZhouFengyu/fastv-repro/MLLM-Comp-Platform/MLLM-Comp-Platform-main/outputs/qwen3_5-eval/crossbench-parquet-cache
+test_split: dev
+output_type: generate_until
+doc_to_visual: !function utils.mmbench_doc_to_visual
+doc_to_text: !function utils.mmbench_doc_to_text
+doc_to_target: answer
+process_results: !function utils.mmbench_process_results
+generation_kwargs:
+  until: ["ASSISTANT:"]
+  max_new_tokens: 16
+  temperature: 0
+  top_p: 1.0
+  num_beams: 1
+  do_sample: false
+metric_list:
+  - metric: gpt_eval_score
+    aggregation: !function utils.mmbench_aggregate_static
+    higher_is_better: true
+  - metric: submission
+    aggregation: !function utils.mmbench_aggregate_submission
+    higher_is_better: true
+lmms_eval_specific_kwargs:
+  default:
+    pre_prompt: ""
+    post_prompt: "\nAnswer with the option's letter from the given choices directly."
+metadata:
+  version: 0.0

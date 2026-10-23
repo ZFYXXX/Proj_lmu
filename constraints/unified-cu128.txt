@@ -1,0 +1,28 @@
+# Verified shared Linux GPU environment: Python 3.10.20, CUDA 12.8.
+# Constrain the model/trainer/media compatibility chain, not every transitive package.
+torch==2.8.0+cu128
+torchvision==0.23.0+cu128
+torchaudio==2.8.0+cu128
+torchcodec==0.7.0
+flash-attn==2.8.3
+transformers==4.57.3
+tokenizers==0.22.2
+accelerate==1.14.0
+peft==0.19.1
+datasets==3.6.0
+trl==0.19.1
+protobuf==5.29.6
+tensorboard==2.20.0
+numpy==2.2.6
+scipy==1.15.3
+pandas==2.3.3
+pyarrow==25.0.0
+qwen-vl-utils==0.0.14
+qwen-omni-utils==0.0.9
+opencv-python-headless==5.0.0.93
+gradio==5.23.1
+gradio-client==1.8.0
+librosa==0.11.0
+soundfile==0.13.1
+lmms-eval==0.7.2
+ms-swift==4.4.0

@@ -1,0 +1,4 @@
+{"messages":[{"role":"user","content":"Reply with the single word hello."},{"role":"assistant","content":"hello"}]}
+{"messages":[{"role":"user","content":"What is two plus two? Reply with one number."},{"role":"assistant","content":"4"}]}
+{"messages":[{"role":"user","content":"请只回答：收到"},{"role":"assistant","content":"收到"}]}
+{"messages":[{"role":"user","content":"Name the color of a clear daytime sky using one word."},{"role":"assistant","content":"blue"}]}

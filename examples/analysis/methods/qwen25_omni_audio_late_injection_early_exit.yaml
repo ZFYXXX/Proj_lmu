@@ -1,0 +1,26 @@
+experiment: {name: qwen25_omni_audio_late_injection_early_exit_example, seed: 42}
+backbone:
+  name: qwen25_omni
+  model_id: Qwen/Qwen2.5-Omni-3B
+  model_revision: null
+  trust_remote_code: false
+  config: {torch_dtype: bfloat16, attn_implementation: eager, enable_talker: false}
+pipeline: {stages: []}
+analysis:
+  backend: lmms_eval
+  compression_mode: none
+  phase: pre_compression
+  tasks: [mmau_test_mini]
+  runtime_batch_size: 1
+  sample_limit: 1
+  probes:
+    - name: late_injection_early_exit
+      enabled: true
+      target_modality: audio
+      layers: [0]
+      experiment_types: [early_exit, late_injection]
+      early_exit_thresholds: [0]
+      late_injection_thresholds: [1]
+      metrics: [js, changed_prob_on_base_top1, top1_changed]
+      ranking_metric: js
+      save_raw: false

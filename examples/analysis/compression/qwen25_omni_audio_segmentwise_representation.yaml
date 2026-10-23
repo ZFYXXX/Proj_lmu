@@ -1,0 +1,38 @@
+experiment: {name: qwen25_omni_audio_segmentwise_representation, seed: 42}
+backbone:
+  name: qwen25_omni
+  model_id: Qwen/Qwen2.5-Omni-3B
+  model_revision: null
+  trust_remote_code: false
+  config: {torch_dtype: bfloat16, attn_implementation: eager, enable_talker: false}
+pipeline:
+  stages:
+    - name: audio_segmentwise_topk
+      placement: projector_level
+      execution_phase: forward
+      plugin: segmentwise_topk_audio
+      algorithm: segmentwise_topk_audio
+      variant: segmentwise_topk_audio.audio
+      binding: segmentwise_topk_audio.audio.qwen25_omni
+      method: token_compression
+      object_family: tensor_slot
+      object_subtype: audio_encoder_output_pre_projector
+      modalities: [audio]
+      target_modalities: [audio]
+      conditioning_modalities: []
+      preserved_modalities: [text, image, video]
+      coupling_policy: independent
+      media_alignment: temporal
+      token_roles: [observation]
+      operation: {type: keep, target_site: audio_encoder_output_pre_projector}
+      criterion: {score_source: encoder_last_layer_attention, num_segments: 2, random_seed: 42}
+      schedule: {granularity: per_audio, allocation: balanced_exact, keep_ratio: 0.5, minimum_keep_tokens: 1}
+analysis:
+  backend: lmms_eval
+  compression_mode: compressed
+  phase: post_compression
+  tasks: [mmau_test_mini]
+  runtime_batch_size: 1
+  sample_limit: 1
+  probes:
+    - {name: representation_dynamics, enabled: true, layers: [0], token_groups: [text, audio], save_raw: false}

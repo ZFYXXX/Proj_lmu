@@ -1,0 +1,33 @@
+experiment:
+  name: qwen25_vl_layer_importance_example
+  seed: 42
+
+backbone:
+  name: qwen25_vl
+  model_id: Qwen/Qwen2.5-VL-3B-Instruct
+  model_revision: 66285546d2b821cf421d4f5eb2576359d3770cd3
+  trust_remote_code: false
+  config:
+    torch_dtype: bfloat16
+    attn_implementation: eager
+
+pipeline:
+  stages: []
+
+analysis:
+  backend: lmms_eval
+  compression_mode: none
+  phase: pre_compression
+  tasks: [mme]
+  runtime_batch_size: 1
+  sample_limit: 1
+  probes:
+    - name: layer_importance
+      enabled: true
+      layers: [0]
+      operations: [layer, attn, ffn]
+      target_token_types: [vision]
+      attn_edges: [v2v, v2t, t2v, t2t]
+      metrics: [js, changed_prob_on_base_top1, top1_changed]
+      ranking_metric: js
+      save_raw: false

@@ -1,0 +1,302 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "support_unit": {
+    "algorithm": "metok",
+    "variant": "metok.video",
+    "backbone": "qwen25_vl",
+    "target_modality": "video",
+    "phase": "forward",
+    "binding": "metok.video.qwen25_vl"
+  },
+  "canonical_config": {
+    "segmentation_method": "similarity",
+    "num_segments": 4,
+    "keyframe_method": "similarity",
+    "keyframe_ratio": 0.4,
+    "top_k_events": 3,
+    "distinguish_important_events": true,
+    "s1_important": 2,
+    "s2_important": 4,
+    "s1_normal": 4,
+    "s2_normal": 8,
+    "pool_mode": "bilinear",
+    "non_keyframe_method": "adaptive_pool",
+    "keyframe_pool_enable": false,
+    "inside_compression": true,
+    "pruning_layers": [3, 10, 19],
+    "ratio": 0.76
+  },
+  "source_revisions": {
+    "five_step_training_and_reload_harness": "76022bd15793b815da5c6b5e88687fd1747012dc",
+    "reporting_recovery": "5447fd9aa7fd66db158f36244821741d9ed0bd3a",
+    "reference_compression_algorithm": "7e3ae876bc6306a4179f389e5f960225cd9e3a79",
+    "lmms_eval": "e9a5309ea6f4b8edacb813823cf8fdfd24bbd115"
+  },
+  "environment": {
+    "name": "mllm-comp-platform-dev",
+    "python": "3.10.20",
+    "torch": "2.8.0+cu128",
+    "transformers": "4.57.3",
+    "dtype": "bfloat16",
+    "attention_implementation": "sdpa",
+    "gradient_checkpointing": false,
+    "offline": true,
+    "package_or_environment_changes": false,
+    "downloads": false
+  },
+  "checkpoint": {
+    "path": "/home/WuHao/checkpoints/ckpts-vlm/Qwen2.5-VL-3B-Instruct",
+    "total_weight_bytes": 7509337976,
+    "weight_files": 2,
+    "local_files_only": true
+  },
+  "auxiliary_checkpoint": {
+    "name": "SigLIP so400m patch14 384",
+    "path": "/home/WuHao/checkpoints/ckpts-vlm/siglip-so400m-patch14-384",
+    "total_weight_bytes": 3511950624,
+    "weight_files": 1,
+    "local_files_only": true,
+    "frozen": true,
+    "vision_path_enabled": true,
+    "video_only": true
+  },
+  "fixture": {
+    "kind": "nextqa_mc_test_derived_sft_code_correctness_fixture",
+    "task": "nextqa_mc_test",
+    "split": "test",
+    "doc_id": 442,
+    "video_id": "3064389881",
+    "target": "D",
+    "parquet": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet",
+    "video_root": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo",
+    "video_fps": 1.0,
+    "video_max_pixels": 100352,
+    "video_grid_thw": [13, 18, 26],
+    "second_per_grid_ts": [1.0],
+    "source_visual_tokens": 1521,
+    "quality_or_training_data_claim": false
+  },
+  "training": {
+    "batch_size": 1,
+    "optimizer": "AdamW",
+    "learning_rate": 0.01,
+    "weight_decay": 0.0,
+    "optimizer_steps": 5,
+    "gradient_accumulation_steps": 1,
+    "intended_trainable_handle": "llm.final_norm.weight",
+    "selected_trainable_parameters": ["model.language_model.norm.weight"],
+    "compressor_trainable_parameters": 0,
+    "siglip_trainable_parameters": 0,
+    "source_visual_tokens_each_step": [1521, 1521, 1521, 1521, 1521],
+    "projector_visual_tokens_each_step": [240, 240, 240, 240, 240],
+    "layer3_visual_tokens_each_step": [178, 178, 178, 178, 178],
+    "layer10_visual_tokens_each_step": [132, 132, 132, 132, 132],
+    "layer19_visual_tokens_each_step": [0, 0, 0, 0, 0],
+    "losses": [
+      0.25910264253616333,
+      0.21249760687351227,
+      0.19048941135406494,
+      0.1529337465763092,
+      0.1419554352760315
+    ],
+    "gradient_norms": [
+      0.15025560557842255,
+      0.1281634420156479,
+      0.11676787585020065,
+      0.09607455879449844,
+      0.0873866155743599
+    ],
+    "max_parameter_deltas": [0.015625, 0.015625, 0.015625, 0.015625, 0.015625],
+    "training_logits_shape_each_step": [1, 72, 151936],
+    "compression_triggered_each_step": true,
+    "both_defining_stages_triggered_each_step": true,
+    "loss_finite_each_step": true,
+    "backward_succeeded_each_step": true,
+    "target_gradient_finite_nonzero_each_step": true,
+    "target_updated_each_step": true,
+    "layout_stable_across_steps": true,
+    "use_cache": false,
+    "cache_policy": "none_training_forward",
+    "dynamic_cache_compaction_claimed": false
+  },
+  "metok_evidence": {
+    "defining_stages": [
+      "event_segment_keyframe_adaptive_pool",
+      "decoder_prune_layers_3_10_19"
+    ],
+    "frame_count": 13,
+    "tokens_per_frame": 117,
+    "raw_tokens_per_frame": 468,
+    "grid_height": 9,
+    "grid_width": 13,
+    "segments": [[0, 4], [4, 9], [9, 11], [11, 13]],
+    "important_events": [0, 1, 3],
+    "keyframes_by_event": [[3], [4, 6], [10], [12]],
+    "projector_event_lengths": [71, 106, 16, 47],
+    "layer3_event_lengths": [54, 81, 7, 36],
+    "layer10_event_lengths": [42, 62, 0, 28],
+    "layer19_event_lengths": [0, 0, 0, 0],
+    "frame_strides_exercised": [2, 4, 8],
+    "projector_source_partition_exact_each_step": true,
+    "projector_representatives_source_ordered_each_step": true,
+    "projected_and_raw_signals_exact_each_step": true,
+    "event_segmentation_and_importance_exact_each_step": true,
+    "keyframe_and_stride_path_exact_each_step": true,
+    "decoder_pruning_layers": [3, 10, 19],
+    "decoder_ratio": 0.76,
+    "decoder_training_cache_policy": "none_training_forward",
+    "final_visual_removal_exact_each_step": true,
+    "image_variant_shared": false,
+    "training_free_compressor": true
+  },
+  "qwen25_legalization": {
+    "source_video_grid_preserved": true,
+    "native_timing_preserved": true,
+    "source_placeholder_count": 1521,
+    "projector_placeholder_count": 240,
+    "final_placeholder_count": 0,
+    "source_mrope_planes": 3,
+    "projector_sparse_mrope_representative_gather_exact": true,
+    "three_pruning_sparse_mrope_gathers_exact": true,
+    "completion_only_labels_and_logits_aligned_each_step": true,
+    "cache_position_dense_each_step": true,
+    "rope_delta_exact_each_step": true,
+    "final_rope_delta": 25,
+    "training_sequence_length": 72,
+    "training_logits_shape": [1, 72, 151936]
+  },
+  "lightweight_checkpoint": {
+    "format": "mllm_comp_selected_parameter_checkpoint",
+    "global_step": 5,
+    "tensor_names": ["model.language_model.norm.weight"],
+    "tensor_dtype": "BF16",
+    "tensor_shape": [2048],
+    "tensor_parameter_count": 2048,
+    "tensor_sha256": "a0f803a7160a570b5e03d03f290cd083932a53ec45b23265d096151e86448d18",
+    "config_sha256": "71c2d0964dd399a3682201090ca00a631daf6453cf07c238f2e80b4db8c22df6",
+    "training_state_sha256": "b27c92a6cf5a2fbc40accdb744ab5f2442c6eb4ec9a80983a21097a6a8f80b8e",
+    "fresh_base_checkpoint_reload": true,
+    "tensor_reload_exact": true,
+    "post_reload_compression_triggered": true,
+    "post_reload_source_visual_tokens": 1521,
+    "post_reload_projector_visual_tokens": 240,
+    "post_reload_layer3_visual_tokens": 178,
+    "post_reload_layer10_visual_tokens": 132,
+    "post_reload_layer19_visual_tokens": 0,
+    "post_reload_logits_shape": [1, 69, 151936],
+    "post_reload_logits_finite": true,
+    "post_reload_labels_absent": true,
+    "post_reload_metok_path_exact": true,
+    "post_reload_qwen25_layout_aligned": true
+  },
+  "gpu": {
+    "physical_device": 1,
+    "logical_device": 0,
+    "name": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+    "gpu0_free_before_mib": 41700,
+    "free_before_mib": 45544,
+    "estimated_peak_mib": 16384,
+    "safety_margin_mib": 16384,
+    "required_free_mib": 32768,
+    "observed_peak_allocated_mib": 9206.085,
+    "observed_peak_reserved_mib": 9432.0,
+    "free_after_process_exit_mib": 35536,
+    "concurrency_decision": "both GPUs admitted; serialized on preselected GPU 1",
+    "stable_external_pids_preserved": [763831, 763832],
+    "independent_external_process_restart_observed": true,
+    "launcher_signals_or_resets": false,
+    "owned_process_absent_after_exit": true,
+    "other_processes_modified": false
+  },
+  "command": "/home/WuHao/code/MLLM-Comp-Platform-Workspace/dev/scripts/diagnostics/validate_qwen25_metok_video_training_checkpoint.py --checkpoint /home/WuHao/checkpoints/ckpts-vlm/Qwen2.5-VL-3B-Instruct --siglip_checkpoint /home/WuHao/checkpoints/ckpts-vlm/siglip-so400m-patch14-384 --nextqa_parquet /home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet --video_root /home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo --output_dir /home/WuHao/code/MLLM-Comp-Platform-Workspace/dev/outputs/video_compression/metok/qwen25_vl/training/20260827t104300-76022bd-metok-qwen25-train-gpu1-a1 --code_revision 76022bd15793b815da5c6b5e88687fd1747012dc --physical_gpu 1 --estimated_peak_mib 16384 --safety_margin_mib 16384",
+  "artifacts": {
+    "local_mirror_root": ".goal-task/video-compression-three-backbones/local-artifacts/20260827t104300-76022bd-metok-qwen25-train-gpu1-a1",
+    "report": {
+      "path": ".goal-task/video-compression-three-backbones/local-artifacts/20260827t104300-76022bd-metok-qwen25-train-gpu1-a1/output/report.json",
+      "sha256": "3eda24af7db9f91f01ccbe6bd1e60e6b198756951b38c032bbafec71654e01bc",
+      "size_bytes": 4772795
+    },
+    "progress": {
+      "path": ".goal-task/video-compression-three-backbones/local-artifacts/20260827t104300-76022bd-metok-qwen25-train-gpu1-a1/output/progress.jsonl",
+      "sha256": "e4591eee1b9fc65acf0ebcc1b91b6b157df80a40b7c84e651e859bed980ce429",
+      "size_bytes": 1086427
+    },
+    "fixture": {
+      "path": ".goal-task/video-compression-three-backbones/local-artifacts/20260827t104300-76022bd-metok-qwen25-train-gpu1-a1/output/fixture.json",
+      "sha256": "5513c295a75d3b154538358555312a1aaf124d239a877912933e3a73a50cd568",
+      "size_bytes": 598
+    },
+    "checkpoint_tensor": {
+      "path": ".goal-task/video-compression-three-backbones/local-artifacts/20260827t104300-76022bd-metok-qwen25-train-gpu1-a1/output/checkpoint-5/adapter_model.safetensors",
+      "sha256": "a0f803a7160a570b5e03d03f290cd083932a53ec45b23265d096151e86448d18",
+      "size_bytes": 4200
+    },
+    "independent_validation": {
+      "path": ".goal-task/video-compression-three-backbones/local-artifacts/20260827t104300-76022bd-metok-qwen25-train-gpu1-a1/independent_validation_recovery.json",
+      "sha256": "1a7520462133d631782849a2fac576622d0b62296f709d1f1e5c244bf01c8101",
+      "size_bytes": 12423
+    },
+    "validation_source": {
+      "path": ".goal-task/video-compression-three-backbones/local-artifacts/20260827t104300-76022bd-metok-qwen25-train-gpu1-a1/validate_artifacts.py",
+      "sha256": "01a02ab25c8e2f95a56d7ce9c7e6792f212e79d4fc424b029e3685c3acdfb35d",
+      "size_bytes": 37981
+    },
+    "log": {
+      "path": ".goal-task/video-compression-three-backbones/local-artifacts/20260827t104300-76022bd-metok-qwen25-train-gpu1-a1/log/run.log",
+      "sha256": "383035da6a5396028d44ff5b0cd483021055dccaa720b1c923c1ef1055b5e2b7",
+      "size_bytes": 12088
+    },
+    "launch_script": {
+      "path": ".goal-task/video-compression-three-backbones/local-artifacts/20260827t104300-76022bd-metok-qwen25-train-gpu1-a1/run.sh",
+      "sha256": "4d98b91bafeb7f4bc1cd2fe07dd58d3b9d45672c54b2d7292aa9af66f1ce8a7d",
+      "size_bytes": 3825
+    }
+  },
+  "verified_invariants": [
+    "exactly five optimizer steps on the shared doc-442 batch-one fixture",
+    "METok event-aware projector pooling and decoder pruning before layers 3, 10, and 19 trigger on every step",
+    "the canonical path reduces 1521 source visual tokens to 240, 178, 132, and finally 0",
+    "projector source partitions, event segments, keyframes, adaptive-pooling strides, and causal representatives are exact",
+    "training use_cache is false and every decoder boundary records none_training_forward",
+    "Qwen2.5 native video_grid_thw and second_per_grid_ts remain unchanged",
+    "projector and all pruning stages gather exact sparse MRoPE anchors",
+    "placeholder, attention-mask, completion-label, cache-position, logits, and rope-delta layouts remain aligned",
+    "loss and logits are finite on every step",
+    "the one intended final-norm target has finite non-zero gradients and updates",
+    "the lightweight checkpoint contains and reloads exactly one BF16 tensor",
+    "post-reload compressed inference repeats both METok stages and Qwen2.5 layout invariants",
+    "the launcher preserved stable external processes and did not signal or reset the independently restarted process"
+  ],
+  "attempts": [
+    {
+      "attempt": 1,
+      "run_id": "20260827t104300-76022bd-metok-qwen25-train-gpu1-a1",
+      "status": "passed",
+      "elapsed_seconds": 109.795
+    }
+  ],
+  "independent_artifact_validation": {
+    "status": "passed",
+    "stdlib_only": true,
+    "checks": 238,
+    "prior_validator_attempts": 3,
+    "recovery_execution_count": 1,
+    "corrections": [
+      "derive LayoutDelta grouping and ordering from the emitted contract",
+      "read real-checkpoint status from the provider record that owns it",
+      "validate the trainable record's numel field instead of assuming a shape field"
+    ],
+    "source_artifacts_unchanged": true,
+    "gpu_rerun_required": false
+  },
+  "boundaries": {
+    "test_derived_code_correctness_fixture": true,
+    "full_nextqa_benchmark": false,
+    "paper_quality_or_efficiency_reproduction": false,
+    "convergence_claim": false,
+    "batch_greater_than_one": false,
+    "single_sample_multiple_videos": false
+  },
+  "recorded_at": "2026-08-27T22:22:08+08:00"
+}

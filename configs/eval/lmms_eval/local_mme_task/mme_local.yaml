@@ -1,0 +1,33 @@
+dataset_path: parquet
+dataset_kwargs:
+  data_files:
+    test: /home/YinPeiran/datasets/lmms_eval_datasets/MME/data/test-*.parquet
+task: mme_local
+test_split: test
+output_type: generate_until
+doc_to_visual: !function lmms_eval.tasks.mme.utils.mme_doc_to_visual
+doc_to_text: !function lmms_eval.tasks.mme.utils.mme_doc_to_text
+doc_to_target: answer
+generation_kwargs:
+  max_new_tokens: 16
+  temperature: 0
+  top_p: 1.0
+  num_beams: 1
+  do_sample: false
+process_results: !function lmms_eval.tasks.mme.utils.mme_process_results
+metric_list:
+  - metric: mme_perception_score
+    aggregation: !function lmms_eval.tasks.mme.utils.mme_aggregate_results
+    higher_is_better: true
+  - metric: mme_cognition_score
+    aggregation: !function lmms_eval.tasks.mme.utils.mme_aggregate_results
+    higher_is_better: true
+lmms_eval_specific_kwargs:
+  default:
+    pre_prompt: ""
+    post_prompt: "\nAnswer the question using a single word or phrase."
+  gpt4v:
+    pre_prompt: ""
+    post_prompt: "\nAnswer the question with Yes or No."
+metadata:
+  version: 0.0

@@ -1,0 +1,19 @@
+task: qwen3_5_video_smoke
+dataset_path: json
+dataset_kwargs:
+  data_files:
+    test: /home/ZhouFengyu/fastv-repro/MLLM-Comp-Platform/MLLM-Comp-Platform-main/configs/eval/lmms_eval/tasks/qwen3_5_video_smoke/smoke.jsonl
+test_split: test
+output_type: generate_until
+doc_to_visual: !function utils.doc_to_visual
+doc_to_text: !function utils.doc_to_text
+doc_to_target: !function utils.doc_to_target
+process_results: !function utils.process_results
+generation_kwargs:
+  max_new_tokens: 16
+  temperature: 0.0
+  do_sample: false
+metric_list:
+  - metric: smoke_nonempty
+    aggregation: !function utils.aggregate_nonempty
+    higher_is_better: true

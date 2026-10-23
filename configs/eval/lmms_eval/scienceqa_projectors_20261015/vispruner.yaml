@@ -1,0 +1,58 @@
+experiment:
+  name: qwen3_5_mme_full_vispruner
+  run_id: null
+  seed: 42
+
+backbone:
+  name: qwen3_5
+  model_path: ${QWEN3_5_MODEL_PATH}
+  model_revision: null
+  trust_remote_code: false
+  config:
+    torch_dtype: auto
+    attn_implementation: sdpa
+    model_load_kwargs: {local_files_only: true, device_map: auto}
+    processor_load_kwargs: {local_files_only: true}
+
+pipeline:
+  stages:
+    - name: vispruner_qwen3_5_image_features
+      enabled: true
+      placement: projector_level
+      execution_phase: generate
+      plugin: vispruner
+      algorithm: vispruner
+      variant: vispruner.image
+      binding: vispruner.image.qwen3_5
+      method: token_compression
+      object_family: tensor_slot
+      object_subtype: image_feature
+      modalities: [image]
+      conditioning_modalities: []
+      preserved_modalities: [text, video, audio]
+      coupling_policy: independent
+      media_alignment: spatial
+      operation: {type: drop}
+      criterion: {score_source: qwen3_5_visual_attention_and_diversity}
+      schedule: {granularity: per_image}
+      config: {retain_ratio: 0.5, important_ratio: 0.5, removal_step: 8, min_visual_tokens: 1}
+
+analysis: {}
+train: {}
+
+eval:
+  backend: lmms_eval
+  compression_mode: compressed
+  target: compressed
+  checkpoint_path: ${QWEN3_5_MODEL_PATH}
+  tasks: [mme_local_full]
+  runtime_batch_size: 1
+  num_processes: 1
+  sample_limit: null
+  generation: {max_new_tokens: 16, temperature: 0.0, do_sample: false, use_cache: true}
+  args: {force_simple: true, log_samples: true, include_path: configs/eval/lmms_eval/tasks/qwen3_5_crossbench_full}
+
+data: {dataset_id: MME-local-full, sample_split: test}
+output:
+  run_dir: outputs/qwen3_5-eval/full-vispruner-20261013/mme
+  manifest_path: outputs/qwen3_5-eval/full-vispruner-20261013/mme/manifest.json

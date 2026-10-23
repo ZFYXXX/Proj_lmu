@@ -1,0 +1,52 @@
+experiment:
+  name: train_aud_sft
+  seed: 42
+
+backbone:
+  name: qwen25_omni
+  model_path: '${QWEN25_OMNI_MODEL_PATH}'
+  trust_remote_code: false
+  config:
+    use_audio_in_video: false
+    sampling_rate: 16000
+
+train:
+  backend: ms_swift
+  compression_mode: none
+  max_steps: null
+  args:
+    datasets: ['${MLLM_COMP_TRAIN_DATASET}']
+    system: 'You are an audio understanding model that answers multiple choice questions based on audio content.'
+    trainable_branch: thinker
+    enable_audio_output: false
+    tuner_type: full
+    freeze_llm: false
+    freeze_vit: true
+    freeze_aligner: true
+    torch_dtype: bfloat16
+    max_length: 4096
+    learning_rate: 0.00001
+    num_train_epochs: 1
+    per_device_train_batch_size: 16
+    per_device_eval_batch_size: 1
+    gradient_accumulation_steps: 4
+    warmup_ratio: 0.05
+    split_dataset_ratio: 0.01
+    eval_steps: 100
+    save_steps: 100
+    save_total_limit: 2
+    load_from_cache_file: true
+    dataset_num_proc: 4
+    dataloader_num_workers: 4
+    deepspeed: zero2
+    logging_steps: 5
+    report_to: [wandb]
+    run_name: audio_sft
+
+data:
+  dataset_id: '${MLLM_COMP_TRAIN_DATASET}'
+  sample_split: train
+
+output:
+  run_dir: '${MLLM_COMP_TRAIN_RUN_DIR}'
+  manifest_path: '${MLLM_COMP_TRAIN_RUN_DIR}/manifest.json'

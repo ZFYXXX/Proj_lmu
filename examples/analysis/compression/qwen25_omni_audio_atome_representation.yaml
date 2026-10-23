@@ -1,0 +1,39 @@
+experiment: {name: qwen25_omni_audio_atome_representation, seed: 42}
+backbone:
+  name: qwen25_omni
+  model_id: Qwen/Qwen2.5-Omni-3B
+  model_revision: null
+  trust_remote_code: false
+  config: {torch_dtype: bfloat16, attn_implementation: eager, enable_talker: false}
+pipeline:
+  stages:
+    - name: audio_adjacent_token_merging
+      placement: encoder_level
+      execution_phase: forward
+      plugin: adjacent_token_merging_audio
+      algorithm: adjacent_token_merging_audio
+      variant: adjacent_token_merging_audio.audio
+      binding: adjacent_token_merging_audio.audio.qwen25_omni
+      method: token_compression
+      object_family: tensor_slot
+      object_subtype: audio_encoder_layer_post_mhsa_pre_ffn
+      modalities: [audio]
+      target_modalities: [audio]
+      conditioning_modalities: []
+      preserved_modalities: [text, image, video]
+      coupling_policy: independent
+      media_alignment: temporal
+      token_roles: [observation]
+      operation: {type: merge, target_site: audio_encoder_layer_post_mhsa_pre_ffn, merge_value: mean}
+      criterion: {ranking: descending, policy: fixed_ratio, score_source: encoder_key_cosine, pairing: disjoint_adjacent}
+      schedule: {granularity: per_layer, merge_ratio: 0.1}
+      activation_scope: {first_layer: 2, layer_interval: 3}
+analysis:
+  backend: lmms_eval
+  compression_mode: compressed
+  phase: post_compression
+  tasks: [mmau_test_mini]
+  runtime_batch_size: 1
+  sample_limit: 1
+  probes:
+    - {name: representation_dynamics, enabled: true, layers: [0], token_groups: [text, audio], save_raw: false}

@@ -1,0 +1,38 @@
+experiment:
+  name: qwen3_5_mme_smoke
+  run_id: null
+  seed: 42
+
+backbone:
+  name: qwen3_5
+  model_path: ${QWEN3_5_MODEL_PATH}
+  model_revision: null
+  trust_remote_code: false
+  config:
+    torch_dtype: auto
+    attn_implementation: eager
+    model_load_kwargs: {local_files_only: true, device_map: auto}
+    processor_load_kwargs: {local_files_only: true}
+
+pipeline:
+  stages: []
+
+analysis: {}
+train: {}
+
+eval:
+  backend: lmms_eval
+  compression_mode: none
+  target: baseline
+  checkpoint_path: ${QWEN3_5_MODEL_PATH}
+  tasks: [mme_local_smoke]
+  runtime_batch_size: 1
+  num_processes: 1
+  sample_limit: 1
+  generation: {max_new_tokens: 8, temperature: 0.0, do_sample: false, use_cache: true}
+  args: {force_simple: true, log_samples: true, include_path: configs/eval/lmms_eval/tasks/mme_local_smoke}
+
+data: {dataset_id: local MME smoke, sample_split: test}
+output:
+  run_dir: ${MLLM_COMP_QWEN3_5_SMOKE_ROOT}/baseline
+  manifest_path: ${MLLM_COMP_QWEN3_5_SMOKE_ROOT}/baseline/manifest.json

@@ -1,0 +1,69 @@
+experiment:
+  name: llava_onevision_analysis_matrix_smoke
+  seed: 42
+
+backbone:
+  name: llava_onevision
+  model_id: lmms-lab/llava-onevision-qwen2-0.5b-ov
+  model_revision: 381d9947148efb1e58a577f451c05705ceec666e
+  trust_remote_code: false
+  config:
+    torch_dtype: float16
+    attn_implementation: eager
+    model_load_kwargs:
+      vision_tower_revision: 9fdffc58afc957d1a03a25b10dba0329ab15c2a3
+
+pipeline:
+  stages: []
+
+analysis:
+  backend: lmms_eval
+  compression_mode: none
+  phase: pre_compression
+  tasks: [mme]
+  runtime_batch_size: 1
+  sample_limit: 1
+  probes:
+    - name: representation_dynamics
+      enabled: true
+      layers: [0]
+      save_raw: false
+    - name: layer_importance
+      enabled: true
+      layers: [0]
+      operations: [layer, attn, ffn]
+      target_token_types: [vision]
+      attn_edges: [v2v, v2t, t2v, t2t]
+      save_raw: false
+    - name: late_injection_early_exit
+      enabled: true
+      layers: [0]
+      experiment_types: [early_exit, late_injection]
+      save_raw: false
+    - name: residual_stream_decomposition
+      enabled: true
+      layers: [0]
+      causal_layers: [0]
+      causal_operations: [attn, ffn]
+      save_raw: false
+    - name: prediction_dynamics
+      enabled: true
+      layers: [0]
+      top_k: 10
+      save_raw: false
+    - name: attention_flow
+      enabled: true
+      layers: [0]
+      layer_batch_size: 1
+      save_raw: false
+    - name: hierarchical_taylor
+      enabled: true
+      layers: [0]
+      layer_batch_size: 1
+      ffn_bottom_fraction: 0.3
+      causal_validation:
+        enabled: true
+        component_count: 1
+        kinds: [path, head, ffn_neuron, sublayer, layer]
+        seed: 42
+      save_raw: false

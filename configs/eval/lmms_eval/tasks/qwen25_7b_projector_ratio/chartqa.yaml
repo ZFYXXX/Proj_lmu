@@ -1,0 +1,16 @@
+include: _template.yaml
+task: qwen25_7b_ratio_chartqa
+dataset_kwargs:
+  data_files:
+    test: /home/YinPeiran/datasets/lmms_eval_datasets/ChartQA/data/test-00000-of-00001.parquet
+test_split: test
+doc_to_text: !function utils.chartqa_doc_to_text
+doc_to_target: answer
+process_results: !function utils.chartqa_process_results
+generation_kwargs: {max_new_tokens: 16, temperature: 0.0, do_sample: false}
+lmms_eval_specific_kwargs:
+  default: {pre_prompt: "", post_prompt: "\nAnswer the question with a single word."}
+metric_list:
+  - {metric: relaxed_overall, aggregation: mean, higher_is_better: true}
+  - {metric: relaxed_human_split, aggregation: mean, higher_is_better: true}
+  - {metric: relaxed_augmented_split, aggregation: mean, higher_is_better: true}

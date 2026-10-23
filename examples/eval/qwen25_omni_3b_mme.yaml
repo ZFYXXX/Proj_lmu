@@ -1,0 +1,34 @@
+experiment:
+  name: qwen25_omni_3b_mme
+  seed: 42
+
+backbone:
+  name: qwen25_omni
+  # 由配套脚本或当前 shell 提供，不把服务器绝对路径写入 YAML。
+  model_path: ${QWEN25_OMNI_MODEL_PATH}
+  trust_remote_code: false
+  config:
+    torch_dtype: bfloat16
+    attn_implementation: flash_attention_2
+    enable_talker: false
+
+eval:
+  backend: lmms_eval
+  # baseline 运行同时使用 none 和 baseline，避免结果身份含糊。
+  compression_mode: none
+  target: baseline
+  # task 的数据、prompt 和 metric 由 lmms-eval 自己的 task YAML 定义。
+  tasks: [mme]
+  runtime_batch_size: 1
+  # 大于 1 时，每个可见 GPU 启动一个 lmms-eval worker。
+  num_processes: 1
+  distributed_launcher: accelerate
+  args:
+    # args 会传给 lmms-eval integration，不属于平台公共字段。
+    log_samples: true
+    verbosity: INFO
+
+output:
+  # 同一个变量同时确定 run directory 和 Manifest 位置。
+  run_dir: ${MLLM_COMP_RUN_DIR}
+  manifest_path: ${MLLM_COMP_RUN_DIR}/manifest.json

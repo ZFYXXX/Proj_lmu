@@ -1,0 +1,39 @@
+experiment:
+  name: qwen3_vl_lmms_eval
+  run_id: null
+  seed: 42
+
+backbone:
+  name: qwen3_vl
+  model_path: ${QWEN3_VL_MODEL_PATH}
+  model_revision: null
+  trust_remote_code: false
+  config:
+    torch_dtype: bfloat16
+    attn_implementation: flash_attention_2
+
+pipeline:
+  stages: []
+
+analysis: {}
+train: {}
+
+eval:
+  backend: lmms_eval
+  compression_mode: none
+  target: baseline
+  checkpoint_path: ${QWEN3_VL_MODEL_PATH}
+  tasks: [mmmu_val]
+  runtime_batch_size: 1
+  sample_limit: 4
+  generation:
+    max_new_tokens: 128
+    do_sample: false
+    temperature: 0.0
+  args:
+    log_samples: true
+
+data:
+  dataset_id: MMMU/MMMU
+  dataset_commit: null
+  sample_split: validation

@@ -1,0 +1,44 @@
+{
+  "budget": "K_i=min(128,N_i); no duplicated tokens or per-layer average budget",
+  "configs": {
+    "/home/ZhouFengyu/fastv-repro/MLLM-Comp-Platform/MLLM-Comp-Platform-main/configs/eval/lmms_eval/projector_trainfree_20261023/full_eadp.yaml": "ef8ce7faee5e9ecb6a3173372dbec342e404488ac8dbad5b36f475460cd8b854",
+    "/home/ZhouFengyu/fastv-repro/MLLM-Comp-Platform/MLLM-Comp-Platform-main/configs/eval/lmms_eval/projector_trainfree_20261023/full_mmtok.yaml": "4064f8993b07a628f405353444e6a6018f3236e815c026628749e843dd51fa81",
+    "/home/ZhouFengyu/fastv-repro/MLLM-Comp-Platform/MLLM-Comp-Platform-main/configs/eval/lmms_eval/projector_trainfree_20261023/full_prunesid.yaml": "c089a79199c60c00f59df093946e78967c1d3091e2776a37e2485dfc9b1e157d",
+    "/home/ZhouFengyu/fastv-repro/MLLM-Comp-Platform/MLLM-Comp-Platform-main/configs/eval/lmms_eval/projector_trainfree_20261023/identity_eadp.yaml": "2fdece318375777a8777087c5477ae76874e29c53ef890cce0a7b962ee8f9e4e",
+    "/home/ZhouFengyu/fastv-repro/MLLM-Comp-Platform/MLLM-Comp-Platform-main/configs/eval/lmms_eval/projector_trainfree_20261023/identity_mmtok.yaml": "781c050e05cee64234bef9e71abfc0cc8a49bda8bb44e1a0ba78d1acfc8ffa92",
+    "/home/ZhouFengyu/fastv-repro/MLLM-Comp-Platform/MLLM-Comp-Platform-main/configs/eval/lmms_eval/projector_trainfree_20261023/identity_prunesid.yaml": "d20c0aae6a986c1b133c2e8adc9b47985d0b7fc9a5029ad5501b00b2a2235abf",
+    "/home/ZhouFengyu/fastv-repro/MLLM-Comp-Platform/MLLM-Comp-Platform-main/configs/eval/lmms_eval/projector_trainfree_20261023/smoke_eadp.yaml": "2085466f7347c71a8fc960493c66f8f94ea3d35d9bdec47c0f6161c6690b0ca5",
+    "/home/ZhouFengyu/fastv-repro/MLLM-Comp-Platform/MLLM-Comp-Platform-main/configs/eval/lmms_eval/projector_trainfree_20261023/smoke_mmtok.yaml": "d8e46f3c7b1ec3dd4263efd5210a458aa5db5d0e845a517b28521b603dcb5b19",
+    "/home/ZhouFengyu/fastv-repro/MLLM-Comp-Platform/MLLM-Comp-Platform-main/configs/eval/lmms_eval/projector_trainfree_20261023/smoke_prunesid.yaml": "571b59ab20aaa9020ab4ce29b1aaa0f70243eb52e88d7530422ac2f09778453d"
+  },
+  "entrypoint": "python -m mllm_comp.cli.main eval --config <yaml>",
+  "gate": "Run identity then smoke before full; CPU gates do not establish paper quality",
+  "identity_budget": "2048: processor upper bound, therefore no compression",
+  "native_resolution": true,
+  "profile": "projector",
+  "sources": {
+    "eadp": {
+      "adaptation": "Official Qwen selector; beta=2; retain native rectangular resolution, not fixed 1008x1008",
+      "commit": "e1a08801461c181871b9ff1cb0803b8e9966f083",
+      "url": "https://github.com/SJTU-DeepVisionLab/EADP"
+    },
+    "mmtok": {
+      "adaptation": "Official Qwen tau_t=.01, Question-prefix user text, mean pre-merger features; fixed K rather than original .2 ratio",
+      "commit": "8e2686836ed5bbe05d064f1d1c20e50c73c70b94",
+      "url": "https://github.com/Ironieser/MMTok"
+    },
+    "prunesid": {
+      "adaptation": "Qwen2 selector on Qwen2.5; local seeded PCA; exact K; original source order and MRoPE, not official ratio-to-576 budget/grouped order",
+      "commit": "4ef17d96b390027f31243bc7e1d27bdee77792a5",
+      "url": "https://github.com/ZhengyaoFang/PruneSID"
+    }
+  },
+  "status": "prepared_not_launched",
+  "tasks": {
+    "qwen25_7b_ratio_ai2d": 3088,
+    "qwen25_7b_ratio_chartqa": 2500,
+    "qwen25_7b_ratio_docvqa_val": 5349,
+    "qwen25_7b_ratio_ocrbench": 1000
+  },
+  "training": false
+}

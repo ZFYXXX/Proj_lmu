@@ -1,0 +1,22 @@
+experiment: {name: qwen25_omni_audio_prediction_dynamics_example, seed: 42}
+backbone:
+  name: qwen25_omni
+  model_id: Qwen/Qwen2.5-Omni-3B
+  model_revision: null
+  trust_remote_code: false
+  config: {torch_dtype: bfloat16, attn_implementation: eager, enable_talker: false}
+pipeline: {stages: []}
+analysis:
+  backend: lmms_eval
+  compression_mode: none
+  phase: pre_compression
+  tasks: [mmau_test_mini]
+  runtime_batch_size: 1
+  sample_limit: 1
+  probes:
+    - name: prediction_dynamics
+      enabled: true
+      layers: [0]
+      metrics: [js, top1_matches_final, rank_of_final_top1]
+      top_k: 10
+      save_raw: false

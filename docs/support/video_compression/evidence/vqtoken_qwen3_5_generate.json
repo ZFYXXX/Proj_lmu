@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "algorithm": "vqtoken",
+  "variant": "vqtoken.video",
+  "backbone": "qwen3_5",
+  "checkpoint": "Qwen3.8-27B-BF16",
+  "model_type": "qwen3_5",
+  "phase": "generate",
+  "task": "qwen3_5_video_smoke",
+  "sample_limit": 1,
+  "batch_size": 1,
+  "transformers_version": "5.19.0",
+  "lmms_eval_version": "0.7.2",
+  "video_source": "/home/YinPeiran/datasets/lmms_eval_datasets/MVBench/video/star/Charades_v1_480/81YUE.mp4",
+  "dataset_downloaded": false,
+  "compression": {
+    "canonical_config": {
+      "num_clusters": 32,
+      "adaptive": false,
+      "use_cross_attention": false
+    },
+    "source_tokens": 6270,
+    "result_tokens": 32,
+    "retention_ratio": 0.005103668261562998,
+    "layout_delta_records": 1,
+    "mrope_positions_synchronized": true
+  },
+  "lmms_eval_result": {
+    "status": "succeeded",
+    "num_samples": 1,
+    "smoke_nonempty": 100.0,
+    "metric_is_quality_score": false,
+    "result_path": "outputs/qwen3_5-eval/video-smoke-vqtoken-final/result.json",
+    "compression_runtime_path": "outputs/qwen3_5-eval/video-smoke-vqtoken-final/compression_runtime.json"
+  },
+  "cpu_contract": {
+    "status": "passed",
+    "source_tokens": 128,
+    "result_tokens": 32,
+    "all_sources_assigned_once": true,
+    "finite_features": true
+  },
+  "adapter_source_sha256": "63c019dd8fb9c706cbc99cd681f4dab8014b35308635fa8d5639800e82df0eeb",
+  "reference_revision": "7e3ae876bc6306a4179f389e5f960225cd9e3a79",
+  "recorded_at": "2026-10-12T11:37:12+08:00",
+  "limitations": [
+    "Single-video integration smoke only; no benchmark-quality claim.",
+    "VQToken uses fixed K=32 per video, so the retained ratio depends on input video length.",
+    "Mixed image/video and audio input are not enabled on this binding.",
+    "No pytest executable is installed in the experiment environment; CPU contract and LMMS-Eval smoke were run directly."
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "source": "MMSU official task taxonomy figure, transcribed from the local official repository; no assignment inferred from task-name semantics",
+  "source_figure": "/Users/andylubowen/Desktop/EIT-code/AudioMCQevaluator/MMSU-official/images/mmsu_benchmark.png",
+  "source_readme": "/Users/andylubowen/Desktop/EIT-code/AudioMCQevaluator/MMSU-official/README.md",
+  "paper": "https://arxiv.org/abs/2506.04779",
+  "display_note": "Semantic corresponds to the official Semantics label; Paralinguistic corresponds to Paralinguistics. Original saved task spelling casual_reasoning is retained.",
+  "groups": {
+    "Perception": {
+      "Semantic": ["content_grounding", "dialogue_turn_counting", "non_verbal_sound_detection", "speech_act_classification", "disfluency_detection", "speech_duration_estimation"],
+      "Phonology": ["accent_identification", "near_homophone_perception", "consonant_vowel_perception", "plosive_sound_identification", "syllable_perception", "speech_stress_perception", "prolonged_sound_perception", "pause_perception", "intonation_perception"],
+      "Paralinguistic": ["gender_prediction", "age_prediction", "speaker_identity_recognition", "total_speaker_counting", "emotion_recognition", "pitch_comparison", "speed_comparison", "vocal_range_comparison", "volume_comparison"]
+    },
+    "Reasoning": {
+      "Semantic": ["casual_reasoning", "logical_reasoning", "deixis_resolution", "continuation_writing", "dialogue_reasoning", "code_switch_question_answering", "background_scene_recognition", "speech_translation", "long_speech_summarization", "intent_detection"],
+      "Phonology": ["couplet_matching", "puns_interpretation", "polysemy_reasoning", "homophone_based_reasoning", "idiom_reasoning", "syntactic_structure_matching", "intonation_based_reasoning", "stress_based_reasoning", "prolonged_sound_reasoning", "pause_based_reasoning"],
+      "Paralinguistic": ["emotional_context_reasoning", "sarcasm_detection", "synthetic_speech_detection"]
+    }
+  }
+}

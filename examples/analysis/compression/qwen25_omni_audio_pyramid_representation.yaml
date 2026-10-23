@@ -1,0 +1,39 @@
+experiment: {name: qwen25_omni_audio_pyramid_representation, seed: 42}
+backbone:
+  name: qwen25_omni
+  model_id: Qwen/Qwen2.5-Omni-3B
+  model_revision: null
+  trust_remote_code: false
+  config: {torch_dtype: bfloat16, attn_implementation: eager, enable_talker: false}
+pipeline:
+  stages:
+    - name: audio_pyramid_prefill
+      placement: llm_level
+      execution_phase: forward
+      plugin: audio_pyramid_attention_pruning
+      algorithm: audio_pyramid_attention_pruning
+      variant: audio_pyramid_attention_pruning.audio
+      binding: audio_pyramid_attention_pruning.audio.qwen25_omni
+      method: token_compression
+      object_family: tensor_slot
+      object_subtype: llm_decoder_layer_output_audio_tokens
+      modalities: [audio]
+      target_modalities: [audio]
+      conditioning_modalities: [text]
+      preserved_modalities: [text, image, video]
+      coupling_policy: independent
+      media_alignment: token
+      token_roles: [observation]
+      operation: {type: keep, target_site: llm_decoder_layer_output_audio_tokens}
+      criterion: {score_source: instruction_to_audio_received_attention}
+      schedule: {keep_ratio: 0.5, minimum_keep_tokens: 2}
+      activation_scope: {layers: [8], lifecycle: prefill_only}
+analysis:
+  backend: lmms_eval
+  compression_mode: compressed
+  phase: post_compression
+  tasks: [mmau_test_mini]
+  runtime_batch_size: 1
+  sample_limit: 1
+  probes:
+    - {name: representation_dynamics, enabled: true, layers: [9], token_groups: [text, audio], save_raw: false}

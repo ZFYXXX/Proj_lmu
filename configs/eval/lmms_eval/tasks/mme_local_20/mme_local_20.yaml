@@ -1,0 +1,31 @@
+dataset_path: parquet
+dataset_kwargs:
+  data_files:
+    test: /home/ZhouFengyu/fastv-repro/MLLM-Comp-Platform/MLLM-Comp-Platform-main/outputs/qwen3_5-eval/mme_first20.parquet
+  cache_dir: /home/ZhouFengyu/fastv-repro/MLLM-Comp-Platform/MLLM-Comp-Platform-main/outputs/qwen3_5-eval/hf_datasets
+task: mme_local_20
+test_split: test
+output_type: generate_until
+doc_to_visual: !function utils.mme_doc_to_visual
+doc_to_text: !function utils.mme_doc_to_text
+doc_to_target: answer
+process_results: !function utils.mme_process_results
+metric_list:
+  - metric: mme_perception_score
+    aggregation: !function utils.mme_aggregate_results
+    higher_is_better: true
+  - metric: mme_cognition_score
+    aggregation: !function utils.mme_aggregate_results
+    higher_is_better: true
+generation_kwargs:
+  max_new_tokens: 16
+  temperature: 0
+  top_p: 1.0
+  num_beams: 1
+  do_sample: false
+lmms_eval_specific_kwargs:
+  default:
+    pre_prompt: ""
+    post_prompt: "\nAnswer the question using a single word or phrase."
+metadata:
+  - version: 0.0

@@ -1,0 +1,16 @@
+include: _smoke_template.yaml
+task: qwen3_5_ai2d_smoke
+dataset_kwargs:
+  data_files:
+    test: /home/YinPeiran/datasets/lmms_eval_datasets/ai2d/data/test-00000-of-00002.parquet
+  cache_dir: /home/ZhouFengyu/fastv-repro/MLLM-Comp-Platform/MLLM-Comp-Platform-main/outputs/qwen3_5-eval/additional-smoke-parquet-cache
+test_split: test
+doc_to_visual: !function utils.ai2d_doc_to_visual
+doc_to_text: !function utils.ai2d_doc_to_text
+doc_to_target: !function utils.ai2d_doc_to_target
+model_specific_target_kwargs: {default: mcq}
+lmms_eval_specific_kwargs:
+  default:
+    prompt_format: mcq
+    pre_prompt: ""
+    post_prompt: "\nAnswer with the option's letter from the given choices directly."

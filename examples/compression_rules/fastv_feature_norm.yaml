@@ -1,0 +1,42 @@
+# Complete formal stage: replace the backbone model path for a real run.
+experiment: {name: fastv_feature_norm, seed: 42}
+backbone: {name: qwen25_vl, model_path: '${QWEN25_VL_MODEL_PATH}'}
+pipeline:
+  stages:
+    - name: fastv_feature_norm
+      plugin: fastv
+      algorithm: fastv
+      variant: fastv.image
+      binding: fastv.image.qwen25_vl
+      placement: llm_level
+      execution_phase: forward
+      method: token_compression
+      object_family: tensor_slot
+      target_modalities: [image]
+      modalities: [image]
+      conditioning_modalities: [text]
+      preserved_modalities: [text, video, audio]
+      media_alignment: token
+      config: {prune_layer: 2, prune_ratio: 0.5}
+      criterion:
+        scorer:
+          callable: mllm_comp.compressors.rule_examples:fastv_feature_norm
+          params: {power: 2.0}
+      operation:
+        type: prune
+        target_site: llm_decoder_layer_post_attention_image_tokens
+        layers: [2]
+analysis:
+  backend: lmms_eval
+  compression_mode: compressed
+  phase: post_compression
+  tasks: [mme]
+  runtime_batch_size: 1
+  sample_limit: 1
+  probes:
+    - name: representation_dynamics
+      enabled: true
+      layers: [3]
+      metrics: [cosine]
+      token_groups: [text, vision]
+      save_raw: false

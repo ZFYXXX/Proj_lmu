@@ -1,0 +1,98 @@
+# Formal entry: mllm-comp train -> native ms-swift.
+experiment:
+  name: qwen25_vl-image-operations-sft
+  seed: 42
+backbone:
+  name: qwen25_vl
+  model_path: '${QWEN25_VL_MODEL_PATH}'
+  config:
+    torch_dtype: bfloat16
+    attn_implementation: sdpa
+    processor_load_kwargs: {min_pixels: 3136, max_pixels: 16384}
+pipeline:
+  stages:
+    - name: image_window
+      plugin: qwen3_vl_attention_replacement
+      placement: llm_level
+      execution_phase: prepare
+      method: operation_compression
+      object_family: module_unit
+      object_subtype: attention
+      modalities: [image]
+      operation: {type: replace}
+      schedule:
+        targets: [{site: 'llm.layer[1].attn'}]
+      config: {strategy: attn_sparse_window, local_left: 127}
+    - name: image_attn_skip
+      plugin: qwen3_vl_attention_replacement
+      placement: llm_level
+      execution_phase: prepare
+      method: operation_compression
+      object_family: module_unit
+      object_subtype: attention
+      modalities: [image]
+      operation: {type: replace}
+      schedule:
+        targets: [{site: 'llm.layer[2].attn'}]
+      config: {strategy: attn_identity}
+    - name: image_mlp
+      plugin: qwen3_vl_ffn_replacement
+      placement: llm_level
+      execution_phase: prepare
+      method: operation_compression
+      object_family: module_unit
+      object_subtype: ffn
+      modalities: [image]
+      operation: {type: replace}
+      schedule:
+        targets: [{site: 'llm.layer[1].ffn'}]
+      config: {strategy: ffn_two_layer_mlp, bottleneck_dim: 128}
+    - name: image_ffn_skip
+      plugin: qwen3_vl_ffn_replacement
+      placement: llm_level
+      execution_phase: prepare
+      method: operation_compression
+      object_family: module_unit
+      object_subtype: ffn
+      modalities: [image]
+      operation: {type: replace}
+      schedule:
+        targets: [{site: 'llm.layer[2].ffn'}]
+      config: {strategy: ffn_identity}
+train:
+  backend: ms_swift
+  compression_mode: compressed
+  max_steps: 1
+  args:
+    tuner_type: full
+    torch_dtype: bfloat16
+    attn_impl: sdpa
+    max_length: 512
+    learning_rate: 0.0001
+    optim: sgd
+    per_device_train_batch_size: 1
+    gradient_accumulation_steps: 1
+    gradient_checkpointing: true
+    freeze_vit: true
+    freeze_aligner: true
+    save_steps: 1
+    save_total_limit: 1
+    logging_steps: 1
+    report_to: [none]
+    dataloader_num_workers: 0
+    dataset_num_proc: 1
+    split_dataset_ratio: 0
+    add_version: false
+    packing: false
+    padding_free: false
+data:
+  dataset_id: '${MLLM_COMP_TRAIN_DATASET}'
+eval:
+  backend: lmms_eval
+  compression_mode: compressed
+  tasks: [ok_vqa_val2014, mmstar, docvqa_val, refcoco_bbox_rec_testB]
+  sample_limit: 2
+  runtime_batch_size: 1
+  generation: {max_new_tokens: 64, use_cache: true, do_sample: false}
+output:
+  run_dir: '${MLLM_COMP_TRAIN_RUN_DIR}'

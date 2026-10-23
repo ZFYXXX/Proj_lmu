@@ -1,0 +1,272 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "support_unit": {
+    "algorithm": "fastvid",
+    "variant": "fastvid.video",
+    "backbone": "qwen25_vl",
+    "target_modality": "video",
+    "phase": "forward",
+    "binding": "fastvid.video.qwen25_vl"
+  },
+  "canonical_config": {
+    "retention_ratio": 0.1,
+    "dyseg_c": 8,
+    "dyseg_tau": 0.9,
+    "stprune_d": 0.4,
+    "dtm_p": 4,
+    "dtm_beta": 0.6
+  },
+  "source_revisions": {
+    "installed_kernel_contract_and_generate_runner": "992ba51355e90d5b86a1d9901e7a2a03135a98a9",
+    "five_step_training_and_reload_harness": "41cb8645c9464a05e33ff2bda673ef17cf5257a6",
+    "nonoverlap_lineage_recovery": "35bd55f415624bc2a7aacb3719bb27f74f4604e9",
+    "reference_compression_algorithm": "7e3ae876bc6306a4179f389e5f960225cd9e3a79",
+    "lmms_eval": "e9a5309ea6f4b8edacb813823cf8fdfd24bbd115"
+  },
+  "environment": {
+    "name": "mllm-comp-platform-dev",
+    "python": "3.10.20",
+    "torch": "2.8.0+cu128",
+    "transformers": "4.57.3",
+    "dtype": "bfloat16",
+    "attention_implementation": "sdpa",
+    "gradient_checkpointing": false,
+    "deterministic_algorithms": true,
+    "offline": true,
+    "package_or_environment_changes": false,
+    "downloads": false
+  },
+  "checkpoint": {
+    "path": "/home/WuHao/checkpoints/ckpts-vlm/Qwen2.5-VL-3B-Instruct",
+    "total_weight_bytes": 7509337976,
+    "weight_shards": 2,
+    "local_files_only": true
+  },
+  "fixture": {
+    "kind": "nextqa_mc_test_derived_sft_code_correctness_fixture",
+    "task": "nextqa_mc_test",
+    "split": "test",
+    "doc_id": 442,
+    "video_id": "3064389881",
+    "target": "D",
+    "parquet": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet",
+    "video_root": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo",
+    "video_fps": 1.0,
+    "video_max_pixels": 100352,
+    "video_grid_thw": [13, 18, 26],
+    "second_per_grid_ts": [1.0],
+    "spatial_merge_size": 2,
+    "temporal_slices": 13,
+    "source_tokens_per_slice": 117,
+    "source_visual_tokens": 1521,
+    "quality_or_training_data_claim": false
+  },
+  "training": {
+    "batch_size": 1,
+    "optimizer": "AdamW",
+    "learning_rate": 0.01,
+    "weight_decay": 0.0,
+    "optimizer_steps": 5,
+    "gradient_accumulation_steps": 1,
+    "intended_trainable_handle": "llm.final_norm.weight",
+    "selected_trainable_parameters": [
+      "model.language_model.norm.weight"
+    ],
+    "compressor_trainable_parameters": 0,
+    "source_visual_tokens_each_step": [1521, 1521, 1521, 1521, 1521],
+    "result_visual_tokens_each_step": [143, 143, 143, 143, 143],
+    "losses": [
+      0.22362327575683594,
+      0.1907028704881668,
+      0.1515575498342514,
+      0.1290987730026245,
+      0.11333121359348297
+    ],
+    "gradient_norms": [
+      0.26418840885162354,
+      0.22429929673671722,
+      0.1709374636411667,
+      0.14304427802562714,
+      0.11931802332401276
+    ],
+    "max_parameter_deltas": [0.015625, 0.015625, 0.015625, 0.015625, 0.015625],
+    "training_logits_shape": [1, 215, 151936],
+    "provider_capture_counts": [1, 2, 3, 4, 5],
+    "compression_triggered_each_step": true,
+    "loss_finite_each_step": true,
+    "backward_succeeded_each_step": true,
+    "target_gradient_finite_nonzero_each_step": true,
+    "target_updated_each_step": true,
+    "layout_stable_across_steps": true
+  },
+  "fastvid_evidence": {
+    "stages": ["dyseg", "stprune", "dtm"],
+    "projected_features_shape_each_step": [1521, 2048],
+    "raw_features_shape_each_step": [6084, 1280],
+    "frame_global_features_shape_each_step": [13, 2048],
+    "token_saliency_attention_shape_each_step": [1521],
+    "all_runtime_signals_finite_each_step": true,
+    "signal_source": "native_final_visual_attention_and_projected_mean",
+    "raw_stream": "native_visual_encoder_output",
+    "dyseg_segment_sizes_each_step": [2, 1, 1, 2, 3, 2, 1, 1],
+    "context_allocations_each_step": [0, 8, 4, 4, 0, 8, 0, 0, 12, 0, 8, 4, 4],
+    "frame_output_counts_each_step": [7, 15, 11, 11, 7, 15, 7, 7, 19, 7, 15, 11, 11],
+    "salient_tokens_each_step": 91,
+    "single_frame_dtm_tokens_each_step": 16,
+    "multi_frame_dtm_tokens_each_step": 36,
+    "result_tokens_each_step": 143,
+    "assigned_sources_each_step": 1430,
+    "overlapping_assigned_sources_each_step": 0,
+    "value_lineage_records_each_step": 143,
+    "representatives_source_ordered_each_step": true,
+    "sampled_center_singleton_layout_each_step": true,
+    "dyseg_boundary_rule": "stable_lowest_adjacent_cosine_union_below_tau",
+    "stprune_rule": "stable_per_frame_attention_topk",
+    "density_tie_policy": "stable_source_order_without_random_noise",
+    "dtm_merge_rule": "center_weighted_with_assigned_mean",
+    "layout_anchor_policy": "released_sampled_center",
+    "value_lineage_policy": "exact_potentially_overlapping_assignments"
+  },
+  "qwen25_legalization": {
+    "source_video_grid_preserved_each_step": true,
+    "source_timing_preserved_each_step": true,
+    "source_placeholder_count": 1521,
+    "result_placeholder_count": 143,
+    "sparse_mrope_representative_gather_exact_each_step": true,
+    "rope_delta_present_each_step": true,
+    "attention_mask_aligned_each_step": true,
+    "completion_only_labels_and_logits_aligned_each_step": true,
+    "visual_labels_ignored_each_step": true
+  },
+  "lightweight_checkpoint": {
+    "format": "mllm_comp_selected_parameter_checkpoint",
+    "global_step": 5,
+    "tensor_names": [
+      "model.language_model.norm.weight"
+    ],
+    "tensor_dtype": "BF16",
+    "tensor_shape": [2048],
+    "tensor_parameter_count": 2048,
+    "tensor_sha256": "6c9baeef7817a27ffe811021409c537606633170259d4523ee88b7f7ed427dd3",
+    "config_sha256": "2f67273aa423c7fa5b0635a20eea342b72bba8ab20b210cedfdafe58bbf42a01",
+    "training_state_sha256": "b27c92a6cf5a2fbc40accdb744ab5f2442c6eb4ec9a80983a21097a6a8f80b8e",
+    "fresh_base_checkpoint_reload": true,
+    "tensor_reload_exact": true,
+    "post_reload_compression_triggered": true,
+    "post_reload_source_visual_tokens": 1521,
+    "post_reload_result_visual_tokens": 143,
+    "post_reload_logits_shape": [1, 212, 151936],
+    "post_reload_logits_finite": true,
+    "post_reload_labels_absent": true,
+    "post_reload_fastvid_path_exact": true,
+    "post_reload_grid_and_timing_exact": true,
+    "post_reload_sparse_mrope_gather_exact": true,
+    "post_reload_qwen25_layout_aligned": true
+  },
+  "gpu": {
+    "physical_device": 0,
+    "logical_device": 0,
+    "name": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+    "free_before_mib": 86146,
+    "estimated_peak_mib": 49152,
+    "safety_margin_mib": 16384,
+    "required_free_mib": 65536,
+    "observed_peak_allocated_mib": 7612.919,
+    "observed_peak_reserved_mib": 8158.0,
+    "free_after_process_exit_mib": 86146,
+    "concurrency_decision": "only GPU 0 admitted the conservative task bound plus margin; one exact job ran serialized and GPU 1 remained unassigned",
+    "preserved_compute_pids": [364893, 364894, 588975],
+    "launcher_gpu_snapshot_restored_exactly": true,
+    "launcher_process_snapshot_restored_exactly": true,
+    "other_processes_modified": false
+  },
+  "command": [
+    "/home/WuHao/miniconda3/envs/mllm-comp-platform-dev/bin/python",
+    "-m",
+    "scripts.diagnostics.validate_qwen25_fastvid_video_training_checkpoint",
+    "--checkpoint",
+    "/home/WuHao/checkpoints/ckpts-vlm/Qwen2.5-VL-3B-Instruct",
+    "--nextqa_parquet",
+    "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet",
+    "--video_root",
+    "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo",
+    "--output_dir",
+    "/home/WuHao/code/MLLM-Comp-Platform-Workspace/dev/outputs/video_compression/fastvid/qwen25_vl/training/20260827t143229-35bd55f-fastvid-qwen25-train-gpu0-a2",
+    "--code_revision",
+    "35bd55f415624bc2a7aacb3719bb27f74f4604e9",
+    "--physical_gpu",
+    "0",
+    "--estimated_peak_mib",
+    "49152",
+    "--safety_margin_mib",
+    "16384"
+  ],
+  "artifacts": {
+    "report": {
+      "path": ".goal-task/video-compression-three-backbones/local-artifacts/20260827t143229-35bd55f-fastvid-qwen25-train-gpu0-a2/report.json",
+      "sha256": "dd7af70bca0d4e4d8355126d95318a31e5e5ad3c608dd51c8cc4851807dcab33",
+      "size_bytes": 2440747
+    },
+    "progress": {
+      "path": ".goal-task/video-compression-three-backbones/local-artifacts/20260827t143229-35bd55f-fastvid-qwen25-train-gpu0-a2/progress.jsonl",
+      "sha256": "45abea4c550381d0835b1022c23dfe41f100b5471dc211a4b0831a39ea4f9f6d",
+      "size_bytes": 662410
+    },
+    "fixture": {
+      "path": ".goal-task/video-compression-three-backbones/local-artifacts/20260827t143229-35bd55f-fastvid-qwen25-train-gpu0-a2/fixture.json",
+      "sha256": "5513c295a75d3b154538358555312a1aaf124d239a877912933e3a73a50cd568",
+      "size_bytes": 598
+    },
+    "checkpoint_tensor": {
+      "path": ".goal-task/video-compression-three-backbones/local-artifacts/20260827t143229-35bd55f-fastvid-qwen25-train-gpu0-a2/checkpoint-5/adapter_model.safetensors",
+      "sha256": "6c9baeef7817a27ffe811021409c537606633170259d4523ee88b7f7ed427dd3",
+      "size_bytes": 4200
+    },
+    "independent_validation": {
+      "path": ".goal-task/video-compression-three-backbones/local-artifacts/20260827t143229-35bd55f-fastvid-qwen25-train-gpu0-a2/independent-validation-recovery.json",
+      "sha256": "2a2d738015d63f21e0570e089f27faab60c5363f6e589bb12ea5c53a1db17b15",
+      "size_bytes": 16927
+    },
+    "validation_attempts": {
+      "path": ".goal-task/video-compression-three-backbones/local-artifacts/20260827t143229-35bd55f-fastvid-qwen25-train-gpu0-a2/validation_attempts.json",
+      "sha256": "746c1b470b9cd0325337da1e016fe9454e4c46b8084ecf745ddca434d4665957",
+      "size_bytes": 1670
+    },
+    "validator": {
+      "path": ".goal-task/video-compression-three-backbones/local-artifacts/20260827t143229-35bd55f-fastvid-qwen25-train-gpu0-a2/validate_artifacts_recovery.py",
+      "sha256": "63eb57bf8bb5cb41a640ea41506c1f58c4b7ed4d6f71d935850b3a1b8b4b6c7c",
+      "size_bytes": 22828
+    }
+  },
+  "independent_artifact_validation": {
+    "status": "passed",
+    "stdlib_only": true,
+    "checks": 197,
+    "recovery_generation": 1,
+    "prior_bounded_attempts": 3,
+    "recovery_change": "replace fixed fixture, logit-length, and allocation values with fixture/path self-consistency, tensor-shape protocol, and contract-derived segment/allocation/output invariants",
+    "gpu_rerun_required": false,
+    "source_run_artifacts_unchanged": true
+  },
+  "verified_invariants": [
+    "exactly five optimizer steps use the shared doc-442 batch-one test-derived fixture",
+    "canonical DySeg, STPrune, single-frame DTM, and multi-frame DTM reduce 1521 source visual tokens to 143 on every step",
+    "context allocations are non-negative, sum to the DTM count, and derive each frame output count",
+    "all 143 sampled centers and 1430 assignments cover the 1521-token source raster with recorded multiplicity",
+    "native video_grid_thw, timing, sparse MRoPE anchors, placeholders, masks, labels, positions, and rope delta remain aligned",
+    "loss and logits are finite and the one intended final-norm tensor has finite non-zero gradients and updates on every step",
+    "the step-5 lightweight checkpoint contains exactly one BF16 tensor and reloads exactly",
+    "post-reload compressed inference is finite and preserves FastVID and Qwen2.5-VL legalization",
+    "launcher GPU and compute-process snapshots return exactly to baseline without modifying external processes"
+  ],
+  "boundaries": {
+    "test_derived_code_correctness_fixture": true,
+    "full_nextqa_benchmark": false,
+    "paper_quality_or_efficiency_reproduction": false,
+    "convergence_claim": false,
+    "batch_greater_than_one": false,
+    "single_sample_multiple_videos": false
+  },
+  "recorded_at": "2026-08-27T22:12:33+08:00"
+}

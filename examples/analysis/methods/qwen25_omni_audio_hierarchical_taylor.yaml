@@ -1,0 +1,24 @@
+experiment: {name: qwen25_omni_audio_hierarchical_taylor_example, seed: 42}
+backbone:
+  name: qwen25_omni
+  model_id: Qwen/Qwen2.5-Omni-3B
+  model_revision: null
+  trust_remote_code: false
+  config: {torch_dtype: bfloat16, attn_implementation: eager, enable_talker: false}
+pipeline: {stages: []}
+analysis:
+  backend: lmms_eval
+  compression_mode: none
+  phase: pre_compression
+  tasks: [mmau_test_mini]
+  runtime_batch_size: 1
+  sample_limit: 1
+  probes:
+    - name: hierarchical_taylor
+      enabled: true
+      target_modality: audio
+      layers: [0]
+      layer_batch_size: 1
+      ffn_bottom_fraction: 0.3
+      causal_validation: {enabled: false, component_count: 1, kinds: [path, head, ffn_neuron, sublayer, layer], seed: 42}
+      save_raw: false

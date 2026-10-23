@@ -1,0 +1,286 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "support_unit": {
+    "algorithm": "fastvid",
+    "variant": "fastvid.video",
+    "backbone": "llava_onevision",
+    "target_modality": "video",
+    "phase": "generate",
+    "binding": "fastvid.video.llava_onevision"
+  },
+  "canonical_config": {
+    "retention_ratio": 0.1,
+    "dyseg_c": 8,
+    "dyseg_tau": 0.9,
+    "stprune_d": 0.4,
+    "dtm_p": 4,
+    "dtm_beta": 0.6
+  },
+  "source_revisions": {
+    "installed_kernel_contract_and_real_checkpoint_runner": "3b47797fdfc594bb51a349137a0e9faa59ede1fa",
+    "reference_compression_algorithm": "7e3ae876bc6306a4179f389e5f960225cd9e3a79",
+    "lmms_eval": "e9a5309ea6f4b8edacb813823cf8fdfd24bbd115"
+  },
+  "environment": {
+    "name": "mllm-comp-platform-dev",
+    "python": "3.10.20",
+    "torch": "2.8.0+cu128",
+    "transformers": "4.57.3",
+    "offline": true,
+    "package_or_environment_changes": false,
+    "downloads": false
+  },
+  "checkpoint": {
+    "path": "/home/WuHao/checkpoints/ckpts-vlm/llava-onevision-qwen2-0.5b-ov",
+    "total_weight_bytes": 1787335336,
+    "weight_files": 1,
+    "dtype": "float16",
+    "attention_implementation": "sdpa",
+    "local_files_only": true
+  },
+  "auxiliary_checkpoint": {
+    "role": "existing frozen SigLIP pooling head",
+    "path": "/home/WuHao/checkpoints/ckpts-vlm/siglip-so400m-patch14-384",
+    "total_weight_bytes": 3511950624,
+    "weight_files": 1,
+    "local_files_only": true,
+    "trainable": false,
+    "downloaded": false
+  },
+  "dataset": {
+    "task": "nextqa_mc_test",
+    "split": "test",
+    "parquet": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet",
+    "parquet_rows": 8564,
+    "parquet_size_bytes": 898657,
+    "video_root": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo",
+    "doc_ids": [3849, 442, 28, 205],
+    "decoded_frames_per_sample": 32,
+    "decode_policy": "uniform_local_decord"
+  },
+  "generation": {
+    "batch_size": 1,
+    "max_new_tokens": 4,
+    "do_sample": false,
+    "use_cache": true,
+    "baseline_and_compressed_same_preprocessing": true,
+    "finite_logits_required": true,
+    "fastvid_capture_count_per_compressed_sample": 1,
+    "cached_decode_query_length": 1,
+    "cached_decode_steps_per_generation": 3
+  },
+  "gpu": {
+    "physical_device": 0,
+    "name": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+    "free_before_mib": 97212,
+    "estimated_peak_mib": 32768,
+    "safety_margin_mib": 16384,
+    "required_free_mib": 49152,
+    "observed_peak_allocated_mib": 5430.917,
+    "observed_peak_reserved_mib": 10080.0,
+    "free_after_workload_before_process_exit_mib": 86462,
+    "free_after_process_exit_mib": 97212,
+    "compute_processes_before": [],
+    "compute_processes_after": [],
+    "gpu1_free_before_mib": 97183,
+    "gpu1_assignment": "unassigned",
+    "concurrency_decision": "both GPUs admitted the estimate plus margin; selected GPU 0 for one job and left GPU 1 unassigned",
+    "other_processes_modified": false
+  },
+  "command": [
+    "/home/WuHao/miniconda3/envs/mllm-comp-platform-dev/bin/python",
+    "scripts/diagnostics/validate_llava_fastvid_video_compression_checkpoint.py",
+    "--checkpoint",
+    "/home/WuHao/checkpoints/ckpts-vlm/llava-onevision-qwen2-0.5b-ov",
+    "--siglip_checkpoint",
+    "/home/WuHao/checkpoints/ckpts-vlm/siglip-so400m-patch14-384",
+    "--nextqa_parquet",
+    "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet",
+    "--video_root",
+    "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo",
+    "--output_dir",
+    "outputs/video_compression/fastvid/llava_onevision/inference/20260826T100252-3b47797-fastvid-llava-gpu0-a1",
+    "--code_revision",
+    "3b47797fdfc594bb51a349137a0e9faa59ede1fa",
+    "--physical_gpu",
+    "0",
+    "--max_new_tokens",
+    "4",
+    "--estimated_peak_mib",
+    "32768",
+    "--safety_margin_mib",
+    "16384"
+  ],
+  "artifacts": {
+    "report": {
+      "path": "outputs/video_compression/fastvid/llava_onevision/inference/20260826T100252-3b47797-fastvid-llava-gpu0-a1/report.json",
+      "sha256": "34ee8345dbb7e27b0c594f8df9daccc250cfe8a4ecda74637a4e03a66e3d1c05",
+      "size_bytes": 6946551
+    },
+    "lmms_eval_samples": {
+      "path": "outputs/video_compression/fastvid/llava_onevision/inference/20260826T100252-3b47797-fastvid-llava-gpu0-a1/samples.jsonl",
+      "sha256": "b00ae5d6f0e91890f0f7b66d393ef814a57914b0e07853fba3598abcc84fa894",
+      "size_bytes": 1902
+    },
+    "launch_script": {
+      "path": "logs/video_compression/fastvid/llava_onevision/inference/20260826T100252-3b47797-fastvid-llava-gpu0-a1/launch.sh",
+      "sha256": "654cb3e94803e6334175f290947ac9e625edda5121d5c34a3654a2e6894b7eec",
+      "size_bytes": 1333
+    },
+    "exit_code": {
+      "path": "logs/video_compression/fastvid/llava_onevision/inference/20260826T100252-3b47797-fastvid-llava-gpu0-a1/exit_code",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "size_bytes": 2
+    },
+    "log": {
+      "path": "logs/video_compression/fastvid/llava_onevision/inference/20260826T100252-3b47797-fastvid-llava-gpu0-a1/run.log",
+      "sha256": "fa40739722b9b2245252f000cbe0bad2539b239ad100f531bffe2a694eacfaaa",
+      "size_bytes": 6947223
+    },
+    "read_only_validator": {
+      "path": "logs/video_compression/fastvid/llava_onevision/inference/20260826T100252-3b47797-fastvid-llava-gpu0-a1/validate_artifact.py",
+      "sha256": "f0b65ee68837d5eb1557333206c358f3b0ffcf9ca3c6c73d1e11de39b80bb4a0",
+      "size_bytes": 9170
+    }
+  },
+  "algorithm_evidence": {
+    "stages": ["dyseg", "stprune", "dtm"],
+    "projected_features_shape_per_sample": [6272, 896],
+    "raw_pre_projector_features_shape_per_sample": [23328, 1152],
+    "frame_global_features_shape_per_sample": [32, 1152],
+    "token_saliency_attention_shape_per_sample": [6272],
+    "signals_finite": true,
+    "signal_source": "frozen_siglip_pooling_head",
+    "raw_stream": "native_visual_encoder_output",
+    "projected_tokens_per_frame": 196,
+    "raw_tokens_per_frame": 729,
+    "nominal_retained_tokens_per_frame": 19,
+    "salient_tokens_per_frame": 12,
+    "context_tokens_per_single_frame_segment": 7,
+    "dyseg_boundary_rule": "stable_lowest_adjacent_cosine_union_below_tau",
+    "stprune_rule": "stable_per_frame_attention_topk",
+    "density_tie_policy": "stable_source_order_without_random_noise",
+    "dtm_merge_rule": "center_weighted_with_assigned_mean",
+    "layout_source_groups": "sampled_center_singletons",
+    "layout_anchor_policy": "released_sampled_center",
+    "value_lineage_policy": "exact_potentially_overlapping_assignments",
+    "representatives_source_ordered": true,
+    "single_frame_dtm_observed": true,
+    "multi_frame_dtm_observed": true,
+    "overlapping_lineage_observed": true,
+    "complete_segment_allocations_and_value_lineage_in_report": true
+  },
+  "samples": {
+    "3849": {
+      "video_id": "3571539122",
+      "qid": 6,
+      "question_type": "TC",
+      "target": "E",
+      "source_visual_tokens": 6272,
+      "result_visual_tokens": 608,
+      "segment_sizes": [1, 4, 1, 12, 3, 1, 4, 6],
+      "single_frame_dtm_tokens": 21,
+      "multi_frame_dtm_tokens": 203,
+      "overlapping_assigned_sources": 3312,
+      "baseline_prefill_length": 6326,
+      "compressed_prefill_length": 662,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "all_checks_passed": true
+    },
+    "442": {
+      "video_id": "3064389881",
+      "qid": 2,
+      "question_type": "TN",
+      "target": "D",
+      "source_visual_tokens": 6272,
+      "result_visual_tokens": 606,
+      "segment_sizes": [11, 1, 1, 4, 1, 6, 1, 1, 2, 1, 1, 2],
+      "single_frame_dtm_tokens": 49,
+      "multi_frame_dtm_tokens": 173,
+      "overlapping_assigned_sources": 3128,
+      "baseline_prefill_length": 6341,
+      "compressed_prefill_length": 675,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "all_checks_passed": true
+    },
+    "28": {
+      "video_id": "6097011028",
+      "qid": 8,
+      "question_type": "CW",
+      "target": "B",
+      "source_visual_tokens": 6272,
+      "result_visual_tokens": 604,
+      "segment_sizes": [1, 1, 14, 1, 1, 5, 7, 2],
+      "single_frame_dtm_tokens": 28,
+      "multi_frame_dtm_tokens": 192,
+      "overlapping_assigned_sources": 4784,
+      "baseline_prefill_length": 6342,
+      "compressed_prefill_length": 674,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "all_checks_passed": true
+    },
+    "205": {
+      "video_id": "2597214137",
+      "qid": 6,
+      "question_type": "DL",
+      "target": "A",
+      "source_visual_tokens": 6272,
+      "result_visual_tokens": 608,
+      "segment_sizes": [1, 8, 16, 1, 1, 2, 1, 2],
+      "single_frame_dtm_tokens": 28,
+      "multi_frame_dtm_tokens": 196,
+      "overlapping_assigned_sources": 4416,
+      "baseline_prefill_length": 6319,
+      "compressed_prefill_length": 655,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "all_checks_passed": true
+    }
+  },
+  "verified_invariants": [
+    "compression callback and FastVID signal capture invoked exactly once per compressed sample",
+    "non-identity visual-token reduction from 6272 to 608, 606, 604, and 608",
+    "projected, native pre-projector, frame-global, and token-saliency signals are finite and source-aligned",
+    "DySeg segment sizes cover all 32 frames and every context allocation is recorded",
+    "STPrune retains the canonical 12 attention-salient tokens per frame",
+    "single-frame and multi-frame DTM paths both execute across the fixed sample set",
+    "complete potentially overlapping DTM value lineage and source-ordered sampled centers are recorded",
+    "LayoutDelta, native splice, and decoder length reductions agree exactly",
+    "LLaVA structural newline tokens and the single video placeholder are preserved",
+    "inference labels remain absent",
+    "attention mask, position IDs, and cache positions align at decoder prefill",
+    "baseline and compressed cached decode each use three unit-query steps",
+    "baseline and compressed logits are finite",
+    "bounded four-token generation completes for all four fixed samples"
+  ],
+  "installed_regression": {
+    "targeted": "114 passed",
+    "aggregate": "1416 passed, 1 skipped",
+    "cuda_visible_devices": "",
+    "observed_gpu_peak_mib": 0
+  },
+  "attempts": [
+    {
+      "attempt": 1,
+      "run_id": "20260826T100252-3b47797-fastvid-llava-gpu0-a1",
+      "status": "passed"
+    }
+  ],
+  "independent_artifact_validation": {
+    "status": "passed",
+    "attempts": 2,
+    "first_attempt": "all scope, provenance, checkpoint, dataset, GPU, algorithm, layout, decoder, generation, artifact, and SHA-256 checks passed read-only",
+    "second_attempt": "the same immutable artifacts passed a deliberately strengthened cached-decode assertion requiring four generated tokens and exactly three unit-query decode calls in both baseline and compressed runs"
+  },
+  "boundaries": {
+    "full_nextqa_benchmark": false,
+    "paper_quality_or_efficiency_reproduction": false,
+    "convergence_claim": false,
+    "training_claim": false
+  },
+  "recorded_at": "2026-08-26T10:02:52+08:00"
+}

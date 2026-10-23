@@ -1,0 +1,1 @@
+"""Shared mechanism-analysis helpers."""

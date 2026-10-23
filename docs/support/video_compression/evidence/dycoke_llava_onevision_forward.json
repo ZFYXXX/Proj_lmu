@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "support_unit": {
+    "algorithm": "dycoke",
+    "variant": "dycoke.video",
+    "backbone": "llava_onevision",
+    "target_modality": "video",
+    "phase": "forward",
+    "binding": "dycoke.video.llava_onevision"
+  },
+  "canonical_config": {
+    "merging_ratio": 0.7,
+    "decoder_prune_layer": 3,
+    "kv_drop_ratio": 0.8,
+    "attention_similarity_threshold": 0.9
+  },
+  "source_revisions": {
+    "three_step_training_and_runtime_evidence": "f656b67350407a6df98648074ba5e9e8262b138d",
+    "reference_compression_algorithm": "7e3ae876bc6306a4179f389e5f960225cd9e3a79"
+  },
+  "environment": {
+    "name": "mllm-comp-platform-dev",
+    "python": "3.10.20",
+    "torch": "2.8.0+cu128",
+    "transformers": "4.57.3",
+    "dtype": "bfloat16",
+    "attention_implementation": "sdpa",
+    "gradient_checkpointing": false,
+    "deterministic_algorithms": true,
+    "offline": true,
+    "package_or_environment_changes": false,
+    "downloads": false
+  },
+  "checkpoint": {
+    "path": "/home/WuHao/checkpoints/ckpts-vlm/llava-onevision-qwen2-0.5b-ov",
+    "total_weight_bytes": 1787335336,
+    "local_files_only": true
+  },
+  "fixture": {
+    "kind": "nextqa_mc_test_derived_sft_code_correctness_fixture",
+    "task": "nextqa_mc_test",
+    "split": "test",
+    "doc_id": 442,
+    "video_id": "3064389881",
+    "target": "D",
+    "decoded_frames": 32,
+    "decode_policy": "uniform_local_decord",
+    "quality_or_training_data_claim": false
+  },
+  "training": {
+    "batch_size": 1,
+    "optimizer": "AdamW",
+    "learning_rate": 0.01,
+    "weight_decay": 0.0,
+    "optimizer_steps": 3,
+    "gradient_accumulation_steps": 1,
+    "intended_trainable_handle": "llm.final_norm.weight",
+    "selected_trainable_parameters": ["model.norm.weight"],
+    "source_visual_tokens_each_step": [6272, 6272, 6272],
+    "result_visual_tokens_each_step": [2960, 2960, 2960],
+    "losses": [0.9172240495681763, 0.9254375100135803, 0.9254385232925415],
+    "gradient_norms": [0.06567391008138657, 0.06588510423898697, 0.06588510423898697],
+    "max_parameter_deltas": [0.015625, 0.015625, 0.015625],
+    "compression_triggered_each_step": true,
+    "loss_and_logits_finite_each_step": true,
+    "backward_succeeded_each_step": true,
+    "target_gradient_finite_nonzero_each_step": true,
+    "target_updated_each_step": true,
+    "layout_stable_across_steps": true,
+    "training_logits_shape": [1, 3032, 151647],
+    "cache_policy": "none_training_forward",
+    "decode_view_invocations": 0,
+    "decode_cache_controller_installed": false
+  },
+  "dycoke_evidence": {
+    "defining_forward_stage": "differentiable_two_pass_ttm_gather",
+    "ttm_pairing": "adjacent_then_zero_two_per_group_of_four",
+    "source_tokens_per_frame": 196,
+    "result_tokens_per_frame": [196, 58, 58, 58, 196, 58, 58, 58, 196, 58, 58, 58, 196, 58, 58, 58, 196, 58, 58, 58, 196, 58, 58, 58, 196, 58, 58, 58, 196, 58, 58, 58],
+    "source_visual_tokens": 6272,
+    "result_visual_tokens": 2960,
+    "non_identity_reduction_each_step": true,
+    "representatives_source_ordered": true,
+    "generation_sparse_visual_kv_owned_by_generate_unit": true
+  },
+  "llava_legalization": {
+    "placeholder_counts_exact_each_step": true,
+    "structural_tokens_preserved_each_step": true,
+    "completion_only_labels_and_logits_aligned_each_step": true,
+    "dense_positions_rebuilt_each_step": true,
+    "layout_delta_aligned_each_step": true
+  },
+  "lightweight_checkpoint": {
+    "global_step": 3,
+    "tensor_names": ["model.norm.weight"],
+    "tensor_parameter_count": 896,
+    "tensor_sha256": "d165509f6c8cdf11bf09c3a8e2be22cad6fd3efaedca43e8438117ebd78a82e7",
+    "config_sha256": "c574ecd7f9e967a1dcb4da72eb892cdfe9919846ca4181e6a35940926c86c0e6",
+    "training_state_sha256": "f604acc7248335ddc4810dd7249650cfe8f21a52c4e90b965b70b35c99e86022",
+    "tensor_reload_exact": true,
+    "post_reload_compression_triggered": true,
+    "post_reload_source_visual_tokens": 6272,
+    "post_reload_result_visual_tokens": 2960,
+    "post_reload_logits_shape": [1, 3029, 151647],
+    "post_reload_logits_finite": true,
+    "post_reload_layout_aligned": true
+  },
+  "gpu": {
+    "physical_device": 0,
+    "free_before_mib": 97212,
+    "estimated_peak_mib": 32768,
+    "safety_margin_mib": 16384,
+    "observed_peak_allocated_mib": 7876.644,
+    "observed_peak_reserved_mib": 11608.0,
+    "concurrency_decision": "ran concurrently with the Qwen2.5-VL cell on physical GPU 1 using distinct output and log directories",
+    "task_gpu_returned_to_launcher_baseline": true,
+    "other_processes_modified": false
+  },
+  "command": "/home/WuHao/code/MLLM-Comp-Platform-Workspace/dev/scripts/diagnostics/validate_llava_dycoke_video_training_checkpoint.py --checkpoint /home/WuHao/checkpoints/ckpts-vlm/llava-onevision-qwen2-0.5b-ov --nextqa_parquet /home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet --video_root /home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo --output_dir /home/WuHao/code/MLLM-Comp-Platform-Workspace/dev/outputs/video_compression/dycoke/llava_onevision/training/20260828T060011-f656b67-dycoke-llava-train-gpu0-a1 --code_revision f656b67350407a6df98648074ba5e9e8262b138d --physical_gpu 0 --estimated_peak_mib 32768 --safety_margin_mib 16384 --learning_rate 0.01 --seed 42",
+  "artifacts": {
+    "root": ".goal-task/video-compression-three-backbones/local-artifacts/20260828T060011-f656b67-dycoke-llava-train-gpu0-a1",
+    "report": {"sha256": "c7c3143b21248e5bdaa2c1b062fc78ed2bad12e448b2a9bd3f1e0c5981182f97", "size_bytes": 7998107},
+    "progress": {"sha256": "b731d35786f3c2acc214fee19aa5b4d28682492fdba4b554cfab7f9824b46de7", "size_bytes": 2042770},
+    "fixture": {"sha256": "375f2ecd510c6e549d9e2394390f7325a16fc6e0285c22b9da189d65c4985904", "size_bytes": 627},
+    "checkpoint_tensor": {"sha256": "d165509f6c8cdf11bf09c3a8e2be22cad6fd3efaedca43e8438117ebd78a82e7", "size_bytes": 1880},
+    "independent_validation": {"sha256": "4b2ea889c88d92717d2cdc9e4b3fee044b6d3de5d0ca835545d3ca9eaed8f0ed", "size_bytes": 2628, "check_count": 145}
+  },
+  "boundaries": {
+    "full_nextqa_benchmark": false,
+    "paper_quality_or_efficiency_reproduction": false,
+    "convergence_claim": false,
+    "batch_greater_than_one": false,
+    "single_sample_multiple_videos": false
+  }
+}

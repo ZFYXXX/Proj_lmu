@@ -1,0 +1,277 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "support_unit": {
+    "algorithm": "visionzip",
+    "variant": "visionzip.video",
+    "backbone": "llava_onevision",
+    "target_modality": "video",
+    "phase": "forward",
+    "binding": "visionzip.video.llava_onevision"
+  },
+  "canonical_config": {
+    "dominant_num": 126,
+    "contextual_num": 21,
+    "attn_layer": -2,
+    "hidden_state_layer": -2
+  },
+  "source_revisions": {
+    "installed_kernel_contract_and_generate_runner": "e81d027e2ffbfd143cf27ad403f9c51c678081d6",
+    "five_step_training_and_reload_harness": "a3fc87d30e0a35d4bb4f7c227375ef5759d5fdd4",
+    "reference_compression_algorithm": "7e3ae876bc6306a4179f389e5f960225cd9e3a79",
+    "lmms_eval": "e9a5309ea6f4b8edacb813823cf8fdfd24bbd115"
+  },
+  "environment": {
+    "name": "mllm-comp-platform-dev",
+    "python": "3.10.20",
+    "torch": "2.8.0+cu128",
+    "transformers": "4.57.3",
+    "dtype": "bfloat16",
+    "attention_implementation": "sdpa",
+    "gradient_checkpointing": false,
+    "offline": true,
+    "package_or_environment_changes": false,
+    "downloads": false
+  },
+  "checkpoint": {
+    "path": "/home/WuHao/checkpoints/ckpts-vlm/llava-onevision-qwen2-0.5b-ov",
+    "total_weight_bytes": 1787335336,
+    "weight_files": 1,
+    "local_files_only": true
+  },
+  "fixture": {
+    "kind": "nextqa_mc_test_derived_sft_code_correctness_fixture",
+    "task": "nextqa_mc_test",
+    "split": "test",
+    "doc_id": 442,
+    "video_id": "3064389881",
+    "target": "D",
+    "parquet": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet",
+    "video_root": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo",
+    "decoded_frames": 32,
+    "decode_policy": "uniform_local_decord",
+    "source_visual_tokens": 6272,
+    "quality_or_training_data_claim": false
+  },
+  "training": {
+    "batch_size": 1,
+    "optimizer": "AdamW",
+    "learning_rate": 0.01,
+    "weight_decay": 0.0,
+    "optimizer_steps": 5,
+    "gradient_accumulation_steps": 1,
+    "intended_trainable_handle": "llm.final_norm.weight",
+    "selected_trainable_parameters": [
+      "model.norm.weight"
+    ],
+    "compressor_trainable_parameters": 0,
+    "source_visual_tokens_each_step": [6272, 6272, 6272, 6272, 6272],
+    "result_visual_tokens_each_step": [4704, 4704, 4704, 4704, 4704],
+    "losses": [
+      0.8653804659843445,
+      0.8653812408447266,
+      0.8653818964958191,
+      0.8653826117515564,
+      0.8653831481933594
+    ],
+    "gradient_norms": [
+      0.06480658054351807,
+      0.06480654329061508,
+      0.06480654329061508,
+      0.06480654329061508,
+      0.06480654329061508
+    ],
+    "max_parameter_deltas": [0.015625, 0.015625, 0.015625, 0.015625, 0.015625],
+    "compression_triggered_each_step": true,
+    "loss_finite_each_step": true,
+    "backward_succeeded_each_step": true,
+    "target_gradient_finite_nonzero_each_step": true,
+    "target_updated_each_step": true,
+    "layout_stable_across_steps": true
+  },
+  "visionzip_evidence": {
+    "selection_scope": "independent_per_temporal_slice",
+    "attention_statistic": "penultimate_mean_received",
+    "similarity": "penultimate_hidden_cosine",
+    "contextual_target_sampling": "released_prefix_stride",
+    "merge_value": "target_plus_mean_assigned_excluding_target",
+    "representative_policy": "merge_target_when_causal_else_source_group_first_index",
+    "attention_layer": -2,
+    "hidden_state_layer": -2,
+    "temporal_slices_each_step": 32,
+    "source_tokens_per_slice": 196,
+    "dominant_tokens_per_slice": 126,
+    "contextual_targets_per_slice": 21,
+    "assigned_contextual_sources_per_slice": 49,
+    "result_tokens_per_slice": 147,
+    "dominant_tokens_each_step": 4032,
+    "contextual_targets_each_step": 672,
+    "assigned_contextual_sources_each_step": 1568,
+    "source_partition_exact_each_step": true,
+    "merge_targets_inside_groups_each_step": true,
+    "representatives_source_ordered_each_step": true,
+    "image_variant_shared": false
+  },
+  "llava_legalization": {
+    "source_placeholder_count": 6272,
+    "result_placeholder_count": 4704,
+    "source_visual_span": [14, 6287],
+    "result_visual_span": [14, 4719],
+    "structural_newline_count": 1,
+    "structural_tokens_preserved_each_step": true,
+    "provider_capture_count_each_step": 1,
+    "completion_only_labels_and_logits_aligned_each_step": true,
+    "training_logits_shape": [1, 4776, 151647]
+  },
+  "lightweight_checkpoint": {
+    "format": "mllm_comp_selected_parameter_checkpoint",
+    "global_step": 5,
+    "tensor_names": [
+      "model.norm.weight"
+    ],
+    "tensor_dtype": "BF16",
+    "tensor_shape": [896],
+    "tensor_parameter_count": 896,
+    "tensor_sha256": "7250bb0677ddb23b18b1d6d208a3ac70414763092917f46ab428cc033c8bc35f",
+    "config_sha256": "a5867ac6cc26eaa9fae2bdbe9dedcb07bc7e628c8cf4b02f0bc36c7342310c74",
+    "training_state_sha256": "b27c92a6cf5a2fbc40accdb744ab5f2442c6eb4ec9a80983a21097a6a8f80b8e",
+    "fresh_base_checkpoint_reload": true,
+    "tensor_reload_exact": true,
+    "post_reload_compression_triggered": true,
+    "post_reload_source_visual_tokens": 6272,
+    "post_reload_result_visual_tokens": 4704,
+    "post_reload_logits_shape": [1, 4773, 151647],
+    "post_reload_logits_finite": true,
+    "post_reload_labels_absent": true,
+    "post_reload_visionzip_path_exact": true,
+    "post_reload_llava_layout_aligned": true
+  },
+  "gpu": {
+    "physical_device": 1,
+    "logical_device": 0,
+    "name": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+    "free_before_mib": 86117,
+    "estimated_peak_mib": 49152,
+    "safety_margin_mib": 16384,
+    "required_free_mib": 65536,
+    "observed_peak_allocated_mib": 19792.022,
+    "observed_peak_reserved_mib": 31248.0,
+    "free_after_process_exit_mib": 86117,
+    "concurrency_decision": "both GPUs admitted; selected GPU 1 for lower utilization; serialized one exact cell",
+    "other_process_snapshots_unchanged": true,
+    "other_processes_modified": false
+  },
+  "command": [
+    "/home/WuHao/miniconda3/envs/mllm-comp-platform-dev/bin/python",
+    "-m",
+    "scripts.diagnostics.validate_llava_visionzip_video_training_checkpoint",
+    "--checkpoint",
+    "/home/WuHao/checkpoints/ckpts-vlm/llava-onevision-qwen2-0.5b-ov",
+    "--nextqa_parquet",
+    "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet",
+    "--video_root",
+    "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo",
+    "--output_dir",
+    "/home/WuHao/code/MLLM-Comp-Platform-Workspace/dev/outputs/video_compression/visionzip/llava_onevision/training/20260827t121844-a3fc87d-visionzip-llava-train-gpu1-a2",
+    "--code_revision",
+    "a3fc87d30e0a35d4bb4f7c227375ef5759d5fdd4",
+    "--physical_gpu",
+    "1",
+    "--estimated_peak_mib",
+    "49152",
+    "--safety_margin_mib",
+    "16384",
+    "--learning_rate",
+    "0.01",
+    "--seed",
+    "42"
+  ],
+  "artifacts": {
+    "report": {
+      "path": ".goal-task/v/a2/outputs/video_compression/visionzip/llava_onevision/training/20260827t121844-a3fc87d-visionzip-llava-train-gpu1-a2/report.json",
+      "sha256": "02ebfd016cf58548e121a793370ade9f95dff9789d0f213c6bde3d1182b2a7a9",
+      "size_bytes": 16857042
+    },
+    "progress": {
+      "path": ".goal-task/v/a2/outputs/video_compression/visionzip/llava_onevision/training/20260827t121844-a3fc87d-visionzip-llava-train-gpu1-a2/progress.jsonl",
+      "sha256": "5e75b4b3accf871badc33a8204d662cc107568efec7a84ab79ba39b066276dc3",
+      "size_bytes": 3980254
+    },
+    "fixture": {
+      "path": ".goal-task/v/a2/outputs/video_compression/visionzip/llava_onevision/training/20260827t121844-a3fc87d-visionzip-llava-train-gpu1-a2/fixture.json",
+      "sha256": "375f2ecd510c6e549d9e2394390f7325a16fc6e0285c22b9da189d65c4985904",
+      "size_bytes": 627
+    },
+    "checkpoint_tensor": {
+      "path": ".goal-task/v/a2/outputs/video_compression/visionzip/llava_onevision/training/20260827t121844-a3fc87d-visionzip-llava-train-gpu1-a2/checkpoint-5/adapter_model.safetensors",
+      "sha256": "7250bb0677ddb23b18b1d6d208a3ac70414763092917f46ab428cc033c8bc35f",
+      "size_bytes": 1880
+    },
+    "independent_validation": {
+      "path": ".goal-task/v/a2_validation/independent_validation.json",
+      "sha256": "366bce885d8390b7dccf039704a5f34ed287ea6d58247b7abba7948652e24907",
+      "size_bytes": 4462
+    },
+    "log": {
+      "path": ".goal-task/v/a2/logs/video_compression/visionzip/llava_onevision/training/20260827t121844-a3fc87d-visionzip-llava-train-gpu1-a2/run.log",
+      "sha256": "81df0b3dac45b176fa3da09ede514906ecc245c803a267ef548001a1ca68c6bc",
+      "size_bytes": 6761
+    },
+    "launch_manifest": {
+      "path": ".goal-task/v/a2/outputs/video_compression/visionzip/llava_onevision/training/20260827t121844-a3fc87d-visionzip-llava-train-gpu1-a2/launch_manifest.json",
+      "sha256": "695ada8a2d837e737e319b1384fec4990ca9a2a2472024a663f4e128f2d49543",
+      "size_bytes": 645
+    },
+    "failed_attempt_log": {
+      "path": ".goal-task/v/a1/logs/video_compression/visionzip/llava_onevision/training/20260827t121657-a3fc87d-visionzip-llava-train-gpu1-a1/run.log",
+      "sha256": "99c9a28b680ac601e9cab0581f4c2149262ae1db34bd8e506860371f934c9966",
+      "size_bytes": 275
+    }
+  },
+  "verified_invariants": [
+    "exactly five optimizer steps on the shared doc-442 batch-one fixture",
+    "compression callback and VisionZip signal provider invoked exactly once per step",
+    "canonical per-slice 126 dominant plus 21 contextual path reduces 6272 source visual tokens to 4704",
+    "penultimate attention and hidden-state signals are finite and source aligned on every step",
+    "all source tokens form exact dominant/contextual partitions and merge targets remain inside their groups",
+    "LLaVA placeholder, structural newline, completion-only labels, logits, and splice lengths follow LayoutDelta",
+    "loss and logits are finite on every step",
+    "the one intended facade final-norm target has finite non-zero gradients and updates",
+    "the lightweight checkpoint contains exactly the intended BF16 tensor",
+    "fresh base-checkpoint reload reproduces the saved tensor exactly",
+    "post-reload compressed inference is finite and preserves VisionZip and LLaVA layout invariants"
+  ],
+  "attempts": [
+    {
+      "attempt": 1,
+      "run_id": "20260827t121657-a3fc87d-visionzip-llava-train-gpu1-a1",
+      "status": "failed_before_checkpoint",
+      "error": "filesystem script invocation omitted the repository-root scripts package from sys.path",
+      "recovery": "invoke the same diagnostic through its package module from the resolved Dev workspace",
+      "gpu_process_state_returned_to_baseline": true
+    },
+    {
+      "attempt": 2,
+      "run_id": "20260827t121844-a3fc87d-visionzip-llava-train-gpu1-a2",
+      "status": "passed",
+      "elapsed_seconds": 40.42
+    }
+  ],
+  "independent_artifact_validation": {
+    "status": "passed",
+    "stdlib_only": true,
+    "checks": 1487,
+    "attempts": 2,
+    "first_attempt_correction": "the validator treated VisionZip merge reduction as dropped-token reduction; it was corrected to require merged_source_count minus merge_group_count equals the 1568-token reduction without changing GPU artifacts",
+    "source_artifacts_unchanged": true
+  },
+  "boundaries": {
+    "test_derived_code_correctness_fixture": true,
+    "full_nextqa_benchmark": false,
+    "paper_quality_or_efficiency_reproduction": false,
+    "convergence_claim": false,
+    "batch_greater_than_one": false,
+    "single_sample_multiple_videos": false
+  },
+  "recorded_at": "2026-08-27T12:20:27+08:00"
+}

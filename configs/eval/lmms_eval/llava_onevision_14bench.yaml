@@ -1,0 +1,62 @@
+experiment:
+  name: llava_onevision_14bench
+  run_id: null
+  seed: 42
+
+backbone:
+  name: llava_onevision
+  model_path: ${LLAVA_ONEVISION_MODEL_PATH}
+  model_revision: null
+  trust_remote_code: false
+  config:
+    torch_dtype: float16
+    attn_implementation: sdpa
+    model_load_kwargs:
+      local_files_only: true
+      model_name: llava_qwen
+
+pipeline:
+  stages: []
+
+analysis: {}
+train: {}
+
+eval:
+  backend: lmms_eval
+  compression_mode: none
+  target: baseline
+  checkpoint_path: ${LLAVA_ONEVISION_MODEL_PATH}
+  tasks:
+    - gqa
+    - vqav2_val
+    - ok_vqa_val2014
+    - textvqa_val
+    - docvqa_val
+    - ocrbench
+    - scienceqa_img
+    - ai2d
+    - mmstar
+    - refcoco_bbox_rec_testA
+    - refcoco_bbox_rec_testB
+    - refcoco+_bbox_rec_testA
+    - refcoco+_bbox_rec_testB
+    - refcocog_bbox_rec_test
+  runtime_batch_size: 1
+  # Match scripts/eval/eval_14bench.sh. Sampling parity requires the same
+  # world size because every rank owns an independent RNG stream.
+  num_processes: 2
+  sample_limit: null
+  # Keep this empty for byte-for-byte parity with lmms-eval's native
+  # llava_onevision generation contract. Task YAML and generation_config own
+  # generation values; the bridge only supplies the native 1024-token fallback.
+  generation: {}
+  args:
+    seed: [0, 1234, 1234, 1234]
+    force_simple: true
+    log_samples: true
+    verbosity: DEBUG
+
+data:
+  dataset_id: null
+  dataset_commit: null
+  sample_split: validation

@@ -1,0 +1,255 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "support_unit": {
+    "algorithm": "vqtoken",
+    "variant": "vqtoken.video",
+    "backbone": "qwen3_vl",
+    "target_modality": "video",
+    "phase": "forward",
+    "binding": "vqtoken.video.qwen3_vl"
+  },
+  "canonical_config": {
+    "num_clusters": 32,
+    "adaptive": false,
+    "use_cross_attention": false
+  },
+  "source_revisions": {
+    "installed_kernel_and_shared_contract": "99d6c31247ddf9f37cecdce88c542d90b0e381ca",
+    "qwen3_video_mrope_deepstack_contract": "ca16fddabe56774b67fce03c18097808317815f0",
+    "five_step_training_and_reload_harness": "4020c791b18483ca6ba63955b7322a7aab319875",
+    "optional_timing_recovery_and_passing_run": "d1fceb3a0528e448170e6b6287857f38503c1b66"
+  },
+  "environment": {
+    "name": "mllm-comp-platform-dev",
+    "python": "3.10.20",
+    "torch": "2.8.0+cu128",
+    "transformers": "4.57.3",
+    "dtype": "bfloat16",
+    "attention_implementation": "sdpa",
+    "gradient_checkpointing": false,
+    "offline": true,
+    "package_or_environment_changes": false,
+    "downloads": false
+  },
+  "checkpoint": {
+    "path": "/home/WuHao/checkpoints/ckpts-vlm/Qwen3-VL-2B-Instruct",
+    "total_weight_bytes": 4255140312,
+    "weight_shards": 1,
+    "local_files_only": true
+  },
+  "fixture": {
+    "kind": "nextqa_mc_test_derived_sft_code_correctness_fixture",
+    "task": "nextqa_mc_test",
+    "split": "test",
+    "doc_id": 442,
+    "video_id": "3064389881",
+    "target": "D",
+    "parquet": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet",
+    "video_root": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo",
+    "video_fps": 1.0,
+    "video_max_pixels": 131072,
+    "enable_thinking": false,
+    "video_grid_thw": [13, 18, 26],
+    "second_per_grid_ts": [],
+    "source_visual_tokens": 1521,
+    "quality_or_training_data_claim": false
+  },
+  "training": {
+    "batch_size": 1,
+    "optimizer": "AdamW",
+    "learning_rate": 0.01,
+    "weight_decay": 0.0,
+    "optimizer_steps": 5,
+    "gradient_accumulation_steps": 1,
+    "intended_trainable_handle": "llm.final_norm.weight",
+    "selected_trainable_parameters": [
+      "model.language_model.norm.weight"
+    ],
+    "compressor_trainable_parameters": 0,
+    "source_visual_tokens_each_step": [1521, 1521, 1521, 1521, 1521],
+    "result_visual_tokens_each_step": [32, 32, 32, 32, 32],
+    "losses": [
+      1.3612052202224731,
+      1.1757341623306274,
+      0.9907194375991821,
+      0.8865630030632019,
+      0.7369571924209595
+    ],
+    "gradient_norms": [
+      0.4809122085571289,
+      0.45618927478790283,
+      0.42207014560699463,
+      0.40661612153053284,
+      0.3652413487434387
+    ],
+    "max_parameter_deltas": [0.015625, 0.015625, 0.015625, 0.015625, 0.015625],
+    "compression_triggered_each_step": true,
+    "loss_finite_each_step": true,
+    "backward_succeeded_each_step": true,
+    "target_gradient_finite_nonzero_each_step": true,
+    "target_updated_each_step": true,
+    "layout_stable_across_steps": true
+  },
+  "qwen3_legalization": {
+    "source_video_grid_preserved": true,
+    "source_placeholder_count": 1521,
+    "result_placeholder_count": 32,
+    "source_position_planes": 3,
+    "result_position_planes": 3,
+    "sparse_mrope_representative_gather_exact": true,
+    "rope_delta_present": true,
+    "visual_pos_masks_compacted": true,
+    "visual_pos_masks_result_count": 32,
+    "attention_mask_compacted": true,
+    "position_ids_compacted": true,
+    "cache_position_dense_after_compaction": true,
+    "completion_only_labels_and_logits_aligned": true,
+    "visual_labels_ignored": true,
+    "deepstack_branch_count": 3,
+    "deepstack_group_count": 32,
+    "deepstack_result_shapes": [[32, 2048], [32, 2048], [32, 2048]],
+    "deepstack_source_groups_replayed": true,
+    "shared_main_deepstack_layout": true
+  },
+  "lightweight_checkpoint": {
+    "format": "mllm_comp_selected_parameter_checkpoint",
+    "global_step": 5,
+    "tensor_names": [
+      "model.language_model.norm.weight"
+    ],
+    "tensor_dtype": "BF16",
+    "tensor_shape": [2048],
+    "tensor_parameter_count": 2048,
+    "tensor_sha256": "f59839455f6feeadd112ab8bb00a02728ea758957f5398c0e64ec50384c31d3b",
+    "config_sha256": "a0655a1aef87a1f8ac78f9e912cbdf8ccf0ecd24f80acc49054d41dbbf00a72d",
+    "training_state_sha256": "b27c92a6cf5a2fbc40accdb744ab5f2442c6eb4ec9a80983a21097a6a8f80b8e",
+    "fresh_base_checkpoint_reload": true,
+    "tensor_reload_exact": true,
+    "post_reload_compression_triggered": true,
+    "post_reload_source_visual_tokens": 1521,
+    "post_reload_result_visual_tokens": 32,
+    "post_reload_logits_finite": true,
+    "post_reload_labels_absent": true,
+    "post_reload_sparse_mrope_representative_gather_exact": true,
+    "post_reload_deepstack_source_groups_replayed": true,
+    "post_reload_visual_pos_masks_compacted": true
+  },
+  "gpu": {
+    "physical_device": 1,
+    "logical_device": 0,
+    "name": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+    "free_before_mib": 86117,
+    "estimated_peak_mib": 32768,
+    "safety_margin_mib": 16384,
+    "required_free_mib": 49152,
+    "observed_peak_allocated_mib": 8461.428,
+    "observed_peak_reserved_mib": 8710.0,
+    "free_after_process_exit_mib": 86117,
+    "concurrency_decision": "serialized one exact cell; existing processes preserved",
+    "other_process_snapshots_unchanged": true,
+    "other_processes_modified": false
+  },
+  "command": [
+    "/home/WuHao/miniconda3/envs/mllm-comp-platform-dev/bin/python",
+    "scripts/diagnostics/validate_qwen3_vqtoken_video_training_checkpoint.py",
+    "--checkpoint",
+    "/home/WuHao/checkpoints/ckpts-vlm/Qwen3-VL-2B-Instruct",
+    "--nextqa_parquet",
+    "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet",
+    "--video_root",
+    "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo",
+    "--output_dir",
+    "/home/WuHao/code/MLLM-Comp-Platform-Workspace/dev/outputs/video_compression/vqtoken/qwen3_vl/training/20260827t115121-d1fceb3-vqtoken-qwen3-train-gpu1-a2",
+    "--code_revision",
+    "d1fceb3a0528e448170e6b6287857f38503c1b66",
+    "--physical_gpu",
+    "1",
+    "--estimated_peak_mib",
+    "32768",
+    "--safety_margin_mib",
+    "16384",
+    "--learning_rate",
+    "0.01",
+    "--seed",
+    "42"
+  ],
+  "artifacts": {
+    "report": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260827t115121-d1fceb3-vqtoken-qwen3-train-gpu1-a2-output/report.json",
+      "sha256": "cdaeba7980e98ee380f1695deb93a4ce19527aaa1977b65e9abc35e81dcc5d95",
+      "size_bytes": 3615782
+    },
+    "progress": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260827t115121-d1fceb3-vqtoken-qwen3-train-gpu1-a2-output/progress.jsonl",
+      "sha256": "547f6c2cbdc3e7ec348f2a4edae49d3fe8206b2f3ca7bec74d3955a6f6ed72a0",
+      "size_bytes": 789531
+    },
+    "fixture": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260827t115121-d1fceb3-vqtoken-qwen3-train-gpu1-a2-output/fixture.json",
+      "sha256": "c5d4352126f048673981218f3fda8d7ab8f6f0ea2ed525b464e770f08ececc67",
+      "size_bytes": 628
+    },
+    "checkpoint_tensor": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260827t115121-d1fceb3-vqtoken-qwen3-train-gpu1-a2-output/checkpoint-5/adapter_model.safetensors",
+      "sha256": "f59839455f6feeadd112ab8bb00a02728ea758957f5398c0e64ec50384c31d3b",
+      "size_bytes": 4200
+    },
+    "independent_validation": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260827t115121-d1fceb3-vqtoken-qwen3-train-gpu1-a2-validation/independent_validation.json",
+      "sha256": "6d23aceb8539d6c656501ed06e115748b5242c4a242e1623228a1d6b0811160a",
+      "size_bytes": 3478
+    },
+    "log": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260827t115121-d1fceb3-vqtoken-qwen3-train-gpu1-a2-log/run.log",
+      "sha256": "d20526035ac8049f74c46aedc4f2560eed49f54da0d5fa9fc40f032ce04af82e",
+      "size_bytes": 5115
+    },
+    "failed_attempt_log": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260827t114715-4020c79-vqtoken-qwen3-train-gpu1-a1-log/run.log",
+      "sha256": "87a2004343c8cb512b37e6c932792c7281fd823c9ec61847faca339ff882e4a6",
+      "size_bytes": 3952
+    }
+  },
+  "verified_invariants": [
+    "exactly five optimizer steps on the shared doc-442 batch-one fixture",
+    "compression callback invoked exactly once per step",
+    "canonical global fixed K reduces 1521 source visual tokens to 32",
+    "video_grid_thw remains the native source grid and absent optional timing remains absent",
+    "three-plane native MRoPE is gathered from exact representative source anchors",
+    "visual_pos_masks and all three DeepStack streams replay the main compression layout",
+    "placeholders, attention masks, labels, positions, and cache positions follow LayoutDelta",
+    "loss and logits are finite on every step",
+    "the one intended facade final-norm target has finite non-zero gradients and updates",
+    "the lightweight checkpoint contains exactly the intended BF16 tensor",
+    "fresh base-checkpoint reload reproduces the saved tensor exactly",
+    "post-reload compressed inference is finite and preserves Qwen3-VL layout invariants"
+  ],
+  "attempts": [
+    {
+      "attempt": 1,
+      "run_id": "20260827t114715-4020c79-vqtoken-qwen3-train-gpu1-a1",
+      "status": "failed_before_compression",
+      "elapsed_seconds": 28.952,
+      "observed_peak_allocated_mib": 4058.96,
+      "observed_peak_reserved_mib": 4060.0,
+      "error": "the diagnostic passed absent optional Qwen3 timing to a scalar conversion helper",
+      "recovery": "record absent optional timing as an empty list and cover it with a dependency-light regression"
+    },
+    {
+      "attempt": 2,
+      "run_id": "20260827t115121-d1fceb3-vqtoken-qwen3-train-gpu1-a2",
+      "status": "passed",
+      "elapsed_seconds": 10.626
+    }
+  ],
+  "boundaries": {
+    "test_derived_code_correctness_fixture": true,
+    "full_nextqa_benchmark": false,
+    "paper_quality_or_efficiency_reproduction": false,
+    "convergence_claim": false,
+    "batch_greater_than_one": false,
+    "single_sample_multiple_videos": false
+  },
+  "recorded_at": "2026-08-27T11:53:00+08:00"
+}

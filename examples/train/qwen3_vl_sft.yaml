@@ -1,0 +1,45 @@
+experiment:
+  name: qwen3_vl_4b_sft
+  seed: 42
+
+backbone:
+  name: qwen3_vl
+  model_path: '${QWEN3_VL_MODEL_PATH}'
+  trust_remote_code: false
+
+train:
+  backend: ms_swift
+  compression_mode: none
+  max_steps: 1
+  args:
+    datasets: ['${MLLM_COMP_TRAIN_DATASET}']
+    trainable_branch: language_model
+    torch_dtype: bfloat16
+    attn_impl: flash_attn
+    tuner_type: lora
+    per_device_train_batch_size: 1
+    gradient_accumulation_steps: 1
+    learning_rate: 0.0001
+    lora_rank: 4
+    lora_alpha: 8
+    target_modules: [all-linear]
+    freeze_vit: true
+    freeze_aligner: true
+    max_length: 128
+    gradient_checkpointing: false
+    split_dataset_ratio: 0
+    dataset_num_proc: 1
+    dataloader_num_workers: 0
+    load_from_cache_file: false
+    logging_steps: 1
+    save_steps: 1
+    save_total_limit: 1
+    report_to: [none]
+
+data:
+  dataset_id: '${MLLM_COMP_TRAIN_DATASET}'
+  sample_split: train
+
+output:
+  run_dir: '${MLLM_COMP_TRAIN_RUN_DIR}'
+  manifest_path: '${MLLM_COMP_TRAIN_RUN_DIR}/manifest.json'

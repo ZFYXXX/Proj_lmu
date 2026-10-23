@@ -1,0 +1,222 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "support_unit": {
+    "algorithm": "vqtoken",
+    "variant": "vqtoken.video",
+    "backbone": "qwen25_vl",
+    "target_modality": "video",
+    "phase": "forward",
+    "binding": "vqtoken.video.qwen25_vl"
+  },
+  "canonical_config": {
+    "num_clusters": 32,
+    "adaptive": false,
+    "use_cross_attention": false
+  },
+  "source_revisions": {
+    "installed_kernel_and_shared_contract": "99d6c31247ddf9f37cecdce88c542d90b0e381ca",
+    "qwen25_video_grid_mrope_contract": "6485f0da59684a7facd05d6dcbee5bb60ade057d",
+    "five_step_training_and_reload_harness": "505027010c4b09584d685f5c1c12fb76fc7bf0b9"
+  },
+  "environment": {
+    "name": "mllm-comp-platform-dev",
+    "python": "3.10.20",
+    "torch": "2.8.0+cu128",
+    "transformers": "4.57.3",
+    "dtype": "bfloat16",
+    "attention_implementation": "sdpa",
+    "gradient_checkpointing": false,
+    "offline": true,
+    "package_or_environment_changes": false,
+    "downloads": false
+  },
+  "checkpoint": {
+    "path": "/home/WuHao/checkpoints/ckpts-vlm/Qwen2.5-VL-3B-Instruct",
+    "total_weight_bytes": 7509337976,
+    "weight_shards": 2,
+    "local_files_only": true
+  },
+  "fixture": {
+    "kind": "nextqa_mc_test_derived_sft_code_correctness_fixture",
+    "task": "nextqa_mc_test",
+    "split": "test",
+    "doc_id": 442,
+    "video_id": "3064389881",
+    "target": "D",
+    "parquet": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet",
+    "video_root": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo",
+    "video_fps": 1.0,
+    "video_max_pixels": 100352,
+    "video_grid_thw": [13, 18, 26],
+    "source_visual_tokens": 1521,
+    "quality_or_training_data_claim": false
+  },
+  "training": {
+    "batch_size": 1,
+    "optimizer": "AdamW",
+    "learning_rate": 0.01,
+    "weight_decay": 0.0,
+    "optimizer_steps": 5,
+    "gradient_accumulation_steps": 1,
+    "intended_trainable_handle": "llm.final_norm.weight",
+    "selected_trainable_parameters": [
+      "model.language_model.norm.weight"
+    ],
+    "compressor_trainable_parameters": 0,
+    "source_visual_tokens_each_step": [1521, 1521, 1521, 1521, 1521],
+    "result_visual_tokens_each_step": [32, 32, 32, 32, 32],
+    "losses": [
+      0.26409244537353516,
+      0.23221461474895477,
+      0.19346113502979279,
+      0.1705332100391388,
+      0.13825884461402893
+    ],
+    "gradient_norms": [
+      0.1740936040878296,
+      0.1533876359462738,
+      0.1301165372133255,
+      0.1151939108967781,
+      0.09586096554994583
+    ],
+    "max_parameter_deltas": [0.015625, 0.015625, 0.015625, 0.015625, 0.015625],
+    "compression_triggered_each_step": true,
+    "loss_finite_each_step": true,
+    "backward_succeeded_each_step": true,
+    "target_gradient_finite_nonzero_each_step": true,
+    "target_updated_each_step": true,
+    "layout_stable_across_steps": true
+  },
+  "qwen25_legalization": {
+    "source_video_grid_preserved": true,
+    "source_placeholder_count": 1521,
+    "result_placeholder_count": 32,
+    "sparse_mrope_representative_gather_exact": true,
+    "rope_delta_present": true,
+    "completion_only_labels_and_logits_aligned": true
+  },
+  "lightweight_checkpoint": {
+    "format": "mllm_comp_selected_parameter_checkpoint",
+    "global_step": 5,
+    "tensor_names": [
+      "model.language_model.norm.weight"
+    ],
+    "tensor_dtype": "BF16",
+    "tensor_shape": [2048],
+    "tensor_parameter_count": 2048,
+    "tensor_sha256": "42d698c97fdd465df7f3d14851e4d3b2f925eea0e3e5d6c28e370d98f5369a1e",
+    "config_sha256": "9f9d151141c713872037184d3ea7da3e31ef8aa41a3d59405f70465c80a5c16c",
+    "training_state_sha256": "b27c92a6cf5a2fbc40accdb744ab5f2442c6eb4ec9a80983a21097a6a8f80b8e",
+    "fresh_base_checkpoint_reload": true,
+    "tensor_reload_exact": true,
+    "post_reload_compression_triggered": true,
+    "post_reload_source_visual_tokens": 1521,
+    "post_reload_result_visual_tokens": 32,
+    "post_reload_logits_finite": true,
+    "post_reload_labels_absent": true,
+    "post_reload_sparse_mrope_representative_gather_exact": true
+  },
+  "gpu": {
+    "physical_device": 0,
+    "logical_device": 0,
+    "name": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+    "free_before_mib": 86146,
+    "estimated_peak_mib": 32768,
+    "safety_margin_mib": 16384,
+    "required_free_mib": 49152,
+    "observed_peak_allocated_mib": 7489.798,
+    "observed_peak_reserved_mib": 7710.0,
+    "free_after_process_exit_mib": 86146,
+    "concurrency_decision": "serialized one exact cell; existing processes preserved",
+    "other_process_snapshots_unchanged": true,
+    "other_processes_modified": false
+  },
+  "command": [
+    "/home/WuHao/miniconda3/envs/mllm-comp-platform-dev/bin/python",
+    "-m",
+    "scripts.diagnostics.validate_qwen25_vqtoken_video_training_checkpoint",
+    "--checkpoint",
+    "/home/WuHao/checkpoints/ckpts-vlm/Qwen2.5-VL-3B-Instruct",
+    "--nextqa_parquet",
+    "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet",
+    "--video_root",
+    "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo",
+    "--output_dir",
+    ".goal-task/video-compression-three-backbones/runs/20260827t112306-5050270-vqtoken-qwen25-train-gpu0-a1/evidence",
+    "--code_revision",
+    "505027010c4b09584d685f5c1c12fb76fc7bf0b9",
+    "--physical_gpu",
+    "0",
+    "--estimated_peak_mib",
+    "32768",
+    "--safety_margin_mib",
+    "16384",
+    "--learning_rate",
+    "0.01",
+    "--seed",
+    "42"
+  ],
+  "artifacts": {
+    "report": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260827t112306-5050270-vqtoken-qwen25-train-gpu0-a1/evidence/report.json",
+      "sha256": "8ce8306096d0e175ef9c3fd70d5157752b30553095d262013521aa63e080a52c",
+      "size_bytes": 2065938
+    },
+    "progress": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260827t112306-5050270-vqtoken-qwen25-train-gpu0-a1/evidence/progress.jsonl",
+      "sha256": "a32d36b9e03ac77705d6b10f425427cc3f6dd1d405d33cca2e9d3f4c1a8352f8",
+      "size_bytes": 477178
+    },
+    "fixture": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260827t112306-5050270-vqtoken-qwen25-train-gpu0-a1/evidence/fixture.json",
+      "sha256": "5513c295a75d3b154538358555312a1aaf124d239a877912933e3a73a50cd568",
+      "size_bytes": 598
+    },
+    "checkpoint_tensor": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260827t112306-5050270-vqtoken-qwen25-train-gpu0-a1/evidence/checkpoint-5/adapter_model.safetensors",
+      "sha256": "42d698c97fdd465df7f3d14851e4d3b2f925eea0e3e5d6c28e370d98f5369a1e",
+      "size_bytes": 4200
+    },
+    "independent_validation": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260827t112306-5050270-vqtoken-qwen25-train-gpu0-a1/independent_validation.json",
+      "sha256": "c8f3a49b60de94dc14390c8d50b2e3eeb7ad93c475b04aac672e14ed5f6b68d4",
+      "size_bytes": 2814
+    },
+    "launch_manifest": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260827t112306-5050270-vqtoken-qwen25-train-gpu0-a1/launch_manifest.json",
+      "sha256": "0b008a7aafe44a37e2b4676160cf44906486c45c410e42d8188aa318529803ee",
+      "size_bytes": 222
+    }
+  },
+  "verified_invariants": [
+    "exactly five optimizer steps on the shared doc-442 batch-one fixture",
+    "compression callback invoked exactly once per step",
+    "canonical global fixed K reduces 1521 source visual tokens to 32",
+    "video_grid_thw remains the native source grid",
+    "placeholder counts and completion-only labels follow LayoutDelta",
+    "sparse native MRoPE is gathered from exact representative source anchors",
+    "loss and logits are finite on every step",
+    "the one intended facade final-norm target has finite non-zero gradients and updates",
+    "the lightweight checkpoint contains exactly the intended BF16 tensor",
+    "fresh base-checkpoint reload reproduces the saved tensor exactly",
+    "post-reload compressed inference is finite and preserves Qwen2.5-VL layout invariants"
+  ],
+  "attempts": [
+    {
+      "attempt": 1,
+      "run_id": "20260827t112306-5050270-vqtoken-qwen25-train-gpu0-a1",
+      "status": "passed",
+      "elapsed_seconds": 46.057
+    }
+  ],
+  "boundaries": {
+    "test_derived_code_correctness_fixture": true,
+    "full_nextqa_benchmark": false,
+    "paper_quality_or_efficiency_reproduction": false,
+    "convergence_claim": false,
+    "batch_greater_than_one": false,
+    "single_sample_multiple_videos": false
+  },
+  "recorded_at": "2026-08-27T11:24:00+08:00"
+}

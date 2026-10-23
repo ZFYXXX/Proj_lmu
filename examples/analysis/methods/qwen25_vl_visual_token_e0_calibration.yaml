@@ -1,0 +1,53 @@
+experiment:
+  name: qwen25_vl_visual_token_e0_calibration
+  seed: 42
+
+backbone:
+  name: qwen25_vl
+  model_path: /home/ZhouFengyu/fastv-repro/models/Qwen2.5-VL-3B-Instruct
+  model_revision: 1b5a7674d40a0ac9acef541a46fed12d710bd36b
+  trust_remote_code: false
+  config:
+    torch_dtype: bfloat16
+    attn_implementation: eager
+    model_load_kwargs: {local_files_only: true}
+    processor_load_kwargs:
+      local_files_only: true
+      use_fast: false
+      min_pixels: 200704
+      max_pixels: 1605632
+
+pipeline: {stages: []}
+
+analysis:
+  backend: lmms_eval
+  compression_mode: none
+  phase: pre_compression
+  runtime_batch_size: 1
+  tasks: [chartqa, textvqa_val, gqa, pope_random]
+  task_include_path: [/home/ZhouFengyu/fastv-repro/lmms_eval/tasks]
+  streaming_datasets: true
+  sample_limit: 4
+  probes:
+    - name: visual_token_phenomena
+      enabled: true
+      layers: [0]
+      intervention_layer: 0
+      target_units: 64
+      max_intervention_units: 8
+      interventions: [zero, global_mean]
+      random_seeds: [11, 23, 47]
+      run_causal_interventions: true
+      run_budget_frontier: false
+      run_layer_trajectory: false
+      budgets: [64]
+      compression_operators: [prune, cluster_mean]
+      safe_nll_relative_limit: 0.05
+      safe_kl_limit: 0.05
+      spatial_bins: 4
+      save_raw: false
+
+train: {}
+eval: {}
+data: {}
+output: {}

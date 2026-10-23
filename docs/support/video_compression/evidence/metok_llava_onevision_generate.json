@@ -1,0 +1,363 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "support_unit": {
+    "algorithm": "metok",
+    "variant": "metok.video",
+    "backbone": "llava_onevision",
+    "target_modality": "video",
+    "phase": "generate",
+    "binding": "metok.video.llava_onevision"
+  },
+  "canonical_config": {
+    "segmentation_method": "similarity",
+    "num_segments": 4,
+    "keyframe_method": "similarity",
+    "keyframe_ratio": 0.4,
+    "top_k_events": 3,
+    "distinguish_important_events": true,
+    "s1_important": 2,
+    "s2_important": 4,
+    "s1_normal": 4,
+    "s2_normal": 8,
+    "pool_mode": "bilinear",
+    "non_keyframe_method": "adaptive_pool",
+    "keyframe_pool_enable": false,
+    "inside_compression": true,
+    "pruning_layers": [3, 10, 19],
+    "ratio": 0.76
+  },
+  "source_revisions": {
+    "kernel_telemetry_and_real_checkpoint_runner": "01c56a6d4080b01fdb6b34573af119aa55b56771",
+    "installed_evidence_normalization": "245dc7e07121e9b125d35928cf9d33fa8729a404",
+    "reference_compression_algorithm": "7e3ae876bc6306a4179f389e5f960225cd9e3a79",
+    "lmms_eval": "e9a5309ea6f4b8edacb813823cf8fdfd24bbd115"
+  },
+  "environment": {
+    "name": "mllm-comp-platform-dev",
+    "python": "3.10.20",
+    "torch": "2.8.0+cu128",
+    "transformers": "4.57.3",
+    "offline": true,
+    "package_or_environment_changes": false,
+    "downloads": false
+  },
+  "checkpoint": {
+    "path": "/home/WuHao/checkpoints/ckpts-vlm/llava-onevision-qwen2-0.5b-ov",
+    "total_weight_bytes": 1787335336,
+    "weight_files": 1,
+    "dtype": "float16",
+    "attention_implementation": "sdpa",
+    "local_files_only": true
+  },
+  "auxiliary_checkpoint": {
+    "role": "existing frozen local SigLIP text encoder and native LLaVA vision tower",
+    "path": "/home/WuHao/checkpoints/ckpts-vlm/siglip-so400m-patch14-384",
+    "total_weight_bytes": 3511950624,
+    "weight_files": 1,
+    "local_files_only": true,
+    "trainable": false,
+    "downloaded": false
+  },
+  "dataset": {
+    "task": "nextqa_mc_test",
+    "split": "test",
+    "parquet": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet",
+    "parquet_rows": 8564,
+    "parquet_size_bytes": 898657,
+    "video_root": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo",
+    "doc_ids": [3849, 442, 28, 205],
+    "decoded_frames_per_sample": 32,
+    "decode_policy": "uniform_local_decord",
+    "processor_pixel_shape_per_sample": [32, 3, 384, 384],
+    "native_siglip_grid_per_frame": [27, 27],
+    "native_raw_visual_tokens_per_sample": 23328,
+    "projected_grid_per_frame": [14, 14],
+    "source_projected_visual_tokens_per_sample": 6272
+  },
+  "generation": {
+    "batch_size": 1,
+    "max_new_tokens": 4,
+    "do_sample": false,
+    "use_cache": true,
+    "baseline_and_compressed_same_preprocessing": true,
+    "finite_logits_required": true,
+    "projector_capture_count_per_compressed_sample": 1,
+    "pruning_capture_count_per_compressed_sample": 3,
+    "cached_decode_query_length": 1,
+    "cached_decode_steps_per_generation": 3
+  },
+  "gpu": {
+    "physical_device": 0,
+    "name": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+    "free_before_mib": 86150,
+    "estimated_peak_mib": 32768,
+    "safety_margin_mib": 16384,
+    "required_free_mib": 49152,
+    "observed_peak_allocated_mib": 6260.602,
+    "observed_peak_reserved_mib": 10080.0,
+    "free_after_workload_before_process_exit_mib": 75402,
+    "free_after_process_exit_mib": 86150,
+    "selected_gpu_existing_process_before": {
+      "pid": 364893,
+      "process_name": "/home/lixiaocong/miniforge3/envs/kof/bin/python3.9",
+      "used_memory_mib": 10998
+    },
+    "gpu1_existing_process_before": {
+      "pid": 364894,
+      "process_name": "/home/lixiaocong/miniforge3/envs/kof/bin/python3.9",
+      "used_memory_mib": 11000
+    },
+    "concurrency_decision": "both GPUs admitted estimate plus margin; selected the slightly higher-free GPU 0 for one isolated job and preserved both unrelated processes",
+    "other_processes_modified": false
+  },
+  "command": [
+    "/home/WuHao/miniconda3/envs/mllm-comp-platform-dev/bin/python",
+    "-m",
+    "scripts.diagnostics.validate_llava_metok_video_compression_checkpoint",
+    "--checkpoint",
+    "/home/WuHao/checkpoints/ckpts-vlm/llava-onevision-qwen2-0.5b-ov",
+    "--siglip_checkpoint",
+    "/home/WuHao/checkpoints/ckpts-vlm/siglip-so400m-patch14-384",
+    "--nextqa_parquet",
+    "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet",
+    "--video_root",
+    "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo",
+    "--output_dir",
+    "/home/WuHao/code/MLLM-Comp-Platform-Workspace/dev/.goal-task/video-compression-three-backbones/runs/20260826T070412Z-245dc7e-metok-llava-gpu0-a2/evidence",
+    "--code_revision",
+    "245dc7e07121e9b125d35928cf9d33fa8729a404",
+    "--physical_gpu",
+    "0",
+    "--max_new_tokens",
+    "4",
+    "--estimated_peak_mib",
+    "32768",
+    "--safety_margin_mib",
+    "16384"
+  ],
+  "artifacts": {
+    "processor_siglip_preflight": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260826T065051Z-01c56a6-metok-llava-cpu-preflight-a1/processor_siglip_preflight.json",
+      "sha256": "5eee32184858b174b03055a21928bc8006a5bc62f57fe728acd878ea8a6e0dc7",
+      "size_bytes": 9471
+    },
+    "installed_targeted_regression": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260826T065051Z-01c56a6-metok-llava/cpu-tests/postactivation-4c6e585-targeted.log",
+      "sha256": "e6fd8f72152436fa36b864f92c4041423d528716128795d0dd8106627776574b",
+      "size_bytes": 260
+    },
+    "installed_aggregate_regression": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260826T065051Z-01c56a6-metok-llava/cpu-tests/postactivation-4c6e585-full-unit.log",
+      "sha256": "6eeaf62931cf7c6da0b973c8b052b11e6fd4e70eaef5bcd37dfc15f8e211f93c",
+      "size_bytes": 1713
+    },
+    "admission": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260826T070412Z-245dc7e-metok-llava-gpu0-a2/admission.txt",
+      "sha256": "5eb5890396ffbb1ac1f6e790305130b45a325a385b3173207b7f5d5a4f2179a4",
+      "size_bytes": 171
+    },
+    "report": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260826T070412Z-245dc7e-metok-llava-gpu0-a2/evidence/report.json",
+      "sha256": "9ca8fe5fb209df794c433611450751aa08584b368a8ac9ee8e562d9df4f7b970",
+      "size_bytes": 11754751
+    },
+    "lmms_eval_samples": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260826T070412Z-245dc7e-metok-llava-gpu0-a2/evidence/samples.jsonl",
+      "sha256": "8dae191860a0c0c357fa514caf34243bcb6b0a1fbab0a88e73e9bad5a54c24dd",
+      "size_bytes": 2250
+    },
+    "launch_script": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260826T070412Z-245dc7e-metok-llava-gpu0-a2/launch.sh",
+      "sha256": "32a6b27309945585fe6e4aceeef6f23b76e33a31233d6f879921615e3b5fd6f5",
+      "size_bytes": 2101
+    },
+    "exit_code": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260826T070412Z-245dc7e-metok-llava-gpu0-a2/exit.status",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "size_bytes": 2
+    },
+    "stdout_log": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260826T070412Z-245dc7e-metok-llava-gpu0-a2/run.log",
+      "sha256": "6673ec330907c507ef037f5bac1691a4f22fb561942267811f9e5e38de7f5813",
+      "size_bytes": 11755423
+    },
+    "gpu_before_and_after": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260826T070412Z-245dc7e-metok-llava-gpu0-a2/gpu-before.csv",
+      "matching_after_path": ".goal-task/video-compression-three-backbones/runs/20260826T070412Z-245dc7e-metok-llava-gpu0-a2/gpu-after.csv",
+      "sha256": "911fc7e04cb373ef7cd50c9ef1b7ae24467bae73d2d3b5275e5c5e236aab6f6b",
+      "size_bytes_each": 232
+    },
+    "processes_before_and_after": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260826T070412Z-245dc7e-metok-llava-gpu0-a2/processes-before.csv",
+      "matching_after_path": ".goal-task/video-compression-three-backbones/runs/20260826T070412Z-245dc7e-metok-llava-gpu0-a2/processes-after.csv",
+      "sha256": "a0b6cd9653e69982c4d9b3e61526d8899a0ffab43ec8385dac2b25b300067ff3",
+      "size_bytes_each": 216
+    },
+    "read_only_validator": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260826T070412Z-245dc7e-metok-llava-gpu0-a2/independent_validator.py",
+      "sha256": "e129298d8ce2b39fa51332c18f4e5e271c8ef05fbf6b9778c8434f982493e6c4",
+      "size_bytes": 20653
+    },
+    "read_only_validation": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260826T070412Z-245dc7e-metok-llava-gpu0-a2/independent_validation.json",
+      "sha256": "924d4aa68dee26eb31391346e185105d3605c6f17358f1edb6dafa20679e5c65",
+      "size_bytes": 33018
+    }
+  },
+  "algorithm_evidence": {
+    "stages": ["event_segment_keyframe_adaptive_pool", "prefill_attention_prune_before_layers_3_10_19"],
+    "similarity_source": "native_siglip_visual_features",
+    "assistant_answer_excluded": true,
+    "siglip_frozen_local_only": true,
+    "raw_features_shape_per_sample": [23328, 1152],
+    "projected_features_shape_per_sample": [6272, 896],
+    "projected_signals_finite": true,
+    "frame_count": 32,
+    "tokens_per_frame": 196,
+    "four_similarity_segments_per_sample": true,
+    "top_three_important_events_per_sample": true,
+    "keyframe_count_policy": "max_one_floor_event_frames_times_ratio",
+    "category_coverage": {
+      "important_keyframe": 46,
+      "important_non_keyframe": 74,
+      "normal_keyframe": 4,
+      "normal_non_keyframe": 4
+    },
+    "spatial_stride_coverage": [2, 4, 8],
+    "projector_result_counts": [830, 908, 896, 884],
+    "layer3_result_counts": [626, 687, 676, 665],
+    "layer10_result_counts": [471, 518, 508, 499],
+    "layer19_result_counts": [0, 0, 0, 0],
+    "source_partition_exact": true,
+    "representatives_first_in_group_and_source_ordered": true,
+    "value_operation": "bilinear_interpolate_align_corners_false",
+    "pruning_selection": "stable_event_top_attention_restore_source_order",
+    "position_policy": "gather_native_one_dimensional_rope",
+    "cache_policy": "compact_completed_layers_before_boundary",
+    "cache_boundaries": [3, 10, 19],
+    "cache_layers_compacted": [[0, 1, 2], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]],
+    "final_visual_removal": true
+  },
+  "samples": {
+    "3849": {
+      "video_id": "3571539122",
+      "qid": 6,
+      "question_type": "TC",
+      "target": "E",
+      "source_visual_tokens": 6272,
+      "projector_visual_tokens": 830,
+      "layer3_visual_tokens": 626,
+      "layer10_visual_tokens": 471,
+      "layer19_visual_tokens": 0,
+      "baseline_prefill_length": 6326,
+      "compressed_projector_prefill_length": 884,
+      "compressed_final_prefill_length": 54,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "all_checks_passed": true
+    },
+    "442": {
+      "video_id": "3064389881",
+      "qid": 2,
+      "question_type": "TN",
+      "target": "D",
+      "source_visual_tokens": 6272,
+      "projector_visual_tokens": 908,
+      "layer3_visual_tokens": 687,
+      "layer10_visual_tokens": 518,
+      "layer19_visual_tokens": 0,
+      "baseline_prefill_length": 6341,
+      "compressed_projector_prefill_length": 977,
+      "compressed_final_prefill_length": 69,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "all_checks_passed": true
+    },
+    "28": {
+      "video_id": "6097011028",
+      "qid": 8,
+      "question_type": "CW",
+      "target": "B",
+      "source_visual_tokens": 6272,
+      "projector_visual_tokens": 896,
+      "layer3_visual_tokens": 676,
+      "layer10_visual_tokens": 508,
+      "layer19_visual_tokens": 0,
+      "baseline_prefill_length": 6342,
+      "compressed_projector_prefill_length": 966,
+      "compressed_final_prefill_length": 70,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "all_checks_passed": true
+    },
+    "205": {
+      "video_id": "2597214137",
+      "qid": 6,
+      "question_type": "DL",
+      "target": "A",
+      "source_visual_tokens": 6272,
+      "projector_visual_tokens": 884,
+      "layer3_visual_tokens": 665,
+      "layer10_visual_tokens": 499,
+      "layer19_visual_tokens": 0,
+      "baseline_prefill_length": 6319,
+      "compressed_projector_prefill_length": 931,
+      "compressed_final_prefill_length": 47,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "all_checks_passed": true
+    }
+  },
+  "verified_invariants": [
+    "one local frozen SigLIP text-conditioning capture and one projector compression capture occur per compressed sample",
+    "all four samples reduce the native 6272-token 32 by 14 by 14 projected raster at the projector and before decoder layers 3 and 10",
+    "four similarity events, top-three important events, source-stable keyframes, all four important/keyframe categories, and spatial strides 2, 4, and 8 execute across the fixed set",
+    "bilinear projector source groups exactly partition the 6272 source tokens with source-ordered causal representatives",
+    "three event-aware attention-pruning formulas and sequence LayoutDeltas are exact",
+    "DynamicCache layers 0 through 2, 0 through 9, and 0 through 18 compact physically and logically before layers 3, 10, and 19",
+    "layer 19 removes every visual token while preserving LLaVA structural newline tokens and the single video placeholder",
+    "inference labels remain absent and attention masks, native one-dimensional positions, and dense cache positions remain aligned",
+    "baseline and compressed cached decode each use three unit-query steps",
+    "baseline and compressed logits are finite and bounded four-token generation completes for every fixed sample"
+  ],
+  "installed_regression": {
+    "local_targeted": "112 passed, 22 skipped",
+    "local_aggregate": "1108 passed, 216 skipped",
+    "installed_targeted": "162 passed",
+    "installed_aggregate": "1478 passed, 1 skipped",
+    "cuda_visible_devices": "",
+    "observed_gpu_peak_mib": 0
+  },
+  "attempts": [
+    {
+      "attempt": 1,
+      "run_id": "20260826T065611Z-01c56a6-metok-llava-gpu0-a1",
+      "status": "failed_evidence_validator_only",
+      "elapsed_seconds": 29.628,
+      "compression_and_generation_completed": true,
+      "failure": "the runner compared JSON-normalized pruning_layers with a tuple and required DynamicCache telemetry to contain only touched layers"
+    },
+    {
+      "attempt": 2,
+      "run_id": "20260826T070412Z-245dc7e-metok-llava-gpu0-a2",
+      "status": "passed",
+      "elapsed_seconds": 13.693
+    }
+  ],
+  "independent_artifact_validation": {
+    "status": "passed",
+    "attempts": 2,
+    "check_count": 1084,
+    "first_attempt": "the standalone validator assumed scope was a string; the immutable report correctly stores a structured exact support-unit scope",
+    "recovery": "the standalone validator was corrected to compare every structured scope field and canonical config",
+    "second_attempt": "all stdlib-only scope, provenance, checkpoint, preflight, GPU, four-sample event/keyframe/stride/projector/pruning/cache/layout/generation/decode/JSONL and SHA-256 checks passed without project imports or input mutation"
+  },
+  "boundaries": {
+    "full_nextqa_benchmark": false,
+    "paper_quality_or_efficiency_reproduction": false,
+    "convergence_claim": false,
+    "training_claim": false
+  },
+  "recorded_at": "2026-08-26T15:11:52+08:00"
+}

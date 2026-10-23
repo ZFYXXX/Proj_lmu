@@ -1,0 +1,275 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "support_unit": {
+    "algorithm": "longvu",
+    "variant": "longvu.video",
+    "backbone": "qwen3_vl",
+    "target_modality": "video",
+    "phase": "generate",
+    "binding": "longvu.video.qwen3_vl"
+  },
+  "canonical_config": {
+    "window_size": 16,
+    "threshold": 0.83,
+    "max_frames": 400,
+    "min_frames": 1,
+    "dino_interp_size": 576,
+    "vision_hidden_size": 1024,
+    "query_num": 144,
+    "connector_depth": 3
+  },
+  "source_revisions": {
+    "checkpoint_runner": "e883a0640479a6a0d27e2aa0a23a17c93d949f85",
+    "qwen3_pixel_floor_fix_and_passing_run": "e47b9118e1a0decd403f1b50ef4cf3121ab30f49",
+    "rectangular_dino_runtime_fix": "ced0dc5731566c4aa1e1c178f3bbf792d3202874",
+    "reference_compression_algorithm": "7e3ae876bc6306a4179f389e5f960225cd9e3a79",
+    "lmms_eval": "e9a5309ea6f4b8edacb813823cf8fdfd24bbd115"
+  },
+  "environment": {
+    "name": "mllm-comp-platform-dev",
+    "python": "3.10.20",
+    "torch": "2.8.0+cu128",
+    "transformers": "4.57.3",
+    "offline_inference": true,
+    "package_or_environment_changes": false,
+    "authorized_modelscope_asset_download": true
+  },
+  "checkpoint": {
+    "path": "/home/WuHao/checkpoints/ckpts-vlm/Qwen3-VL-4B-Instruct",
+    "weight_files": [
+      "model-00001-of-00002.safetensors",
+      "model-00002-of-00002.safetensors"
+    ],
+    "total_weight_bytes": 8875719344,
+    "dtype": "bfloat16",
+    "attention_implementation": "sdpa",
+    "local_files_only": true
+  },
+  "auxiliary_checkpoint": {
+    "role": "frozen DINOv2 Giant frame-selection encoder",
+    "path": "/home/WuHao/checkpoints/ckpts-aux/dinov2-giant",
+    "modelscope_model_id": "AI-ModelScope/dinov2-giant",
+    "modelscope_revision": "0c788bb0964e17e4d3a68871e50057c997d3978c",
+    "loaded_weight_file": "model.safetensors",
+    "loaded_weight_bytes": 4546005432,
+    "snapshot_file_count": 7,
+    "snapshot_total_bytes": 9092172183,
+    "hidden_size": 1536,
+    "layers": 40,
+    "heads": 24,
+    "trainable": false,
+    "download_authorized_by_user": true,
+    "local_files_only_for_validation_and_inference": true
+  },
+  "dataset": {
+    "task": "nextqa_mc_test",
+    "split": "test",
+    "parquet": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet",
+    "parquet_rows": 8564,
+    "parquet_size_bytes": 898657,
+    "video_root": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo",
+    "doc_ids": [3849, 442, 28, 205],
+    "video_preprocessing": {
+      "fps": 1.0,
+      "min_pixels": 262144,
+      "max_pixels": 327680,
+      "image_patch_size": 16,
+      "provider": "qwen_vl_utils.process_vision_info",
+      "purpose": "preserve at least a 12x12 post-merge source raster for canonical LongVU queries"
+    }
+  },
+  "generation": {
+    "batch_size": 1,
+    "max_new_tokens": 4,
+    "do_sample": false,
+    "use_cache": true,
+    "baseline_and_compressed_same_preprocessing": true,
+    "finite_logits_required": true,
+    "signal_capture_delta_per_compressed_sample": 1,
+    "cached_decode_repair_required": true
+  },
+  "qwen3_legalization": {
+    "authoritative_source_video_grid_thw": true,
+    "optional_native_timing_preserved": true,
+    "sparse_three_plane_mrope_gather": true,
+    "visual_pos_masks_compacted": true,
+    "deepstack_branch_count": 3,
+    "deepstack_source_groups_replayed": true,
+    "shared_main_and_deepstack_layout": true
+  },
+  "gpu": {
+    "physical_device": 0,
+    "name": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+    "free_before_mib": 82242,
+    "estimated_peak_mib": 57344,
+    "safety_margin_mib": 16384,
+    "required_free_mib": 73728,
+    "observed_peak_allocated_mib": 20400.076,
+    "observed_peak_reserved_mib": 23698.0,
+    "free_after_process_exit_mib": 97191,
+    "gpu1_free_before_mib": 38016,
+    "gpu1_assignment": "not_admitted",
+    "concurrency_decision": "GPU 0 admitted with one unrelated process; GPU 1 did not satisfy estimate plus margin; one serialized job on GPU 0",
+    "owned_process_released": true,
+    "launcher_process_snapshot_changed_externally": true,
+    "external_process_change": "unrelated nuwa PIDs 57092 and 57093 disappeared and unrelated GPU-1 PID 63087 changed memory use during the run; these changes were only observed",
+    "other_processes_controlled": false,
+    "other_processes_modified_by_this_task": false
+  },
+  "artifacts": {
+    "report": {
+      "path": ".goal-runs/video-compression-three-backbones/longvu/qwen3_vl/generate/20260828T090453Z-e47b911-longvu-qwen3-infer-gpu0-a2/report.json",
+      "sha256": "e421a00b561efaa0eb2a013a1489b2b96ae31cf4acde9aef2249d1dffda2c83e",
+      "size_bytes": 22496667
+    },
+    "lmms_eval_samples": {
+      "path": ".goal-runs/video-compression-three-backbones/longvu/qwen3_vl/generate/20260828T090453Z-e47b911-longvu-qwen3-infer-gpu0-a2/samples.jsonl",
+      "sha256": "a9de7700851f9a1c21f2f06f5734370d40e17aeee0323e9d4db7613dd6b4ec0c",
+      "size_bytes": 1899
+    },
+    "independent_validation": {
+      "path": ".goal-runs/video-compression-three-backbones/longvu/qwen3_vl/generate/20260828T090453Z-e47b911-longvu-qwen3-infer-gpu0-a2/independent-validation.json",
+      "sha256": "54098abdd96431de8423e678cbffc6edcc83d8506a377777c96b121dbcef1f94",
+      "size_bytes": 4446,
+      "check_count": 59
+    },
+    "failed_attempt_1_report": {
+      "path": ".goal-runs/video-compression-three-backbones/longvu/qwen3_vl/generate/20260828T090026Z-e883a06-longvu-qwen3-infer-gpu0-a1/report.json",
+      "sha256": "17a9015149ae74490cb0acc4952a024ef9c7fa80ea8f2b36ebd068635f3575f5",
+      "size_bytes": 1099,
+      "result": "Qwen2.5-scaled pixel floor left a Qwen3 post-merge frame raster narrower than 12 tokens"
+    },
+    "exit_code": {
+      "path": ".goal-logs/video-compression-three-backbones/longvu/qwen3_vl/generate/20260828T090453Z-e47b911-longvu-qwen3-infer-gpu0-a2/exit-code.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "size_bytes": 2
+    },
+    "stderr_log": {
+      "path": ".goal-logs/video-compression-three-backbones/longvu/qwen3_vl/generate/20260828T090453Z-e47b911-longvu-qwen3-infer-gpu0-a2/stderr.log",
+      "sha256": "20785cb8addb71d0d6780c93a166d3e1bb16cb14b3d92bc4892e0fcfed894cec",
+      "size_bytes": 5626
+    }
+  },
+  "algorithm_evidence": {
+    "stages": [
+      "dinov2_frame_selection",
+      "sva_fusion",
+      "output_projection"
+    ],
+    "video_grid_thw_per_sample": [
+      [6, 28, 38],
+      [13, 30, 40],
+      [23, 24, 44],
+      [44, 30, 40]
+    ],
+    "source_visual_tokens": [1596, 3900, 6072, 13200],
+    "selected_frames": [2, 13, 23, 44],
+    "result_visual_tokens": [288, 1872, 3312, 6336],
+    "tokens_per_selected_frame": 144,
+    "projected_hidden_size": 2560,
+    "raw_hidden_size": 1024,
+    "deepstack_hidden_size": 2560,
+    "dinov2_feature_shape_suffix": [576, 1536],
+    "fusion_parameter_count": 48572416,
+    "signals_finite": true,
+    "projected_pixel_source": "qwen_patchified_video_inverse",
+    "source_normalization": "qwen3_half",
+    "dino_normalization": "imagenet",
+    "frame_selection_tie_policy": "stable_source_order_middle_forced",
+    "layout_source_groups": "dense_raster_partition_12x12",
+    "layout_anchor_policy": "first_source_in_structural_query_cell",
+    "value_lineage_policy": "trainable_sva_native_dino_cross_attention",
+    "fusion_registered_pre_optimizer": true,
+    "fusion_trainable": true,
+    "dino_frozen": true
+  },
+  "samples": {
+    "3849": {
+      "video_grid_thw": [6, 28, 38],
+      "source_visual_tokens": 1596,
+      "selected_frames": 2,
+      "result_visual_tokens": 288,
+      "baseline_prefill_length": 1698,
+      "compressed_prefill_length": 390,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "all_checks_passed": true
+    },
+    "442": {
+      "video_grid_thw": [13, 30, 40],
+      "source_visual_tokens": 3900,
+      "selected_frames": 13,
+      "result_visual_tokens": 1872,
+      "baseline_prefill_length": 4079,
+      "compressed_prefill_length": 2051,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "all_checks_passed": true
+    },
+    "28": {
+      "video_grid_thw": [23, 24, 44],
+      "source_visual_tokens": 6072,
+      "selected_frames": 23,
+      "result_visual_tokens": 3312,
+      "baseline_prefill_length": 6342,
+      "compressed_prefill_length": 3582,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "all_checks_passed": true
+    },
+    "205": {
+      "video_grid_thw": [44, 30, 40],
+      "source_visual_tokens": 13200,
+      "selected_frames": 44,
+      "result_visual_tokens": 6336,
+      "baseline_prefill_length": 13636,
+      "compressed_prefill_length": 6772,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "all_checks_passed": true
+    }
+  },
+  "verified_invariants": [
+    "DINOv2 frame selection and forced window midpoints ran on every fixed sample",
+    "the trainable three-layer SVA fusion consumed aligned native Qwen3 raw features and frozen rectangular DINO rasters",
+    "all four samples reduced authoritative source video_grid_thw tokens under a non-identity exact budget",
+    "source groups, anchors, LayoutDelta, temporal placeholders, absent labels, sparse native three-plane MRoPE, and cache inputs agreed",
+    "visual_pos_masks and all three DeepStack branches replayed the main-stream LongVU layout exactly",
+    "cached generation performed three decode repairs and produced four finite compressed tokens on every sample",
+    "the owned process exited and no external process was controlled despite independently changing external snapshots"
+  ],
+  "regression": {
+    "local_qwen3_diagnostic_slice": "79 passed",
+    "installed_cuda_hidden_preflight_before_recovery": "92 passed",
+    "installed_cuda_hidden_recovery_slice": "28 passed",
+    "cuda_visible_devices": "",
+    "observed_gpu_peak_mib": 0
+  },
+  "attempts": [
+    {
+      "attempt": 1,
+      "run_id": "20260828T090026Z-e883a06-longvu-qwen3-infer-gpu0-a1",
+      "status": "failed",
+      "reason": "Qwen2.5-scaled pixel floor did not account for Qwen3's 16x16 patch size"
+    },
+    {
+      "attempt": 2,
+      "run_id": "20260828T090453Z-e47b911-longvu-qwen3-infer-gpu0-a2",
+      "status": "passed",
+      "recovery": "freeze the Qwen3 LongVU bounds at 256x32x32 through 320x32x32 pixels"
+    }
+  ],
+  "independent_artifact_validation": {
+    "status": "passed",
+    "attempts": 1,
+    "result": "59 independent stdlib-only provenance, checkpoint, GPU, four-sample LongVU, temporal-span, sparse-MRoPE, visual_pos_masks, three-branch DeepStack, cached-decode, JSONL, boundary, and SHA-256 checks passed read-only"
+  },
+  "boundaries": {
+    "full_nextqa_benchmark": false,
+    "paper_quality_or_efficiency_reproduction": false,
+    "convergence_claim": false,
+    "training_claim": false
+  },
+  "recorded_at": "2026-08-28T17:13:12+08:00"
+}

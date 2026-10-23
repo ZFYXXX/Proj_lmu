@@ -1,0 +1,254 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "support_unit": {
+    "algorithm": "dycoke",
+    "variant": "dycoke.video",
+    "backbone": "llava_onevision",
+    "target_modality": "video",
+    "phase": "generate",
+    "binding": "dycoke.video.llava_onevision"
+  },
+  "canonical_config": {
+    "merging_ratio": 0.7,
+    "decoder_prune_layer": 3,
+    "kv_drop_ratio": 0.8,
+    "attention_similarity_threshold": 0.9
+  },
+  "source_revisions": {
+    "checkpoint_runner_and_runtime_evidence": "19199a7ea65f278efc3eabfd1d84c0b754ef158e",
+    "reference_compression_algorithm": "7e3ae876bc6306a4179f389e5f960225cd9e3a79",
+    "lmms_eval": "e9a5309ea6f4b8edacb813823cf8fdfd24bbd115"
+  },
+  "environment": {
+    "name": "mllm-comp-platform-dev",
+    "python": "3.10.20",
+    "torch": "2.8.0+cu128",
+    "transformers": "4.57.3",
+    "offline": true,
+    "package_or_environment_changes": false,
+    "downloads": false
+  },
+  "checkpoint": {
+    "path": "/home/WuHao/checkpoints/ckpts-vlm/llava-onevision-qwen2-0.5b-ov",
+    "total_weight_bytes": 1787335336,
+    "weight_files": 1,
+    "dtype": "float16",
+    "attention_implementation": "sdpa",
+    "local_files_only": true
+  },
+  "dataset": {
+    "task": "nextqa_mc_test",
+    "split": "test",
+    "parquet": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet",
+    "parquet_rows": 8564,
+    "parquet_size_bytes": 898657,
+    "video_root": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo",
+    "doc_ids": [3849, 442, 28, 205],
+    "decoded_frames_per_sample": 32,
+    "decode_policy": "uniform_local_decord"
+  },
+  "generation": {
+    "batch_size": 1,
+    "max_new_tokens": 4,
+    "do_sample": false,
+    "use_cache": true,
+    "baseline_and_compressed_same_preprocessing": true,
+    "finite_logits_required": true,
+    "projector_capture_count_per_compressed_sample": 1,
+    "decode_kv_views_per_compressed_sample": 3,
+    "cached_decode_query_length": 1
+  },
+  "gpu": {
+    "physical_device": 0,
+    "name": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+    "free_before_mib": 86146,
+    "estimated_peak_mib": 32768,
+    "safety_margin_mib": 16384,
+    "required_free_mib": 49152,
+    "observed_peak_allocated_mib": 5420.044,
+    "observed_peak_reserved_mib": 10120.0,
+    "free_after_workload_before_process_exit_mib": 75358,
+    "free_after_process_exit_mib": 86146,
+    "compute_processes_before": [
+      {
+        "pid": 364893,
+        "used_memory_mib": 11000,
+        "process_name": "/home/lixiaocong/miniforge3/envs/kof/bin/python3.9"
+      }
+    ],
+    "compute_processes_after": [
+      {
+        "pid": 364893,
+        "used_memory_mib": 11000,
+        "process_name": "/home/lixiaocong/miniforge3/envs/kof/bin/python3.9"
+      }
+    ],
+    "gpu1_free_before_mib": 86117,
+    "gpu1_free_after_mib": 86117,
+    "gpu1_assignment": "unassigned",
+    "concurrency_decision": "both GPUs admitted; selected slightly higher-free GPU 0; single job; GPU 1 unassigned",
+    "other_processes_modified": false
+  },
+  "command": [
+    "/home/WuHao/miniconda3/envs/mllm-comp-platform-dev/bin/python",
+    "-m",
+    "scripts.diagnostics.validate_llava_dycoke_video_compression_checkpoint",
+    "--checkpoint",
+    "/home/WuHao/checkpoints/ckpts-vlm/llava-onevision-qwen2-0.5b-ov",
+    "--nextqa_parquet",
+    "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet",
+    "--video_root",
+    "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo",
+    "--output_dir",
+    ".goal-task/video-compression-three-backbones/runs/20260827t095034-19199a7-dycoke-llava-gpu0-a1/evidence",
+    "--code_revision",
+    "19199a7ea65f278efc3eabfd1d84c0b754ef158e",
+    "--physical_gpu",
+    "0",
+    "--max_new_tokens",
+    "4",
+    "--estimated_peak_mib",
+    "32768",
+    "--safety_margin_mib",
+    "16384"
+  ],
+  "artifacts": {
+    "report": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260827t095034-19199a7-dycoke-llava-gpu0-a1/evidence/report.json",
+      "sha256": "c93da3f782e37be986e07f63b0f3cd4f0211d050a8e41bf120dc3edeb5a1cc1f",
+      "size_bytes": 13972220
+    },
+    "lmms_eval_samples": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260827t095034-19199a7-dycoke-llava-gpu0-a1/evidence/samples.jsonl",
+      "sha256": "c1b54b2da1a5f120365df8ef6b41cb3c49463a56c038a3c154e00a25a39ce616",
+      "size_bytes": 2010
+    },
+    "independent_validation": {
+      "sha256": "26d157538d58ef54672cf0b7d5a5b6afdb6401a8ee1cb93aa0e1f9288b0b58b5",
+      "size_bytes": 5616,
+      "check_count": 144
+    }
+  },
+  "algorithm_evidence": {
+    "ttm_pairing": "adjacent_then_zero_two_per_group_of_four",
+    "selection": "lowest_corresponding_spatial_cosine",
+    "selection_ties": "source_index_stable",
+    "selection_output_order": "source_order_restored",
+    "merge_value": "selected_source_value_no_averaging",
+    "temporal_slices_per_sample": 32,
+    "source_tokens_per_slice": 196,
+    "selected_tokens_per_non_anchor_slice": 58,
+    "group_anchor_count": 8,
+    "adjacent_selection_count": 16,
+    "stride_zero_two_selection_count": 8,
+    "trailing_full_count": 0,
+    "source_tokens_per_sample": 6272,
+    "result_tokens_per_sample": 2960,
+    "singleton_source_groups_exact": true,
+    "representatives_source_ordered": true,
+    "decode_attention_source_layer": 2,
+    "decode_sparse_first_layer": 3,
+    "decode_kept_visual_tokens": 591,
+    "decode_dropped_visual_tokens": 2369,
+    "selection_recompute_exercised": true,
+    "selection_reuse_exercised": true,
+    "physical_dynamic_cache_retained": true,
+    "image_variant_shared": false,
+    "training_free_compressor": true
+  },
+  "samples": {
+    "3849": {
+      "video_id": "3571539122",
+      "qid": 6,
+      "question_type": "TC",
+      "target": "E",
+      "source_visual_tokens": 6272,
+      "result_visual_tokens": 2960,
+      "baseline_prefill_length": 6326,
+      "compressed_prefill_length": 3014,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "decode_selection_reuse": [false, false, false],
+      "all_checks_passed": true
+    },
+    "442": {
+      "video_id": "3064389881",
+      "qid": 2,
+      "question_type": "TN",
+      "target": "D",
+      "source_visual_tokens": 6272,
+      "result_visual_tokens": 2960,
+      "baseline_prefill_length": 6341,
+      "compressed_prefill_length": 3029,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "decode_selection_reuse": [false, true, false],
+      "all_checks_passed": true
+    },
+    "28": {
+      "video_id": "6097011028",
+      "qid": 8,
+      "question_type": "CW",
+      "target": "B",
+      "source_visual_tokens": 6272,
+      "result_visual_tokens": 2960,
+      "baseline_prefill_length": 6342,
+      "compressed_prefill_length": 3030,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "decode_selection_reuse": [false, true, false],
+      "all_checks_passed": true
+    },
+    "205": {
+      "video_id": "2597214137",
+      "qid": 6,
+      "question_type": "DL",
+      "target": "A",
+      "source_visual_tokens": 6272,
+      "result_visual_tokens": 2960,
+      "baseline_prefill_length": 6319,
+      "compressed_prefill_length": 3007,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "decode_selection_reuse": [false, false, false],
+      "all_checks_passed": true
+    }
+  },
+  "verified_invariants": [
+    "canonical two-pass TTM reduced each native 32x196 LLaVA raster from 6272 to 2960 tokens",
+    "all anchors, adjacent selections, zero-two selections, singleton lineage, and source order were exact",
+    "LayoutDelta, native LLaVA splice, structural tokens, placeholder, masks, absent labels, and dense positions agreed",
+    "layer-2 attention drove sparse KV views from layer 3 while the physical DynamicCache stayed complete",
+    "each compressed sample executed three unit-query decode views and the fixed set covered both recomputation and reuse",
+    "baseline and compressed logits were finite and bounded four-token cached generation completed",
+    "dycoke.video evidence does not borrow from image behavior"
+  ],
+  "regression": {
+    "local_pre_activation_affected": "81 passed, 16 skipped",
+    "installed_pre_activation_affected": "97 passed",
+    "local_activation_pre_checksum": "60 passed, 6 skipped, 1 checksum test intentionally deferred until manifest freeze",
+    "cuda_visible_devices": "",
+    "observed_gpu_peak_mib": 0
+  },
+  "attempts": [
+    {
+      "attempt": 1,
+      "run_id": "20260827t095034-19199a7-dycoke-llava-gpu0-a1",
+      "status": "passed"
+    }
+  ],
+  "independent_artifact_validation": {
+    "status": "passed",
+    "attempts": 1,
+    "result": "144 stdlib-only scope, provenance, resource, GPU, four-sample TTM, layout, decoder, sparse-KV-view, JSONL, boundary, and SHA-256 checks passed read-only"
+  },
+  "boundaries": {
+    "full_nextqa_benchmark": false,
+    "paper_quality_or_efficiency_reproduction": false,
+    "convergence_claim": false,
+    "training_claim": false,
+    "physical_cache_compaction": false
+  },
+  "recorded_at": "2026-08-27T09:50:34+08:00"
+}

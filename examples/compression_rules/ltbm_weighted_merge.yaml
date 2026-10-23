@@ -1,0 +1,42 @@
+# Complete formal stage: replace the backbone model path for a real run.
+experiment: {name: ltbm_weighted_merge, seed: 42}
+backbone: {name: qwen25_omni, model_path: '${QWEN25_OMNI_MODEL_PATH}'}
+pipeline:
+  stages:
+    - name: ltbm_weighted_merge
+      plugin: local_temporal_bipartite_merging_audio
+      algorithm: local_temporal_bipartite_merging_audio
+      variant: local_temporal_bipartite_merging_audio.audio
+      binding: local_temporal_bipartite_merging_audio.audio.qwen25_omni
+      placement: projector_level
+      execution_phase: forward
+      method: token_compression
+      object_family: tensor_slot
+      target_modalities: [audio]
+      modalities: [audio]
+      preserved_modalities: [text, image, video]
+      media_alignment: temporal
+      operation:
+        type: merge
+        target_site: audio_encoder_output_pre_projector
+        grouper:
+          callable: mllm_comp.compressors.rule_examples:ltbm_nearest_pairs
+        aggregator:
+          callable: mllm_comp.compressors.rule_examples:ltbm_destination_weighted_mean
+          params: {destination_weight: 3.0}
+      criterion: {window_size: 8}
+      schedule: {keep_ratio: 0.5}
+analysis:
+  backend: lmms_eval
+  compression_mode: compressed
+  phase: post_compression
+  tasks: [mmau_test_mini]
+  runtime_batch_size: 1
+  sample_limit: 1
+  probes:
+    - name: representation_dynamics
+      enabled: true
+      layers: [0]
+      metrics: [cosine]
+      token_groups: [text, audio]
+      save_raw: false

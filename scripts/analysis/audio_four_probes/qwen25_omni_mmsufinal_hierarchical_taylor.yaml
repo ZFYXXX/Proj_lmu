@@ -1,0 +1,36 @@
+# All 5,000 MMSU-final rows, using the native task's reference answer.
+experiment: {name: qwen25_omni_mmsufinal_hierarchical_taylor, seed: 42}
+backbone:
+  name: qwen25_omni
+  model_id: Qwen/Qwen2.5-Omni-7B
+  trust_remote_code: false
+  config:
+    torch_dtype: bfloat16
+    attn_implementation: eager
+    enable_talker: false
+pipeline: {stages: []}
+analysis:
+  backend: lmms_eval
+  compression_mode: none
+  phase: pre_compression
+  tasks: [mmsufinal]
+  runtime_batch_size: 1
+  sample_limit: null
+  probes:
+    - name: hierarchical_taylor
+      enabled: true
+      target_modality: audio
+      objective: teacher_forced_answer_cross_entropy_v1
+      layers: all
+      layer_batch_size: 1
+      ffn_bottom_fraction: 0.3
+      causal_validation:
+        enabled: false
+        component_count: 1
+        kinds: [path, head, ffn_neuron, sublayer, layer]
+        seed: 42
+      # Retain complete task-level neuron vectors without buffering all sample vectors.
+      save_raw: false
+output:
+  run_dir: runs/analysis/audio_four_probes/hierarchical_taylor/mmsufinal
+  manifest_path: runs/analysis/audio_four_probes/hierarchical_taylor/mmsufinal/manifest.json

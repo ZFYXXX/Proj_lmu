@@ -1,0 +1,208 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "support_unit": {
+    "algorithm": "llamavid",
+    "variant": "llamavid.video",
+    "backbone": "llava_onevision",
+    "target_modality": "video",
+    "phase": "forward",
+    "binding": "llamavid.video.llava_onevision"
+  },
+  "canonical_config": {
+    "num_query": 32,
+    "bert_type": "qformer",
+    "compress_type": "mean"
+  },
+  "source_revisions": {
+    "checkpoint_runner": "28f379863fa66cbd71cf22bc47db7a92ba164201",
+    "reference_compression_algorithm": "7e3ae876bc6306a4179f389e5f960225cd9e3a79"
+  },
+  "environment": {
+    "name": "mllm-comp-platform-dev",
+    "offline": true,
+    "package_or_environment_changes": false
+  },
+  "checkpoint": "/home/WuHao/checkpoints/ckpts-vlm/llava-onevision-qwen2-0.5b-ov",
+  "auxiliary_checkpoint": "/home/WuHao/checkpoints/ckpts-aux/bert-base-uncased",
+  "command": "/home/WuHao/code/MLLM-Comp-Platform-Workspace/dev/scripts/diagnostics/validate_provider_video_training_checkpoint.py --algorithm llamavid --backbone llava_onevision --checkpoint /home/WuHao/checkpoints/ckpts-vlm/llava-onevision-qwen2-0.5b-ov --auxiliary_checkpoint /home/WuHao/checkpoints/ckpts-aux/bert-base-uncased --nextqa_parquet /home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet --video_root /home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo --output_dir /home/WuHao/code/MLLM-Comp-Platform-Workspace/dev/.goal-runs/video-compression-three-backbones/llamavid/llava_onevision/forward/20260906T202659Z-28f3798-llamavid-llava_onevision-train-gpu1-a2 --code_revision 28f379863fa66cbd71cf22bc47db7a92ba164201 --physical_gpu 1 --estimated_peak_mib 32768 --safety_margin_mib 16384",
+  "fixture": {
+    "kind": "nextqa_mc_test_derived_sft_code_correctness_fixture",
+    "task": "nextqa_mc_test",
+    "split": "test",
+    "doc_id": 442,
+    "video_id": "3064389881",
+    "prompt": "what did the baby do after the man pushed her onto the ball at the beginning of the video\nA. shakes legs\nB. point\nC. look at the baby\nD. lie on the ball\nE. toss ball down",
+    "target": "D",
+    "video_path": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo/3064389881.mp4",
+    "quality_or_training_data_claim": false
+  },
+  "training": {
+    "optimizer_steps": 3,
+    "batch_size": 1,
+    "gradient_checkpointing": false,
+    "trainable_scope": "base final norm plus complete provider-owned compressor; pretrained base and external DINO stay frozen",
+    "steps": [
+      {
+        "step": 1,
+        "loss": 0.489143431186676,
+        "source": 6272,
+        "result": 64,
+        "failed_checks": [],
+        "base_parameters": [
+          {
+            "name": "model.norm.weight",
+            "facade_handle": "llm.final_norm.weight",
+            "numel": 896,
+            "dtype": "torch.bfloat16",
+            "gradient_present": true,
+            "gradient_finite": true,
+            "gradient_nonzero": true,
+            "gradient_norm": 0.0539400577545166,
+            "max_parameter_delta": 0.015625
+          }
+        ],
+        "compressor_parameter_tensors": 268,
+        "nonzero_compressor_gradients": 268,
+        "updated_compressor_tensors": 268
+      },
+      {
+        "step": 2,
+        "loss": 1.1676844358444214,
+        "source": 6272,
+        "result": 64,
+        "failed_checks": [],
+        "base_parameters": [
+          {
+            "name": "model.norm.weight",
+            "facade_handle": "llm.final_norm.weight",
+            "numel": 896,
+            "dtype": "torch.bfloat16",
+            "gradient_present": true,
+            "gradient_finite": true,
+            "gradient_nonzero": true,
+            "gradient_norm": 0.12317579239606857,
+            "max_parameter_delta": 0.015625
+          }
+        ],
+        "compressor_parameter_tensors": 268,
+        "nonzero_compressor_gradients": 268,
+        "updated_compressor_tensors": 268
+      },
+      {
+        "step": 3,
+        "loss": 8.148185729980469,
+        "source": 6272,
+        "result": 64,
+        "failed_checks": [],
+        "base_parameters": [
+          {
+            "name": "model.norm.weight",
+            "facade_handle": "llm.final_norm.weight",
+            "numel": 896,
+            "dtype": "torch.bfloat16",
+            "gradient_present": true,
+            "gradient_finite": true,
+            "gradient_nonzero": true,
+            "gradient_norm": 0.271553635597229,
+            "max_parameter_delta": 0.0048828125
+          }
+        ],
+        "compressor_parameter_tensors": 268,
+        "nonzero_compressor_gradients": 268,
+        "updated_compressor_tensors": 268
+      }
+    ]
+  },
+  "checkpoint_saved": {
+    "path": "/home/WuHao/code/MLLM-Comp-Platform-Workspace/dev/.goal-runs/video-compression-three-backbones/llamavid/llava_onevision/forward/20260906T202659Z-28f3798-llamavid-llava_onevision-train-gpu1-a2/checkpoint-3",
+    "tensor_sha256": "ef1db3a11e84b2a0fb1a4aa73e6d2ebc1c433da4468e635c8396e266e02a2b7e",
+    "compression_state_path": "/home/WuHao/code/MLLM-Comp-Platform-Workspace/dev/.goal-runs/video-compression-three-backbones/llamavid/llava_onevision/forward/20260906T202659Z-28f3798-llamavid-llava_onevision-train-gpu1-a2/checkpoint-3/compression_model.safetensors",
+    "compression_size_bytes": 263475904,
+    "compressor_trainable_parameter_count": 131723392
+  },
+  "reload": {
+    "failed_checks": [],
+    "base_reload": {
+      "parameter_records": [
+        {
+          "name": "model.norm.weight",
+          "facade_handle": "llm.final_norm.weight",
+          "shape": [
+            896
+          ],
+          "dtype": "torch.bfloat16",
+          "exact_reload": true
+        }
+      ],
+      "all_exact": true
+    },
+    "compression_state_exact": true,
+    "compression_tensor_count": 268,
+    "source": 6272,
+    "result": 64
+  },
+  "gpu": {
+    "before": {
+      "physical_device": 1,
+      "name": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+      "uuid": "GPU-51c7266f-391b-e0f6-1387-0f3ea8430ef6",
+      "total_memory_mib": 97887,
+      "used_memory_mib": 42337,
+      "free_memory_mib": 54912,
+      "compute_processes": [
+        {
+          "pid": 2095,
+          "process_name": "/home/lixiaocong/venvs/simtoolreal-isaacsim-py311/bin/python",
+          "used_memory_mib": 42203
+        }
+      ]
+    },
+    "admission": {
+      "estimated_peak_mib": 32768,
+      "safety_margin_mib": 16384,
+      "required_free_mib": 49152,
+      "observed_free_mib": 54912,
+      "decision": "admitted_with_existing_compute_processes",
+      "concurrency": 1
+    },
+    "concurrency_decision": "One owned job on this explicitly selected device; independent jobs may use the other device.",
+    "observed_peak_allocated_mib": 6486.3251953125,
+    "observed_peak_reserved_mib": 7976,
+    "launcher_gpu_after_process_exit": [
+      "0, NVIDIA RTX PRO 6000 Blackwell Workstation Edition, GPU-e97378fb-0ff8-ef7f-10d2-f89b5e3fcac7, 97887, 7309, 89940",
+      "1, NVIDIA RTX PRO 6000 Blackwell Workstation Edition, GPU-51c7266f-391b-e0f6-1387-0f3ea8430ef6, 97887, 42337, 54912"
+    ],
+    "launcher_processes_after": [
+      "GPU-e97378fb-0ff8-ef7f-10d2-f89b5e3fcac7, 846139, /home/WuHao/miniconda3/envs/mllm-comp-platform-dev/bin/python, 7244",
+      "GPU-51c7266f-391b-e0f6-1387-0f3ea8430ef6, 2095, /home/lixiaocong/venvs/simtoolreal-isaacsim-py311/bin/python, 42203"
+    ]
+  },
+  "artifacts": {
+    "report": ".goal-runs/video-compression-three-backbones/llamavid/llava_onevision/forward/20260906T202659Z-28f3798-llamavid-llava_onevision-train-gpu1-a2/report.json",
+    "report_sha256": "cbd894bddb8f8f9ccad5e4b82e7f5af739dd9126c333bdf5f1414ec646db1885",
+    "steps": ".goal-runs/video-compression-three-backbones/llamavid/llava_onevision/forward/20260906T202659Z-28f3798-llamavid-llava_onevision-train-gpu1-a2/steps.jsonl",
+    "launcher_logs": ".goal-logs/video-compression-three-backbones/llamavid/llava_onevision/forward/20260906T202659Z-28f3798-llamavid-llava_onevision-train-gpu1-a2",
+    "launcher_exit_code": 0
+  },
+  "attempts": [
+    {
+      "attempt": 1,
+      "status": "failed_before_optimizer",
+      "source_commit": "b9fd772027003ff2827aaf540c74bf253ffbcea7",
+      "reason": "Diagnostic passed an extra backbone key to pipeline stage schema; no optimizer step executed."
+    },
+    {
+      "attempt": 2,
+      "status": "passed",
+      "source_commit": "28f379863fa66cbd71cf22bc47db7a92ba164201"
+    }
+  ],
+  "boundaries": {
+    "full_nextqa_benchmark": false,
+    "paper_quality_or_efficiency_reproduction": false,
+    "convergence_claim": false,
+    "method_specific_trained_checkpoint_claim": false
+  },
+  "recorded_at": "2026-09-06T20:27:19Z"
+}

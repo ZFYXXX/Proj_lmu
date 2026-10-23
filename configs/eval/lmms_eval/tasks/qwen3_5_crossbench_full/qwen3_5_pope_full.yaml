@@ -1,0 +1,5 @@
+group: qwen3_5_pope_full
+task:
+  - qwen3_5_pope_adversarial_full
+  - qwen3_5_pope_popular_full
+  - qwen3_5_pope_random_full

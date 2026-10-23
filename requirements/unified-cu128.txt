@@ -1,0 +1,26 @@
+# Install PyTorch from its cu128 index first; see README.
+-c ../constraints/unified-cu128.txt
+transformers
+accelerate
+peft
+datasets
+trl
+protobuf
+tensorboard
+scipy
+pandas
+pyarrow
+gradio
+gradio-client
+librosa
+soundfile
+ffmpeg==1.4
+ffmpeg-python==0.2.0
+modelscope-studio==1.2.2
+tabulate
+moviepy
+decord==0.6.0
+opencv-python-headless
+qwen-vl-utils
+qwen-omni-utils[decord]
+torchcodec

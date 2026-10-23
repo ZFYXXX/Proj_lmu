@@ -1,0 +1,39 @@
+experiment: {name: qwen25_vl_visual_merge_value_residual_pilot, seed: 42}
+backbone:
+  name: qwen25_vl
+  model_path: /home/ZhouFengyu/fastv-repro/models/Qwen2.5-VL-3B-Instruct
+  model_revision: 1b5a7674d40a0ac9acef541a46fed12d710bd36b
+  trust_remote_code: false
+  config:
+    torch_dtype: bfloat16
+    attn_implementation: eager
+    model_load_kwargs: {local_files_only: true}
+    processor_load_kwargs: {local_files_only: true, use_fast: false, min_pixels: 200704, max_pixels: 1605632}
+pipeline: {stages: []}
+analysis:
+  backend: lmms_eval
+  compression_mode: none
+  phase: pre_compression
+  runtime_batch_size: 1
+  tasks: [qwen25_vl_chartqa_full, qwen25_projector_quality_textvqa_full]
+  task_include_path:
+    - /home/ZhouFengyu/fastv-repro/MLLM-Comp-Platform/MLLM-Comp-Platform-main/configs/eval/lmms_eval/tasks/qwen25_vl_chartqa_full
+    - /home/ZhouFengyu/fastv-repro/MLLM-Comp-Platform/MLLM-Comp-Platform-main/configs/eval/lmms_eval/tasks/qwen25_vl_projector_quality
+  streaming_datasets: true
+  sample_limit: 4
+  probes:
+    - name: visual_merge_attribution
+      enabled: true
+      layers: [0]
+      target_tokens: 64
+      partitions: [grid, feature_anchor]
+      variants: [pre, post, A, B, C, D, O-Z, O-M, O-Z-VR1, O-Z-VR4, O-Z-VR8]
+      fp32_statistics: true
+      identity_tolerance: 0.0001
+      save_raw: false
+train: {}
+eval: {}
+data: {}
+output:
+  run_dir: outputs/analysis/visual_merge_attribution/value_residual_k64_pilot
+  manifest_path: outputs/analysis/visual_merge_attribution/value_residual_k64_pilot/manifest.json

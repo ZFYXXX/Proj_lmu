@@ -1,0 +1,67 @@
+experiment:
+  name: qwen25_vl_pair_geometry_discovery_8each
+  seed: 20261020
+
+backbone:
+  name: qwen25_vl
+  model_path: /home/ZhouFengyu/fastv-repro/models/Qwen2.5-VL-3B-Instruct
+  model_revision: 1b5a7674d40a0ac9acef541a46fed12d710bd36b
+  trust_remote_code: false
+  config:
+    torch_dtype: bfloat16
+    attn_implementation: eager
+    model_load_kwargs: {local_files_only: true}
+    processor_load_kwargs:
+      local_files_only: true
+      use_fast: false
+      min_pixels: 200704
+      max_pixels: 1605632
+
+pipeline: {stages: []}
+analysis:
+  backend: lmms_eval
+  compression_mode: none
+  phase: pre_compression
+  runtime_batch_size: 1
+  tasks: [chartqa, textvqa_val, gqa, pope_random]
+  task_include_path: [/home/ZhouFengyu/fastv-repro/lmms_eval/tasks]
+  streaming_datasets: true
+  sample_limit: 1000
+  sampling:
+    unique_images_per_task: 8
+    seed: 20261020
+    exclude_samples:
+      - /home/ZhouFengyu/fastv-repro/MLLM-Comp-Platform/MLLM-Comp-Platform-main/runs/qwen25_vl_visual_token_causal_200each/20261019T122616028665Z-4c9746cb/analysis/visual_token_phenomena/visual_token_phenomena.samples.jsonl
+      - /home/ZhouFengyu/fastv-repro/MLLM-Comp-Platform/MLLM-Comp-Platform-main/runs/qwen25_vl_visual_token_causal_200each/20261019T122616028639Z-b698e153/analysis/visual_token_phenomena/visual_token_phenomena.samples.jsonl
+      - /home/ZhouFengyu/fastv-repro/MLLM-Comp-Platform/MLLM-Comp-Platform-main/runs/qwen25_vl_visual_token_e1_deletion_8each/e1_deletion_8each_20261019/analysis/visual_token_phenomena/visual_token_phenomena.samples.jsonl
+      - /home/ZhouFengyu/fastv-repro/MLLM-Comp-Platform/MLLM-Comp-Platform-main/runs/qwen25_vl_visual_token_e1_deletion_8each/e1_identity_smoke_20261019_v2/analysis/visual_token_phenomena/visual_token_phenomena.samples.jsonl
+      - /home/ZhouFengyu/fastv-repro/MLLM-Comp-Platform/MLLM-Comp-Platform-main/runs/qwen25_vl_visual_token_e0_calibration/e0_20261019_v1/analysis/visual_token_phenomena/visual_token_phenomena.samples.jsonl
+      - /home/ZhouFengyu/fastv-repro/MLLM-Comp-Platform/MLLM-Comp-Platform-main/runs/qwen25_vl_visual_token_joint_pilot/joint_smoke_20261020_v2/analysis/visual_token_phenomena/visual_token_phenomena.samples.jsonl
+      - /home/ZhouFengyu/fastv-repro/MLLM-Comp-Platform/MLLM-Comp-Platform-main/runs/qwen25_vl_visual_token_joint_pilot/joint_pilot_20261020_v1/analysis/visual_token_phenomena/visual_token_phenomena.samples.jsonl
+      - /home/ZhouFengyu/fastv-repro/MLLM-Comp-Platform/MLLM-Comp-Platform-main/runs/qwen25_vl_visual_token_generation_holdout/generation_holdout_20each_20261020_v1/analysis/visual_token_phenomena/visual_token_phenomena.samples.jsonl
+      - /home/ZhouFengyu/fastv-repro/MLLM-Comp-Platform/MLLM-Comp-Platform-main/runs/qwen25_vl_visual_token_generation_holdout/generation_smoke_20261020_v1/analysis/visual_token_phenomena/visual_token_phenomena.samples.jsonl
+  probes:
+    - name: visual_token_phenomena
+      enabled: true
+      layers: [0]
+      intervention_layer: 0
+      target_units: 64
+      max_intervention_units: 64
+      interventions: [global_mean]
+      random_seeds: [11, 23, 47]
+      run_causal_interventions: false
+      run_pair_geometry_interventions: true
+      run_unit_deletion: false
+      run_joint_deletion: false
+      stability_repeats: 0
+      save_region_maps: false
+      run_generation: false
+      run_budget_frontier: false
+      run_layer_trajectory: false
+      budgets: [64]
+      compression_operators: [cluster_mean]
+      save_raw: false
+train: {}
+eval: {}
+data: {}
+output: {}

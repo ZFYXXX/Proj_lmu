@@ -1,0 +1,294 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "support_unit": {
+    "algorithm": "visionzip",
+    "variant": "visionzip.video",
+    "backbone": "qwen25_vl",
+    "target_modality": "video",
+    "phase": "forward",
+    "binding": "visionzip.video.qwen25_vl"
+  },
+  "canonical_config": {
+    "dominant_num": 126,
+    "contextual_num": 21,
+    "attn_layer": -2,
+    "hidden_state_layer": -2
+  },
+  "source_revisions": {
+    "installed_kernel_contract_and_generate_runner": "6682c1f4f0ad02a292336ce72ab202c2e8d45756",
+    "five_step_training_and_reload_harness": "a3cd5e2ea711c703a100261a66815d2edfd05a30",
+    "reference_compression_algorithm": "7e3ae876bc6306a4179f389e5f960225cd9e3a79",
+    "lmms_eval": "e9a5309ea6f4b8edacb813823cf8fdfd24bbd115"
+  },
+  "environment": {
+    "name": "mllm-comp-platform-dev",
+    "python": "3.10.20",
+    "torch": "2.8.0+cu128",
+    "transformers": "4.57.3",
+    "qwen_vl_utils": "0.0.14",
+    "dtype": "bfloat16",
+    "attention_implementation": "sdpa",
+    "gradient_checkpointing": false,
+    "offline": true,
+    "package_or_environment_changes": false,
+    "downloads": false
+  },
+  "checkpoint": {
+    "path": "/home/WuHao/checkpoints/ckpts-vlm/Qwen2.5-VL-3B-Instruct",
+    "total_weight_bytes": 7509337976,
+    "weight_shards": 2,
+    "local_files_only": true
+  },
+  "fixture": {
+    "kind": "nextqa_mc_test_derived_sft_code_correctness_fixture",
+    "task": "nextqa_mc_test",
+    "split": "test",
+    "doc_id": 442,
+    "video_id": "3064389881",
+    "target": "D",
+    "parquet": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet",
+    "video_root": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo",
+    "video_fps": 1.0,
+    "video_min_pixels": 125440,
+    "video_max_pixels": 131072,
+    "video_grid_thw": [13, 22, 28],
+    "second_per_grid_ts": [1.0],
+    "spatial_merge_size": 2,
+    "source_tokens_per_slice": 154,
+    "source_visual_tokens": 2002,
+    "quality_or_training_data_claim": false
+  },
+  "training": {
+    "batch_size": 1,
+    "optimizer": "AdamW",
+    "learning_rate": 0.01,
+    "weight_decay": 0.0,
+    "optimizer_steps": 5,
+    "gradient_accumulation_steps": 1,
+    "intended_trainable_handle": "llm.final_norm.weight",
+    "selected_trainable_parameters": [
+      "model.language_model.norm.weight"
+    ],
+    "compressor_trainable_parameters": 0,
+    "source_visual_tokens_each_step": [2002, 2002, 2002, 2002, 2002],
+    "result_visual_tokens_each_step": [1911, 1911, 1911, 1911, 1911],
+    "losses": [
+      0.28283292055130005,
+      0.24496057629585266,
+      0.21892279386520386,
+      0.16966257989406586,
+      0.1466844528913498
+    ],
+    "gradient_norms": [
+      0.29289206862449646,
+      0.25051149725914,
+      0.21156390011310577,
+      0.16261474788188934,
+      0.13617222011089325
+    ],
+    "max_parameter_deltas": [0.015625, 0.015625, 0.015625, 0.015625, 0.015625],
+    "compression_triggered_each_step": true,
+    "loss_finite_each_step": true,
+    "backward_succeeded_each_step": true,
+    "target_gradient_finite_nonzero_each_step": true,
+    "target_updated_each_step": true,
+    "layout_stable_across_steps": true
+  },
+  "visionzip_evidence": {
+    "selection_scope": "independent_per_temporal_slice",
+    "attention_statistic": "penultimate_mean_received",
+    "similarity": "penultimate_hidden_cosine",
+    "contextual_target_sampling": "released_prefix_stride",
+    "merge_value": "target_plus_mean_assigned_excluding_target",
+    "representative_policy": "merge_target_when_causal_else_source_group_first_index",
+    "attention_layer": -2,
+    "hidden_state_layer": -2,
+    "hidden_state_width": 5120,
+    "temporal_slices_each_step": 13,
+    "source_tokens_per_slice": 154,
+    "dominant_tokens_per_slice": 126,
+    "contextual_targets_per_slice": 21,
+    "assigned_contextual_sources_per_slice": 7,
+    "result_tokens_per_slice": 147,
+    "dominant_tokens_each_step": 1638,
+    "contextual_targets_each_step": 273,
+    "assigned_contextual_sources_each_step": 91,
+    "source_partition_exact_each_step": true,
+    "merge_targets_inside_groups_each_step": true,
+    "representatives_source_ordered_each_step": true,
+    "contextual_aggregation_exercised_each_step": true,
+    "image_variant_shared": false
+  },
+  "qwen25_legalization": {
+    "source_video_grid_preserved_each_step": true,
+    "source_second_per_grid_ts_preserved_each_step": true,
+    "result_grid_policy": "irregular_sparse_source_anchors",
+    "source_placeholder_count": 2002,
+    "result_placeholder_count": 1911,
+    "sparse_mrope_representative_gather_exact_each_step": true,
+    "rope_delta_present_each_step": true,
+    "source_attention_mask_aligned_each_step": true,
+    "completion_only_labels_and_logits_aligned_each_step": true,
+    "training_logits_shape": [1, 1983, 151936]
+  },
+  "lightweight_checkpoint": {
+    "format": "mllm_comp_selected_parameter_checkpoint",
+    "global_step": 5,
+    "tensor_names": [
+      "model.language_model.norm.weight"
+    ],
+    "tensor_dtype": "BF16",
+    "tensor_shape": [2048],
+    "tensor_parameter_count": 2048,
+    "tensor_sha256": "9a539cfd87cc61f7d081367b54f1098127338c40279d0ac7ab2a6ab0404ef86c",
+    "config_sha256": "70fbaf7ee58121118943c646a3616a549cdd49021f3f08b631b0fe977d133b29",
+    "training_state_sha256": "b27c92a6cf5a2fbc40accdb744ab5f2442c6eb4ec9a80983a21097a6a8f80b8e",
+    "fresh_base_checkpoint_reload": true,
+    "tensor_reload_exact": true,
+    "post_reload_compression_triggered": true,
+    "post_reload_source_visual_tokens": 2002,
+    "post_reload_result_visual_tokens": 1911,
+    "post_reload_logits_shape": [1, 1980, 151936],
+    "post_reload_logits_finite": true,
+    "post_reload_labels_absent": true,
+    "post_reload_visionzip_path_exact": true,
+    "post_reload_grid_and_timing_exact": true,
+    "post_reload_sparse_mrope_gather_exact": true,
+    "post_reload_qwen25_layout_aligned": true
+  },
+  "gpu": {
+    "physical_device": 1,
+    "logical_device": 0,
+    "name": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+    "free_before_mib": 86117,
+    "estimated_peak_mib": 49152,
+    "safety_margin_mib": 16384,
+    "required_free_mib": 65536,
+    "observed_peak_allocated_mib": 11207.0,
+    "observed_peak_reserved_mib": 12992.0,
+    "free_after_process_exit_mib": 86117,
+    "concurrency_decision": "both GPUs admitted; selected GPU 1 after the initial lower-utilization snapshot; latest utilization was allowed to fluctuate because the required free-memory margin remained satisfied",
+    "other_process_snapshots_unchanged": true,
+    "other_processes_modified": false
+  },
+  "command": [
+    "/home/WuHao/miniconda3/envs/mllm-comp-platform-dev/bin/python",
+    "-m",
+    "scripts.diagnostics.validate_qwen25_visionzip_video_training_checkpoint",
+    "--checkpoint",
+    "/home/WuHao/checkpoints/ckpts-vlm/Qwen2.5-VL-3B-Instruct",
+    "--nextqa_parquet",
+    "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet",
+    "--video_root",
+    "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo",
+    "--output_dir",
+    ".goal-task/video-compression-three-backbones/runs/20260827t124525-a3cd5e2-visionzip-qwen25-train-gpu1-a1/evidence",
+    "--code_revision",
+    "a3cd5e2ea711c703a100261a66815d2edfd05a30",
+    "--physical_gpu",
+    "1",
+    "--estimated_peak_mib",
+    "49152",
+    "--safety_margin_mib",
+    "16384",
+    "--learning_rate",
+    "0.01",
+    "--seed",
+    "42"
+  ],
+  "artifacts": {
+    "report": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260827t124525-a3cd5e2-visionzip-qwen25-train-gpu1-a1/evidence/report.json",
+      "sha256": "737f7e9d46ba9e1755699fbea92dc93e1448d9128646273ff864aa1f4bb13def",
+      "size_bytes": 8092934
+    },
+    "progress": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260827t124525-a3cd5e2-visionzip-qwen25-train-gpu1-a1/evidence/progress.jsonl",
+      "sha256": "61159b0bb9581b0a9aa0fa04bcd77adae0cad1db295fe977e11b99d2517bdbe1",
+      "size_bytes": 1556581
+    },
+    "fixture": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260827t124525-a3cd5e2-visionzip-qwen25-train-gpu1-a1/evidence/fixture.json",
+      "sha256": "289259fcf228ac81988a0be40e674006527ef0ab3e808d53f39175e8859dc9c0",
+      "size_bytes": 624
+    },
+    "checkpoint_tensor": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260827t124525-a3cd5e2-visionzip-qwen25-train-gpu1-a1/evidence/checkpoint-5/adapter_model.safetensors",
+      "sha256": "9a539cfd87cc61f7d081367b54f1098127338c40279d0ac7ab2a6ab0404ef86c",
+      "size_bytes": 4200
+    },
+    "independent_validation": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260827t124525-a3cd5e2-visionzip-qwen25-train-gpu1-a1/independent_validation.json",
+      "sha256": "0630fe3aad8948406a5f7801faee374a439ffda305dc13c7d8cb863e3d73549b",
+      "size_bytes": 10796
+    },
+    "log": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260827t124525-a3cd5e2-visionzip-qwen25-train-gpu1-a1/run.log",
+      "sha256": "87cfc470bb5da36588c4173d2232d9dd1df467357aa57c909277c2e31832fe99",
+      "size_bytes": 10116
+    },
+    "launch_manifest": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260827t124525-a3cd5e2-visionzip-qwen25-train-gpu1-a1/launch_manifest.json",
+      "sha256": "03f1a6f167736e24d81b332a448460cc5a169b8db2c8d08da873d1f51c3cfa65",
+      "size_bytes": 1430
+    },
+    "run_script": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260827t124525-a3cd5e2-visionzip-qwen25-train-gpu1-a1/run.sh",
+      "sha256": "0092398d615dc6b4f54d2a342fea11f74c37c76c6206df01dfb31160dbf9f6d3",
+      "size_bytes": 1780
+    }
+  },
+  "verified_invariants": [
+    "exactly five optimizer steps on the shared doc-442 batch-one fixture",
+    "compression callback and VisionZip signal provider invoked exactly once per step",
+    "each of 13 native temporal slices follows the canonical 154 to 147 path with 126 dominant and 21 contextual outputs",
+    "penultimate attention and hidden-state signals are finite and source aligned on every step",
+    "all source tokens form exact dominant/contextual partitions and merge targets remain inside their groups",
+    "native video_grid_thw and second_per_grid_ts remain authoritative",
+    "result MRoPE positions are exact gathers from ordered source representatives",
+    "placeholders, attention masks, completion-only labels, logits, rope delta, and LayoutDelta remain aligned",
+    "loss and logits are finite on every step",
+    "the one intended facade final-norm target has finite non-zero gradients and updates",
+    "the lightweight checkpoint contains exactly the intended BF16 tensor",
+    "fresh base-checkpoint reload reproduces the saved tensor exactly",
+    "post-reload compressed inference is finite and preserves VisionZip and Qwen2.5-VL legalization"
+  ],
+  "attempts": [
+    {
+      "attempt": 1,
+      "run_id": "20260827t124525-a3cd5e2-visionzip-qwen25-train-gpu1-a1",
+      "status": "passed",
+      "elapsed_seconds": 71.79
+    }
+  ],
+  "independent_artifact_validation": {
+    "status": "passed",
+    "stdlib_only": true,
+    "checks": 246,
+    "attempts": 3,
+    "corrections": [
+      "sys.argv records the resolved module file while run.sh records the python -m launcher",
+      "checkpoint provenance records the two weight-file entries rather than a derived weight_shards field"
+    ],
+    "gpu_rerun_required": false,
+    "source_artifacts_unchanged": true
+  },
+  "regression": {
+    "local_focused": "107 passed, 31 skipped",
+    "local_unit_aggregate": "1213 passed, 218 skipped",
+    "installed_preactivation_slice": "148 passed",
+    "local_activation_slice": "105 passed, 31 skipped",
+    "local_postactivation_unit_aggregate": "1214 passed, 218 skipped",
+    "installed_activation_slice": "146 passed"
+  },
+  "boundaries": {
+    "test_derived_code_correctness_fixture": true,
+    "full_nextqa_benchmark": false,
+    "paper_quality_or_efficiency_reproduction": false,
+    "convergence_claim": false,
+    "batch_greater_than_one": false,
+    "single_sample_multiple_videos": false
+  },
+  "recorded_at": "2026-08-27T13:13:15+08:00"
+}

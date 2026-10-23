@@ -1,0 +1,45 @@
+task: qwen3_5_refcoco_bbox_rec_val_full
+group: qwen3_5_refcoco_bbox_rec_full
+dataset_path: parquet
+dataset_kwargs:
+  data_files:
+    test:
+      - /home/YinPeiran/datasets/lmms_eval_datasets/RefCOCO/data/val-00000-of-00004.parquet
+      - /home/YinPeiran/datasets/lmms_eval_datasets/RefCOCO/data/val-00001-of-00004.parquet
+      - /home/YinPeiran/datasets/lmms_eval_datasets/RefCOCO/data/val-00002-of-00004.parquet
+      - /home/YinPeiran/datasets/lmms_eval_datasets/RefCOCO/data/val-00003-of-00004.parquet
+  cache_dir: /home/ZhouFengyu/fastv-repro/MLLM-Comp-Platform/MLLM-Comp-Platform-main/outputs/qwen3_5-eval/crossbench-parquet-cache
+test_split: test
+output_type: generate_until
+process_docs: !function utils.refcoco_preprocess_dataset
+doc_to_visual: !function utils.refcoco_doc_to_visual
+doc_to_text: !function utils.refcoco_doc_to_text
+doc_to_target: bbox
+generation_kwargs:
+  max_new_tokens: 128
+  until: ["ASSISTANT:"]
+process_results: !function utils.refcoco_process_results
+metric_list:
+  - metric: refcoco_IoU
+    aggregation: !function utils.refcoco_iou
+    higher_is_better: true
+  - metric: refcoco_ACC@0.1
+    aggregation: !function utils.refcoco_acc01
+    higher_is_better: true
+  - metric: refcoco_ACC@0.3
+    aggregation: !function utils.refcoco_acc03
+    higher_is_better: true
+  - metric: refcoco_ACC@0.5
+    aggregation: !function utils.refcoco_acc05
+    higher_is_better: true
+  - metric: refcoco_ACC@0.7
+    aggregation: !function utils.refcoco_acc07
+    higher_is_better: true
+  - metric: refcoco_ACC@0.9
+    aggregation: !function utils.refcoco_acc09
+    higher_is_better: true
+  - metric: refcoco_Center_ACC
+    aggregation: !function utils.refcoco_center_acc
+    higher_is_better: true
+metadata:
+  version: 0.0

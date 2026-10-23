@@ -1,0 +1,259 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "support_unit": {
+    "algorithm": "dycoke",
+    "variant": "dycoke.video",
+    "backbone": "qwen3_vl",
+    "target_modality": "video",
+    "phase": "generate",
+    "binding": "dycoke.video.qwen3_vl"
+  },
+  "canonical_config": {
+    "merging_ratio": 0.7,
+    "decoder_prune_layer": 3,
+    "kv_drop_ratio": 0.8,
+    "attention_similarity_threshold": 0.9
+  },
+  "source_revisions": {
+    "checkpoint_runner_and_qwen3_deepstack_contract": "2ec9be4cdb1bddaa1e6f22fa65ca5a359db91e3f",
+    "reference_compression_algorithm": "7e3ae876bc6306a4179f389e5f960225cd9e3a79",
+    "lmms_eval": "e9a5309ea6f4b8edacb813823cf8fdfd24bbd115"
+  },
+  "environment": {
+    "name": "mllm-comp-platform-dev",
+    "python": "3.10.20",
+    "torch": "2.8.0+cu128",
+    "transformers": "4.57.3",
+    "qwen_vl_utils": "0.0.14",
+    "offline": true,
+    "package_or_environment_changes": false,
+    "downloads": false
+  },
+  "checkpoint": {
+    "path": "/home/WuHao/checkpoints/ckpts-vlm/Qwen3-VL-2B-Instruct",
+    "total_weight_bytes": 4255140312,
+    "weight_files": 1,
+    "dtype": "bfloat16",
+    "attention_implementation": "sdpa",
+    "local_files_only": true
+  },
+  "dataset": {
+    "task": "nextqa_mc_test",
+    "split": "test",
+    "parquet": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet",
+    "parquet_rows": 8564,
+    "parquet_size_bytes": 898657,
+    "video_root": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo",
+    "doc_ids": [3849, 442, 28, 205],
+    "video_preprocessing": {
+      "fps": 1.0,
+      "max_pixels": 131072,
+      "image_patch_size": 16,
+      "enable_thinking": false,
+      "provider": "qwen_vl_utils.process_vision_info"
+    },
+    "native_second_per_grid_ts": "optional and absent for all four installed Qwen3 processor outputs; absence preserved by the bridge"
+  },
+  "generation": {
+    "batch_size": 1,
+    "max_new_tokens": 4,
+    "min_new_tokens": 4,
+    "do_sample": false,
+    "use_cache": true,
+    "baseline_and_compressed_same_preprocessing": true,
+    "finite_logits_required": true,
+    "projector_invocations_per_compressed_sample": 1,
+    "decode_kv_views_per_compressed_sample": 3,
+    "cached_decode_query_length": 1,
+    "deepstack_branches": 3
+  },
+  "gpu": {
+    "physical_device": 1,
+    "name": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+    "free_before_mib": 86117,
+    "estimated_peak_mib": 32768,
+    "safety_margin_mib": 16384,
+    "required_free_mib": 49152,
+    "observed_peak_allocated_mib": 5108.204,
+    "observed_peak_reserved_mib": 6012.0,
+    "free_after_workload_before_process_exit_mib": 79438,
+    "free_after_process_exit_mib": 86117,
+    "compute_processes_before": [
+      {
+        "pid": 364894,
+        "used_memory_mib": 11000,
+        "process_name": "/home/lixiaocong/miniforge3/envs/kof/bin/python3.9"
+      }
+    ],
+    "compute_processes_after": [
+      {
+        "pid": 364894,
+        "used_memory_mib": 11000,
+        "process_name": "/home/lixiaocong/miniforge3/envs/kof/bin/python3.9"
+      }
+    ],
+    "gpu0_free_before_mib": 58474,
+    "gpu0_free_after_mib": 58474,
+    "gpu0_assignment": "unassigned",
+    "concurrency_decision": "both GPUs admitted the 32768 MiB estimate plus the 16384 MiB safety margin; GPU 1 had substantially more free memory and lower utilization, so the single job used GPU 1 and left GPU 0 unassigned",
+    "other_processes_modified": false
+  },
+  "command": [
+    "/home/WuHao/miniconda3/envs/mllm-comp-platform-dev/bin/python",
+    "scripts/diagnostics/validate_qwen3_vl_dycoke_video_compression_checkpoint.py",
+    "--checkpoint",
+    "/home/WuHao/checkpoints/ckpts-vlm/Qwen3-VL-2B-Instruct",
+    "--nextqa_parquet",
+    "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet",
+    "--video_root",
+    "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo",
+    "--output_dir",
+    ".goal-task/video-compression-three-backbones/runs/20260827t103923-2ec9be4-dycoke-qwen3-gpu1-a1/evidence",
+    "--code_revision",
+    "2ec9be4cdb1bddaa1e6f22fa65ca5a359db91e3f",
+    "--physical_gpu",
+    "1",
+    "--max_new_tokens",
+    "4",
+    "--estimated_peak_mib",
+    "32768",
+    "--safety_margin_mib",
+    "16384"
+  ],
+  "artifacts": {
+    "report": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260827t103923-2ec9be4-dycoke-qwen3-gpu1-a1/evidence/report.json",
+      "sha256": "c60abd29e6283e2cce4ae40d2f0e60294023ee7649f6ed8dfd64510204e36b44",
+      "size_bytes": 8829693
+    },
+    "lmms_eval_samples": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260827t103923-2ec9be4-dycoke-qwen3-gpu1-a1/evidence/samples.jsonl",
+      "sha256": "8122bb1774bf87cee6ea42791cb23083321d22de4bbe613128eb7c6ad4d419a4",
+      "size_bytes": 1910
+    },
+    "launch_manifest": {
+      "sha256": "0ba6866d07a7a2b58920f17936e0d4fdfd7e3253f56daa0f7961f7243e2bf01a",
+      "size_bytes": 377
+    },
+    "independent_validation": {
+      "sha256": "8e7934a6ad0f52bff6756e72b0be0062233ade44b76f041fce1fa685af731552",
+      "size_bytes": 1148,
+      "check_count": 1434
+    },
+    "pre_launch_gpu_snapshot": {
+      "sha256": "6564c6d709a9672b889ed956ab289b59ba7d91b5c869764a3d65aa4ab9bba095"
+    },
+    "post_exit_gpu_snapshot": {
+      "sha256": "6564c6d709a9672b889ed956ab289b59ba7d91b5c869764a3d65aa4ab9bba095"
+    },
+    "pre_launch_compute_processes": {
+      "sha256": "092106df68e180e76a6740eed1b1b4e06e7c2e65861a3d411080f38a076ef3c0"
+    },
+    "post_exit_compute_processes": {
+      "sha256": "092106df68e180e76a6740eed1b1b4e06e7c2e65861a3d411080f38a076ef3c0"
+    }
+  },
+  "algorithm_evidence": {
+    "ttm_pairing": "adjacent_then_zero_two_per_group_of_four",
+    "selection": "lowest_corresponding_spatial_cosine",
+    "selection_ties": "source_index_stable",
+    "selection_output_order": "source_order_restored",
+    "merge_value": "selected_source_value_no_averaging",
+    "source_video_grid_preserved": true,
+    "optional_native_timing_absence_preserved": true,
+    "sparse_native_mrope_anchor_gather_exact": true,
+    "rope_delta_recorded": true,
+    "visual_pos_masks_compacted": true,
+    "deepstack_source_groups_replayed": true,
+    "shared_main_deepstack_layout": true,
+    "decode_attention_source_layer": 2,
+    "decode_sparse_first_layer": 3,
+    "selection_recompute_exercised": true,
+    "selection_reuse_exercised": true,
+    "physical_dynamic_cache_retained": true,
+    "image_variant_shared": false,
+    "training_free_compressor": true
+  },
+  "samples": {
+    "3849": {
+      "video_id": "3571539122",
+      "qid": 6,
+      "question_type": "TC",
+      "target": "E",
+      "video_grid_thw": [6, 20, 28],
+      "source_visual_tokens": 840,
+      "result_visual_tokens": 448,
+      "two_pass_stage_counts": [2, 3, 1, 0],
+      "decode_kept_visual_tokens": 89,
+      "baseline_prefill_length": 942,
+      "compressed_prefill_length": 550,
+      "final_rope_delta": -364,
+      "deepstack_result_shapes": [[448, 2048], [448, 2048], [448, 2048]],
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "all_checks_passed": true
+    },
+    "442": {
+      "video_id": "3064389881",
+      "qid": 2,
+      "question_type": "TN",
+      "target": "D",
+      "video_grid_thw": [13, 18, 26],
+      "source_visual_tokens": 1521,
+      "result_visual_tokens": 783,
+      "two_pass_stage_counts": [4, 6, 3, 0],
+      "decode_kept_visual_tokens": 156,
+      "baseline_prefill_length": 1700,
+      "compressed_prefill_length": 962,
+      "final_rope_delta": -614,
+      "deepstack_result_shapes": [[783, 2048], [783, 2048], [783, 2048]],
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "all_checks_passed": true
+    },
+    "28": {
+      "video_id": "6097011028",
+      "qid": 8,
+      "question_type": "CW",
+      "target": "B",
+      "video_grid_thw": [23, 16, 30],
+      "source_visual_tokens": 2760,
+      "result_visual_tokens": 1416,
+      "two_pass_stage_counts": [6, 11, 5, 1],
+      "decode_kept_visual_tokens": 283,
+      "baseline_prefill_length": 3030,
+      "compressed_prefill_length": 1686,
+      "final_rope_delta": -1071,
+      "deepstack_result_shapes": [[1416, 2048], [1416, 2048], [1416, 2048]],
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "all_checks_passed": true
+    },
+    "205": {
+      "video_id": "2597214137",
+      "qid": 6,
+      "question_type": "DL",
+      "target": "A",
+      "video_grid_thw": [44, 18, 26],
+      "source_visual_tokens": 5148,
+      "result_visual_tokens": 2442,
+      "two_pass_stage_counts": [11, 22, 11, 0],
+      "decode_kept_visual_tokens": 488,
+      "baseline_prefill_length": 5584,
+      "compressed_prefill_length": 2878,
+      "final_rope_delta": -1870,
+      "deepstack_result_shapes": [[2442, 2048], [2442, 2048], [2442, 2048]],
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "all_checks_passed": true
+    }
+  },
+  "boundaries": {
+    "full_nextqa_benchmark": false,
+    "paper_quality_or_efficiency_reproduction": false,
+    "training_or_convergence_claim": false,
+    "physical_cache_compaction_claim": false,
+    "support_activation_scope": "dycoke:dycoke.video:qwen3_vl:video:generate only"
+  }
+}

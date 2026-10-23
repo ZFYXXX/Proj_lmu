@@ -1,0 +1,321 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "support_unit": {
+    "algorithm": "fastvid",
+    "variant": "fastvid.video",
+    "backbone": "qwen25_vl",
+    "target_modality": "video",
+    "phase": "generate",
+    "binding": "fastvid.video.qwen25_vl"
+  },
+  "canonical_config": {
+    "retention_ratio": 0.1,
+    "dyseg_c": 8,
+    "dyseg_tau": 0.9,
+    "stprune_d": 0.4,
+    "dtm_p": 4,
+    "dtm_beta": 0.6
+  },
+  "source_revisions": {
+    "installed_kernel_contract_and_real_checkpoint_runner": "992ba51355e90d5b86a1d9901e7a2a03135a98a9",
+    "reference_compression_algorithm": "7e3ae876bc6306a4179f389e5f960225cd9e3a79",
+    "lmms_eval": "e9a5309ea6f4b8edacb813823cf8fdfd24bbd115"
+  },
+  "environment": {
+    "name": "mllm-comp-platform-dev",
+    "python": "3.10.20",
+    "torch": "2.8.0+cu128",
+    "transformers": "4.57.3",
+    "qwen_vl_utils": "0.0.14",
+    "offline": true,
+    "package_or_environment_changes": false,
+    "downloads": false
+  },
+  "checkpoint": {
+    "path": "/home/WuHao/checkpoints/ckpts-vlm/Qwen2.5-VL-3B-Instruct",
+    "total_weight_bytes": 7509337976,
+    "weight_files": 2,
+    "dtype": "bfloat16",
+    "attention_implementation": "sdpa",
+    "local_files_only": true
+  },
+  "dataset": {
+    "task": "nextqa_mc_test",
+    "split": "test",
+    "parquet": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet",
+    "parquet_rows": 8564,
+    "parquet_size_bytes": 898657,
+    "video_root": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo",
+    "doc_ids": [3849, 442, 28, 205]
+  },
+  "video_preprocessing": {
+    "fps": 1.0,
+    "max_pixels": 100352,
+    "provider": "qwen_vl_utils.process_vision_info",
+    "processor_preflight_model_loaded": false,
+    "processor_preflight_cuda_visible": false,
+    "processor_preflight_artifact": ".goal-task/video-compression-three-backbones/runs/20260826T104003-992ba51-fastvid-qwen25-gpu0-a1/processor_preflight.json",
+    "processor_preflight_path_note": "the gpu0 label was provisional; CUDA was hidden and the later live admission selected GPU 1",
+    "source_grids": [[6, 20, 28], [13, 18, 26], [23, 16, 30], [44, 18, 26]],
+    "post_merger_tokens_per_temporal_slice": [140, 117, 120, 117],
+    "source_visual_tokens": [840, 1521, 2760, 5148],
+    "second_per_grid_ts": [1.0, 1.0, 1.0, 1.0]
+  },
+  "generation": {
+    "batch_size": 1,
+    "max_new_tokens": 4,
+    "do_sample": false,
+    "use_cache": true,
+    "baseline_and_compressed_same_preprocessing": true,
+    "finite_logits_required": true,
+    "fastvid_capture_count_per_compressed_sample": 1,
+    "cached_decode_query_length": 1,
+    "cached_decode_steps_per_generation": 3
+  },
+  "gpu": {
+    "physical_device": 1,
+    "name": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+    "free_before_mib": 97183,
+    "estimated_peak_mib": 49152,
+    "safety_margin_mib": 16384,
+    "required_free_mib": 65536,
+    "observed_peak_allocated_mib": 8113.775,
+    "observed_peak_reserved_mib": 9520.0,
+    "free_after_workload_before_process_exit_mib": 86991,
+    "free_after_process_exit_mib": 97183,
+    "compute_processes_before": [],
+    "compute_processes_after": [],
+    "gpu0_alternative": {
+      "initial_free_mib": 71036,
+      "second_free_mib": 69718,
+      "unrelated_process_pid": 320301,
+      "unrelated_process_used_mib_initial": 26168,
+      "unrelated_process_used_mib_second": 27486,
+      "assignment": "unassigned_after_headroom_shrank_before_launch"
+    },
+    "concurrency_decision": "both GPUs initially admitted the estimate plus margin; the unrelated GPU 0 process grew before launch, so the sole job moved to idle GPU 1",
+    "other_processes_modified": false
+  },
+  "command": [
+    "/home/WuHao/miniconda3/envs/mllm-comp-platform-dev/bin/python",
+    "scripts/diagnostics/validate_qwen25_vl_fastvid_video_compression_checkpoint.py",
+    "--checkpoint",
+    "/home/WuHao/checkpoints/ckpts-vlm/Qwen2.5-VL-3B-Instruct",
+    "--nextqa_parquet",
+    "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet",
+    "--video_root",
+    "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo",
+    "--output_dir",
+    ".goal-task/video-compression-three-backbones/runs/20260826T104400-992ba51-fastvid-qwen25-gpu1-a1/checkpoint",
+    "--code_revision",
+    "992ba51355e90d5b86a1d9901e7a2a03135a98a9",
+    "--physical_gpu",
+    "1",
+    "--max_new_tokens",
+    "4",
+    "--video_fps",
+    "1.0",
+    "--video_max_pixels",
+    "100352",
+    "--estimated_peak_mib",
+    "49152",
+    "--safety_margin_mib",
+    "16384"
+  ],
+  "artifacts": {
+    "report": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260826T104400-992ba51-fastvid-qwen25-gpu1-a1/checkpoint/report.json",
+      "sha256": "311c8ca4ee5b4b3c7746a658f587a46999d1528def15cce0307bf43943ea7322",
+      "size_bytes": 4984353
+    },
+    "lmms_eval_samples": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260826T104400-992ba51-fastvid-qwen25-gpu1-a1/checkpoint/samples.jsonl",
+      "sha256": "b94dea65452ba2509824d275c3d982ff92b52833691af01d04239800eeb67c01",
+      "size_bytes": 1879
+    },
+    "processor_preflight": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260826T104003-992ba51-fastvid-qwen25-gpu0-a1/processor_preflight.json",
+      "sha256": "a654c847bef2fec888b006184419598c868c5e5ad7392f0a26fe64bb594a23d7",
+      "size_bytes": 9002
+    },
+    "launch_script": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260826T104400-992ba51-fastvid-qwen25-gpu1-a1/run.sh",
+      "sha256": "2fabdbb81e91b78d5797d319c8af399158a0b21b6f4c09a12c61f6301b4e0b8e",
+      "size_bytes": 1440
+    },
+    "log": {
+      "path": ".goal-task/video-compression-three-backbones/logs/20260826T104400-992ba51-fastvid-qwen25-gpu1-a1.log",
+      "sha256": "345e5baa82ce1ac048cf72078bca10bac5d8cb72bc6f64e67d2e90235cc95416",
+      "size_bytes": 4990370
+    },
+    "read_only_validator": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260826T104400-992ba51-fastvid-qwen25-gpu1-a1/validate_artifacts.sh",
+      "sha256": "480b84284902abcae9ab043c40785528481843314f775268c1b8b74bfc68d6e6",
+      "size_bytes": 9491
+    }
+  },
+  "algorithm_evidence": {
+    "stages": ["dyseg", "stprune", "dtm"],
+    "projected_features_shapes": [[840, 2048], [1521, 2048], [2760, 2048], [5148, 2048]],
+    "native_final_block_features_shapes": [[3360, 1280], [6084, 1280], [11040, 1280], [20592, 1280]],
+    "frame_global_features_shapes": [[6, 2048], [13, 2048], [23, 2048], [44, 2048]],
+    "token_saliency_attention_shapes": [[840], [1521], [2760], [5148]],
+    "signals_finite": true,
+    "signal_source": "native_final_visual_attention_and_projected_mean",
+    "raw_stream": "native_visual_encoder_output",
+    "qwen25_window_order_restored_to_raster": true,
+    "retained_tokens_per_frame": [14, 11, 12, 11],
+    "salient_tokens_per_frame": [9, 7, 8, 7],
+    "context_tokens_per_single_frame_segment": [5, 4, 4, 4],
+    "dyseg_boundary_rule": "stable_lowest_adjacent_cosine_union_below_tau",
+    "stprune_rule": "stable_per_frame_attention_topk",
+    "density_tie_policy": "stable_source_order_without_random_noise",
+    "dtm_merge_rule": "center_weighted_with_assigned_mean",
+    "layout_source_groups": "sampled_center_singletons",
+    "layout_anchor_policy": "released_sampled_center",
+    "value_lineage_policy": "exact_potentially_overlapping_assignments",
+    "representatives_source_ordered": true,
+    "single_frame_dtm_observed": true,
+    "multi_frame_dtm_observed": true,
+    "overlapping_lineage_observed": true,
+    "complete_segment_allocations_and_value_lineage_in_report": true
+  },
+  "samples": {
+    "3849": {
+      "video_id": "3571539122",
+      "qid": 6,
+      "question_type": "TC",
+      "target": "E",
+      "video_grid_thw": [6, 20, 28],
+      "source_visual_tokens": 840,
+      "result_visual_tokens": 84,
+      "segment_sizes": [1, 1, 1, 1, 1, 1],
+      "single_frame_dtm_tokens": 30,
+      "multi_frame_dtm_tokens": 0,
+      "overlapping_assigned_sources": 0,
+      "baseline_prefill_length": 894,
+      "compressed_prefill_length": 138,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "all_checks_passed": true
+    },
+    "442": {
+      "video_id": "3064389881",
+      "qid": 2,
+      "question_type": "TN",
+      "target": "D",
+      "video_grid_thw": [13, 18, 26],
+      "source_visual_tokens": 1521,
+      "result_visual_tokens": 143,
+      "segment_sizes": [2, 1, 1, 2, 3, 2, 1, 1],
+      "single_frame_dtm_tokens": 16,
+      "multi_frame_dtm_tokens": 36,
+      "overlapping_assigned_sources": 0,
+      "baseline_prefill_length": 1590,
+      "compressed_prefill_length": 212,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "all_checks_passed": true
+    },
+    "28": {
+      "video_id": "6097011028",
+      "qid": 8,
+      "question_type": "CW",
+      "target": "B",
+      "video_grid_thw": [23, 16, 30],
+      "source_visual_tokens": 2760,
+      "result_visual_tokens": 276,
+      "segment_sizes": [4, 1, 6, 2, 4, 4, 1, 1],
+      "single_frame_dtm_tokens": 12,
+      "multi_frame_dtm_tokens": 80,
+      "overlapping_assigned_sources": 672,
+      "baseline_prefill_length": 2830,
+      "compressed_prefill_length": 346,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "all_checks_passed": true
+    },
+    "205": {
+      "video_id": "2597214137",
+      "qid": 6,
+      "question_type": "DL",
+      "target": "A",
+      "video_grid_thw": [44, 18, 26],
+      "source_visual_tokens": 5148,
+      "result_visual_tokens": 481,
+      "segment_sizes": [1, 14, 2, 1, 2, 3, 11, 10],
+      "single_frame_dtm_tokens": 8,
+      "multi_frame_dtm_tokens": 165,
+      "overlapping_assigned_sources": 3850,
+      "baseline_prefill_length": 5195,
+      "compressed_prefill_length": 528,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "all_checks_passed": true
+    }
+  },
+  "verified_invariants": [
+    "compression callback and native Qwen final-block signal capture invoked exactly once per compressed sample",
+    "non-identity visual-token reduction from 840/1521/2760/5148 to 84/143/276/481",
+    "projected, native final-block, projected frame-global, and mean-received-saliency signals are finite and source-aligned",
+    "Qwen2.5 native window order is restored to the dense raster before raw and saliency alignment",
+    "DySeg segment sizes cover every native temporal slice and every context allocation is recorded",
+    "STPrune retains the canonical stable per-slice saliency top-k",
+    "single-frame and multi-frame DTM paths both execute across the fixed sample set",
+    "complete potentially overlapping DTM value lineage and source-ordered sampled centers are recorded",
+    "authoritative video_grid_thw and second_per_grid_ts remain unchanged",
+    "LayoutDelta, source/result placeholders, and decoder length reductions agree exactly",
+    "native three-axis MRoPE columns are gathered exactly from sparse representative anchors",
+    "inference labels remain absent and attention mask, position IDs, and cache positions align at prefill",
+    "baseline and compressed cached decode each use three unit-query steps",
+    "baseline and compressed logits are finite",
+    "bounded four-token generation completes for all four fixed samples"
+  ],
+  "installed_regression": {
+    "local_targeted": "77 passed, 12 skipped",
+    "local_aggregate": "1057 passed, 214 skipped",
+    "installed_pre_activation_targeted": "89 passed",
+    "installed_post_activation_targeted": "89 passed",
+    "installed_post_activation_aggregate": "1425 passed, 1 skipped",
+    "cuda_visible_devices": "",
+    "observed_gpu_peak_mib": 0
+  },
+  "attempts": [
+    {
+      "attempt": "processor-preflight",
+      "run_id": "20260826T104003-992ba51-fastvid-qwen25-gpu0-a1",
+      "status": "passed",
+      "gpu_visible": false,
+      "model_loaded": false
+    },
+    {
+      "attempt": "launch-preparation-1",
+      "run_id": "20260826T104400-992ba51-fastvid-qwen25-gpu1-a1",
+      "status": "failed_before_upload",
+      "error": "the unique run root did not yet exist for the SFTP temporary file",
+      "recovery": "created the exact run root with mode 775 matching the existing run root, then retried the atomic upload",
+      "model_loaded": false,
+      "gpu_allocated": false
+    },
+    {
+      "attempt": 1,
+      "run_id": "20260826T104400-992ba51-fastvid-qwen25-gpu1-a1",
+      "status": "passed",
+      "physical_gpu": 1
+    }
+  ],
+  "independent_artifact_validation": {
+    "status": "passed",
+    "attempts": 1,
+    "scope": "read-only scope, provenance, checkpoint, preflight, dataset, GPU, algorithm, layout, grid/timing, MRoPE, placeholder, decoder, generation, artifact, size, and SHA-256 assertions",
+    "artifacts_modified": false
+  },
+  "boundaries": {
+    "full_nextqa_benchmark": false,
+    "paper_quality_or_efficiency_reproduction": false,
+    "convergence_claim": false,
+    "training_claim": false
+  },
+  "recorded_at": "2026-08-26T10:44:00+08:00"
+}

@@ -1,0 +1,203 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "support_unit": {
+    "algorithm": "vqtoken",
+    "variant": "vqtoken.video",
+    "backbone": "llava_onevision",
+    "target_modality": "video",
+    "phase": "generate",
+    "binding": "vqtoken.video.llava_onevision"
+  },
+  "canonical_config": {
+    "num_clusters": 32,
+    "adaptive": false,
+    "use_cross_attention": false
+  },
+  "source_revisions": {
+    "installed_kernel_and_contract": "99d6c31247ddf9f37cecdce88c542d90b0e381ca",
+    "real_checkpoint_runner": "3bcfd8befedc92cd9dd76c4b5f93bbdb7df7ace4",
+    "lmms_eval": "e9a5309ea6f4b8edacb813823cf8fdfd24bbd115"
+  },
+  "environment": {
+    "name": "mllm-comp-platform-dev",
+    "python": "3.10.20",
+    "torch": "2.8.0+cu128",
+    "transformers": "4.57.3",
+    "offline": true,
+    "package_or_environment_changes": false,
+    "downloads": false
+  },
+  "checkpoint": {
+    "path": "/home/WuHao/checkpoints/ckpts-vlm/llava-onevision-qwen2-0.5b-ov",
+    "total_weight_bytes": 1787335336,
+    "dtype": "float16",
+    "attention_implementation": "sdpa",
+    "local_files_only": true
+  },
+  "dataset": {
+    "task": "nextqa_mc_test",
+    "split": "test",
+    "parquet": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet",
+    "parquet_rows": 8564,
+    "parquet_size_bytes": 898657,
+    "video_root": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo",
+    "doc_ids": [3849, 442, 28, 205],
+    "decoded_frames_per_sample": 32,
+    "decode_policy": "uniform_local_decord"
+  },
+  "generation": {
+    "batch_size": 1,
+    "max_new_tokens": 4,
+    "do_sample": false,
+    "use_cache": true,
+    "baseline_and_compressed_same_preprocessing": true,
+    "finite_logits_required": true
+  },
+  "gpu": {
+    "physical_device": 0,
+    "name": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+    "free_before_mib": 97212,
+    "estimated_peak_mib": 24576,
+    "safety_margin_mib": 16384,
+    "required_free_mib": 40960,
+    "observed_peak_allocated_mib": 5392.323,
+    "observed_peak_reserved_mib": 10072.0,
+    "free_after_workload_before_process_exit_mib": 86470,
+    "free_after_process_exit_mib": 97212,
+    "compute_processes_before": [],
+    "concurrency_decision": "single_first_evidence_job_on_gpu0; gpu1_unassigned",
+    "other_processes_modified": false
+  },
+  "command": [
+    "/home/WuHao/miniconda3/envs/mllm-comp-platform-dev/bin/python",
+    "scripts/diagnostics/validate_llava_video_compression_checkpoint.py",
+    "--checkpoint",
+    "/home/WuHao/checkpoints/ckpts-vlm/llava-onevision-qwen2-0.5b-ov",
+    "--nextqa-parquet",
+    "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet",
+    "--video-root",
+    "/home/WuHao/datasets/lmms_eval_datasets/NExTQA",
+    "--output-dir",
+    "outputs/video_compression/vqtoken/llava_onevision/inference/20260826T060643-3bcfd8b-vqtoken-llava-gpu0-a2",
+    "--code-revision",
+    "3bcfd8befedc92cd9dd76c4b5f93bbdb7df7ace4",
+    "--physical-gpu",
+    "0",
+    "--max-new-tokens",
+    "4",
+    "--estimated-peak-mib",
+    "24576",
+    "--safety-margin-mib",
+    "16384"
+  ],
+  "artifacts": {
+    "report": {
+      "path": "outputs/video_compression/vqtoken/llava_onevision/inference/20260826T060643-3bcfd8b-vqtoken-llava-gpu0-a2/report.json",
+      "sha256": "467de499a06840c7e809d1a2614435189eb2d3bc486cf473daf78c7f7a793cc2",
+      "size_bytes": 4942640
+    },
+    "lmms_eval_samples": {
+      "path": "outputs/video_compression/vqtoken/llava_onevision/inference/20260826T060643-3bcfd8b-vqtoken-llava-gpu0-a2/samples.jsonl",
+      "sha256": "c3a47861ec4a8c526dfd584cadb459aac45b98813cc87e77b5b6272c7a610313",
+      "size_bytes": 1916
+    },
+    "launch_manifest": {
+      "path": "outputs/video_compression/vqtoken/llava_onevision/inference/20260826T060643-3bcfd8b-vqtoken-llava-gpu0-a2/launch_manifest.json",
+      "sha256": "5707c96632cfa5ee5cfe83962fe65d1e2fd34719aba5e5baf76825f85820682e"
+    },
+    "log": {
+      "path": "logs/video_compression/vqtoken/llava_onevision/inference/20260826T060643-3bcfd8b-vqtoken-llava-gpu0-a2/run.log",
+      "sha256": "101f5b2e44bce7b4ffea2f6ad34623ef5c8c9fba9acd886e1fbeaa5d04589909"
+    }
+  },
+  "samples": {
+    "3849": {
+      "video_id": "3571539122",
+      "qid": 6,
+      "question_type": "TC",
+      "target": "E",
+      "source_visual_tokens": 6272,
+      "result_visual_tokens": 32,
+      "baseline_prefill_length": 6326,
+      "compressed_prefill_length": 86,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "all_checks_passed": true
+    },
+    "442": {
+      "video_id": "3064389881",
+      "qid": 2,
+      "question_type": "TN",
+      "target": "D",
+      "source_visual_tokens": 6272,
+      "result_visual_tokens": 32,
+      "baseline_prefill_length": 6341,
+      "compressed_prefill_length": 101,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "all_checks_passed": true
+    },
+    "28": {
+      "video_id": "6097011028",
+      "qid": 8,
+      "question_type": "CW",
+      "target": "B",
+      "source_visual_tokens": 6272,
+      "result_visual_tokens": 32,
+      "baseline_prefill_length": 6342,
+      "compressed_prefill_length": 102,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "all_checks_passed": true
+    },
+    "205": {
+      "video_id": "2597214137",
+      "qid": 6,
+      "question_type": "DL",
+      "target": "A",
+      "source_visual_tokens": 6272,
+      "result_visual_tokens": 32,
+      "baseline_prefill_length": 6319,
+      "compressed_prefill_length": 79,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "all_checks_passed": true
+    }
+  },
+  "verified_invariants": [
+    "compression callback invoked exactly once per sample",
+    "non-identity visual-token reduction",
+    "canonical fixed K equals 32",
+    "LayoutDelta and native splice source/result counts agree",
+    "decoder prefill length reduction equals visual-token reduction",
+    "LLaVA structural newline tokens are preserved",
+    "exactly one video placeholder is legalized",
+    "inference labels remain absent",
+    "attention mask, position IDs, and cache positions align at decoder prefill",
+    "baseline and compressed logits are finite",
+    "generation is bounded and completes"
+  ],
+  "attempts": [
+    {
+      "attempt": 1,
+      "run_id": "20260826T060357-e26e5dd-vqtoken-llava-gpu0",
+      "status": "failed_before_checkpoint_load",
+      "error": "PyTorch rejected reset_peak_memory_stats before CUDA context initialization",
+      "gpu_peak_mib": 0,
+      "recovery": "removed the unnecessary reset because every runner invocation uses a fresh process"
+    },
+    {
+      "attempt": 2,
+      "run_id": "20260826T060643-3bcfd8b-vqtoken-llava-gpu0-a2",
+      "status": "passed"
+    }
+  ],
+  "boundaries": {
+    "full_nextqa_benchmark": false,
+    "paper_quality_or_efficiency_reproduction": false,
+    "convergence_claim": false,
+    "training_claim": false
+  },
+  "recorded_at": "2026-08-26T06:06:43+08:00"
+}

@@ -1,0 +1,50 @@
+# Baseline template. launch.py injects either no stage or one real encoder Top-K stage.
+experiment:
+  name: mmsufinal_silent_redundancy
+  run_id: null
+  seed: 42
+
+backbone:
+  name: qwen25_omni
+  model_path: '${CHECKPOINT_PATH}'
+  model_revision: null
+  trust_remote_code: false
+  config:
+    use_audio_in_video: false
+    sampling_rate: 16000
+    torch_dtype: bfloat16
+    attn_implementation: flash_attention_2
+    enable_talker: false
+
+pipeline:
+  stages: []
+
+analysis: {}
+train: {}
+
+eval:
+  backend: lmms_eval
+  runtime_mode: default
+  compression_mode: none
+  target: baseline
+  checkpoint_path: '${CHECKPOINT_PATH}'
+  tasks: [mmsufinal]
+  runtime_batch_size: 1
+  num_processes: 4
+  distributed_launcher: accelerate
+  main_process_port: 29720
+  sample_limit: null
+  generation: {}
+  args:
+    use_audio_in_video: false
+    log_samples: true
+    verbosity: INFO
+
+data:
+  dataset_id: null
+  dataset_commit: null
+  sample_split: test
+
+output:
+  run_dir: '${ANALYSIS_RUN_DIR}'
+  manifest_path: '${ANALYSIS_RUN_DIR}/manifest.json'

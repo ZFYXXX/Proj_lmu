@@ -1,0 +1,40 @@
+experiment:
+  name: qwen25_vl_projector_quality_baseline_k64
+  seed: 42
+backbone:
+  name: qwen25_vl
+  model_path: /home/ZhouFengyu/fastv-repro/models/Qwen2.5-VL-3B-Instruct
+  model_revision: 1b5a7674d40a0ac9acef541a46fed12d710bd36b
+  trust_remote_code: false
+  config:
+    torch_dtype: bfloat16
+    attn_implementation: sdpa
+    model_load_kwargs: {local_files_only: true}
+    processor_load_kwargs:
+      local_files_only: true
+      use_fast: false
+      min_pixels: 200704
+      max_pixels: 1605632
+pipeline:
+  stages: []
+analysis: {}
+train: {}
+eval:
+  backend: lmms_eval
+  compression_mode: none
+  target: baseline
+  checkpoint_path: /home/ZhouFengyu/fastv-repro/models/Qwen2.5-VL-3B-Instruct
+  tasks: [qwen25_projector_quality_textvqa, qwen25_projector_quality_chartqa, qwen25_projector_quality_gqa, qwen25_projector_quality_pope_random]
+  runtime_batch_size: 1
+  num_processes: 1
+  sample_limit: 4
+  generation: {max_new_tokens: 32, temperature: 0.0, do_sample: false, use_cache: true}
+  args:
+    force_simple: true
+    log_samples: true
+    verbosity: INFO
+    include_path: /home/ZhouFengyu/fastv-repro/MLLM-Comp-Platform/MLLM-Comp-Platform-main/configs/eval/lmms_eval/tasks/qwen25_vl_projector_quality
+data: {dataset_id: local-projector-quality, sample_split: validation}
+output:
+  run_dir: outputs/analysis/projector_quality_k64_4each/baseline_retry
+  manifest_path: outputs/analysis/projector_quality_k64_4each/baseline_retry/manifest.json

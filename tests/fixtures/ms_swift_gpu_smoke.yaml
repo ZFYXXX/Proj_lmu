@@ -1,0 +1,58 @@
+experiment:
+  name: ms_swift_qwen25_omni_gpu_smoke
+  run_id: ms_swift_qwen25_omni_gpu_smoke
+  seed: 42
+
+backbone:
+  name: qwen25_omni
+  model_path: "${QWEN25_OMNI_MODEL_PATH}"
+  model_revision: null
+  trust_remote_code: false
+
+pipeline:
+  stages: []
+
+analysis: {}
+
+train:
+  backend: ms_swift
+  compression_mode: none
+  checkpoint_in: null
+  resume: null
+  max_steps: 1
+  args:
+    datasets: ["${MLLM_COMP_SWIFT_SMOKE_DATASET}"]
+    trainable_branch: thinker
+    enable_audio_output: false
+    torch_dtype: bfloat16
+    attn_impl: flash_attn
+    tuner_type: lora
+    per_device_train_batch_size: 1
+    gradient_accumulation_steps: 1
+    learning_rate: 0.0001
+    lora_rank: 4
+    lora_alpha: 8
+    target_modules: [all-linear]
+    freeze_vit: true
+    freeze_aligner: true
+    max_length: 128
+    gradient_checkpointing: false
+    split_dataset_ratio: 0
+    dataset_num_proc: 1
+    dataloader_num_workers: 0
+    load_from_cache_file: false
+    logging_steps: 1
+    save_steps: 1
+    save_total_limit: 1
+    report_to: [none]
+
+eval: {}
+
+data:
+  dataset_id: "${MLLM_COMP_SWIFT_SMOKE_DATASET}"
+  dataset_commit: null
+  sample_split: train
+
+output:
+  run_dir: "${MLLM_COMP_SWIFT_SMOKE_OUTPUT}"
+  manifest_path: "${MLLM_COMP_SWIFT_SMOKE_OUTPUT}/manifest.json"

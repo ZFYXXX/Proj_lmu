@@ -1,0 +1,71 @@
+experiment:
+  name: qwen25_vl_imagellm_visionzip_forward_probe
+  run_id: null
+  seed: 42
+
+backbone:
+  name: qwen25_vl
+  model_path: ${QWEN25_VL_MODEL_PATH}
+  model_revision: null
+  trust_remote_code: false
+  config:
+    torch_dtype: bfloat16
+    attn_implementation: flash_attention_2
+    model_load_kwargs: {local_files_only: true}
+    processor_load_kwargs:
+      local_files_only: true
+      min_pixels: 200704
+      max_pixels: 1605632
+
+pipeline:
+  stages:
+    - name: visionzip_image_projector
+      enabled: true
+      placement: projector_level
+      execution_phase: forward
+      plugin: visionzip
+      algorithm: visionzip
+      variant: visionzip.image
+      binding: visionzip.image.qwen25_vl
+      method: token_compression
+      object_family: tensor_slot
+      object_subtype: post_encoder_pre_llm_image_features
+      modalities: [image]
+      conditioning_modalities: []
+      preserved_modalities: [text, video, audio]
+      coupling_policy: independent
+      media_alignment: spatial
+      operation: {type: keep, budget_type: keep_count, target_site: post_encoder_pre_llm}
+      criterion: {score_source: vision_attention_and_keys, ranking: dominant_then_contextual}
+      schedule:
+        granularity: per_image
+        budgets: 32
+        selector: {modality: image}
+      config:
+        budget: 32
+        dominant_weight: 27
+        contextual_weight: 5
+
+analysis: {}
+train: {compression_mode: none}
+eval:
+  backend: lmms_eval
+  compression_mode: compressed
+  target: compressed
+  checkpoint_path: ${QWEN25_VL_MODEL_PATH}
+  tasks: [mme]
+  runtime_batch_size: 1
+  num_processes: 1
+  sample_limit: 2
+  generation: {}
+  args:
+    seed: [0, 1234, 1234, 1234]
+    force_simple: true
+    forward_only_probe: true
+    log_samples: true
+    verbosity: INFO
+
+data: {dataset_id: MME, dataset_commit: null, sample_split: test}
+output:
+  run_dir: ${MLLM_COMP_IMAGELLM_PROBE_ROOT}/visionzip
+  manifest_path: ${MLLM_COMP_IMAGELLM_PROBE_ROOT}/visionzip/manifest.json

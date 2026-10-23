@@ -1,0 +1,33 @@
+# Same native Qwen2.5-Omni LTBM binding as the platform's LTBM eval config.
+# launch.py only changes keep_ratio and window_size for experiment 13.
+name: audio_ltbm
+placement: projector_level
+execution_phase: generate
+plugin: local_temporal_bipartite_merging_audio
+algorithm: local_temporal_bipartite_merging_audio
+variant: local_temporal_bipartite_merging_audio.audio
+binding: local_temporal_bipartite_merging_audio.audio.qwen25_omni
+method: token_compression
+object_family: tensor_slot
+object_subtype: audio_encoder_output_pre_projector
+modalities: [audio]
+target_modalities: [audio]
+conditioning_modalities: []
+preserved_modalities: [text, image, video]
+coupling_policy: independent
+media_alignment: temporal
+token_roles: [observation]
+operation:
+  type: merge
+  target_site: audio_encoder_output_pre_projector
+  merge_value: mean
+criterion:
+  ranking: descending
+  score_source: projector_token_cosine
+  pairing: alternating_bipartite_local
+  window_size: 8
+schedule:
+  granularity: per_audio
+  keep_ratio: 0.5
+  minimum_keep_tokens: 1
+  selector: {modality: audio}

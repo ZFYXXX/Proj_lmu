@@ -1,0 +1,73 @@
+experiment:
+  name: qwen25_omni_audio_analysis_matrix_smoke
+  seed: 42
+
+backbone:
+  name: qwen25_omni
+  model_id: Qwen/Qwen2.5-Omni-3B
+  model_revision: null
+  trust_remote_code: false
+  config:
+    torch_dtype: bfloat16
+    attn_implementation: eager
+    enable_talker: false
+
+pipeline:
+  stages: []
+
+analysis:
+  backend: lmms_eval
+  compression_mode: none
+  phase: pre_compression
+  tasks: [mmau_test_mini]
+  runtime_batch_size: 1
+  sample_limit: 1
+  probes:
+    - name: representation_dynamics
+      enabled: true
+      layers: [0]
+      token_groups: [system, text, audio]
+      save_raw: false
+    - name: layer_importance
+      enabled: true
+      layers: [0]
+      operations: [layer, attn, ffn]
+      target_token_types: [audio]
+      attn_edges: [a2a, a2t, t2a, t2t]
+      save_raw: false
+    - name: late_injection_early_exit
+      enabled: true
+      target_modality: audio
+      layers: [0]
+      experiment_types: [early_exit, late_injection]
+      save_raw: false
+    - name: residual_stream_decomposition
+      enabled: true
+      layers: [0]
+      causal_layers: [0]
+      causal_operations: [attn, ffn]
+      token_groups: [all, system, text, audio]
+      save_raw: false
+    - name: prediction_dynamics
+      enabled: true
+      layers: [0]
+      top_k: 10
+      save_raw: false
+    - name: attention_flow
+      enabled: true
+      layers: [0]
+      token_groups: [system, text, audio]
+      layer_batch_size: 1
+      save_raw: false
+    - name: hierarchical_taylor
+      enabled: true
+      target_modality: audio
+      layers: [0]
+      layer_batch_size: 1
+      ffn_bottom_fraction: 0.3
+      causal_validation:
+        enabled: false
+        component_count: 1
+        kinds: [path, head, ffn_neuron, sublayer, layer]
+        seed: 42
+      save_raw: false

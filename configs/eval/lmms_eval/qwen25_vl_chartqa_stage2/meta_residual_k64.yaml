@@ -1,0 +1,54 @@
+experiment: {name: qwen25_vl_chartqa_stage2_meta_residual_k64, seed: 42}
+backbone:
+  name: qwen25_vl
+  model_path: /home/ZhouFengyu/fastv-repro/models/Qwen2.5-VL-3B-Instruct
+  model_revision: 1b5a7674d40a0ac9acef541a46fed12d710bd36b
+  trust_remote_code: false
+  config:
+    torch_dtype: bfloat16
+    attn_implementation: eager
+    model_load_kwargs: {local_files_only: true}
+    processor_load_kwargs: {local_files_only: true, use_fast: false, min_pixels: 200704, max_pixels: 1605632}
+pipeline:
+  stages:
+    - name: feature_anchor_meta_residual_k64_generate
+      enabled: true
+      placement: projector_level
+      execution_phase: generate
+      plugin: feature_anchor_mean
+      algorithm: feature_anchor_mean
+      variant: feature_anchor_mean.image
+      binding: feature_anchor_mean.image.qwen25_vl
+      method: token_compression
+      object_family: tensor_slot
+      object_subtype: merged_image_features
+      modalities: [image]
+      conditioning_modalities: []
+      preserved_modalities: [text, video, audio]
+      coupling_policy: independent
+      media_alignment: spatial
+      operation: {type: merge, target_site: post_vision_merger_pre_llm_scatter}
+      criterion: {score_source: normalized_visual_features, ranking: deterministic_farthest_first_cosine}
+      schedule: {granularity: per_image, budgets: 64, selector: {modality: image}}
+      config:
+        target_count: 64
+        stage2_variant: meta_residual
+        bottleneck_dim: 64
+        projector_checkpoint: /home/ZhouFengyu/fastv-repro/MLLM-Comp-Platform/MLLM-Comp-Platform-main/outputs/train/qwen25_vl/stage2_pilot_20261018/meta_residual/projector.safetensors
+        trainable_projector: false
+analysis: {}
+train: {}
+eval:
+  backend: lmms_eval
+  compression_mode: compressed
+  target: compressed
+  checkpoint_path: /home/ZhouFengyu/fastv-repro/models/Qwen2.5-VL-3B-Instruct
+  tasks: [qwen25_vl_chartqa_full]
+  runtime_batch_size: 1
+  num_processes: 1
+  generation: {max_new_tokens: 16, temperature: 0.0, do_sample: false, use_cache: true}
+  args: {force_simple: true, log_samples: true, verbosity: INFO, include_path: /home/ZhouFengyu/fastv-repro/MLLM-Comp-Platform/MLLM-Comp-Platform-main/configs/eval/lmms_eval/tasks/qwen25_vl_chartqa_full}
+data: {dataset_id: local-chartqa, sample_split: test}
+output:
+  run_dir: outputs/eval/qwen25_vl/chartqa_stage2_k64_20261018/meta_residual
+  manifest_path: outputs/eval/qwen25_vl/chartqa_stage2_k64_20261018/meta_residual/manifest.json

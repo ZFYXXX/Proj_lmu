@@ -1,0 +1,12 @@
+[submodule "third_party/frameworks/lmms-eval"]
+	path = third_party/frameworks/lmms-eval
+	url = https://github.com/HarrisonWu42/lmms-eval.git
+	branch = comp-v0.7.2
+[submodule "third_party/frameworks/ms-swift"]
+	path = third_party/frameworks/ms-swift
+	url = https://github.com/HarrisonWu42/ms-swift.git
+	branch = comp-v4.4.0
+[submodule "third_party/backbones/LLaVA-NeXT"]
+	path = third_party/backbones/LLaVA-NeXT
+	url = https://github.com/HarrisonWu42/LLaVA-NeXT.git
+	branch = main

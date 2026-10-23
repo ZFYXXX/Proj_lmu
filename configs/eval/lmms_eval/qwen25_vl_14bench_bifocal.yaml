@@ -1,0 +1,102 @@
+experiment:
+  name: qwen25_vl_14bench_bifocal
+  run_id: null
+  seed: 42
+
+backbone:
+  name: qwen25_vl
+  model_path: ${QWEN25_VL_MODEL_PATH}
+  model_revision: null
+  trust_remote_code: false
+  config:
+    torch_dtype: bfloat16
+    attn_implementation: flash_attention_2
+    model_load_kwargs:
+      local_files_only: true
+    processor_load_kwargs:
+      local_files_only: true
+      min_pixels: 200704
+      max_pixels: 1605632
+
+pipeline:
+  stages:
+    - name: bifocal_stage1_image_projector
+      enabled: true
+      placement: projector_level
+      execution_phase: generate
+      plugin: bifocal
+      algorithm: bifocal
+      variant: bifocal.image
+      binding: bifocal.image.qwen25_vl
+      method: token_compression
+      object_family: tensor_slot
+      object_subtype: merged_image_features
+      modalities: [image]
+      conditioning_modalities: [text]
+      preserved_modalities: [text, video, audio]
+      coupling_policy: independent
+      media_alignment: spatial
+      operation: {type: merge, target_site: post_vision_merger_pre_llm_scatter}
+      criterion: {score_source: vit_column_mass_and_query_relevance}
+      schedule:
+        granularity: per_image
+        selector: {modality: image}
+      config:
+        s1_frac: 0.25
+        block: auto
+        coarse_frac: 0.29
+        k_frac: 0.75
+        clsr: "1"
+        no_query: false
+        respool: true
+        respool_pos: false
+        metric: vit_attn
+        metric_agg: mass
+        vit_block: 31
+        rank_map: ""
+        rank_mix: 0.0
+        nrm_sign: 1
+        sink_clamp: 0.0
+        s1_merge: ""
+        s1_mu: 1.0
+        word_space: 0
+
+analysis: {}
+train: {compression_mode: none}
+
+eval:
+  backend: lmms_eval
+  compression_mode: compressed
+  target: compressed
+  checkpoint_path: ${QWEN25_VL_MODEL_PATH}
+  tasks:
+    - gqa
+    - vqav2_val
+    - ok_vqa_val2014
+    - textvqa_val
+    - docvqa_val
+    - ocrbench
+    - scienceqa_img
+    - ai2d
+    - mmstar
+    - refcoco_bbox_rec_testA
+    - refcoco_bbox_rec_testB
+    - refcoco+_bbox_rec_testA
+    - refcoco+_bbox_rec_testB
+    - refcocog_bbox_rec_test
+  runtime_batch_size: 1
+  num_processes: 1
+  sample_limit: null
+
+  generation: {}
+  args:
+    seed: [0, 1234, 1234, 1234]
+    force_simple: true
+    forward_only_probe: false
+    log_samples: true
+    verbosity: DEBUG
+
+data:
+  dataset_id: null
+  dataset_commit: null
+  sample_split: validation

@@ -1,0 +1,84 @@
+# Target final audio-token retention: 25%; layer/chunk rounding changes the realized ratio.
+# fixed_ratio merging at layers 2,5,...,29 for a 32-layer encoder.
+experiment:
+  name: atome_keep25_mmaunew3
+  run_id: null
+  seed: 42
+backbone:
+  name: qwen25_omni
+  model_path: ${QWEN25_OMNI_MODEL_PATH}
+  model_revision: null
+  trust_remote_code: false
+  config:
+    use_audio_in_video: false
+    sampling_rate: 16000
+    torch_dtype: bfloat16
+    attn_implementation: flash_attention_2
+    enable_talker: false
+pipeline:
+  stages:
+    - name: audio_adjacent_token_merging
+      placement: encoder_level
+      execution_phase: generate
+      plugin: adjacent_token_merging_audio
+      algorithm: adjacent_token_merging_audio
+      variant: adjacent_token_merging_audio.audio
+      binding: adjacent_token_merging_audio.audio.qwen25_omni
+      enabled: true
+      method: token_compression
+      object_family: tensor_slot
+      object_subtype: audio_encoder_layer_post_mhsa_pre_ffn
+      modalities:
+        - audio
+      target_modalities:
+        - audio
+      conditioning_modalities: []
+      preserved_modalities:
+        - text
+        - image
+        - video
+      coupling_policy: independent
+      media_alignment: temporal
+      token_roles:
+        - observation
+      operation:
+        type: merge
+        target_site: audio_encoder_layer_post_mhsa_pre_ffn
+        merge_value: mean
+      criterion:
+        policy: fixed_ratio
+        score_source: encoder_key_cosine
+        pairing: disjoint_adjacent
+      schedule:
+        merge_ratio: 0.14
+      activation_scope:
+        first_layer: 2
+        layer_interval: 3
+analysis: {}
+train: {}
+eval:
+  backend: lmms_eval
+  runtime_mode: default
+  compression_mode: compressed
+  target: compressed
+  checkpoint_path: ${QWEN25_OMNI_MODEL_PATH}
+  tasks:
+    - mmaunew3
+  runtime_batch_size: 1
+  num_processes: 4
+  distributed_launcher: accelerate
+  main_process_port: 29635
+  sample_limit: null
+  generation:
+    use_cache: true
+  args:
+    use_audio_in_video: false
+    log_samples: true
+    verbosity: INFO
+data:
+  dataset_id: null
+  dataset_commit: null
+  sample_split: test
+output:
+  run_dir: ${MLLM_COMP_EVAL_RUN_DIR}
+  manifest_path: ${MLLM_COMP_EVAL_RUN_DIR}/manifest.json

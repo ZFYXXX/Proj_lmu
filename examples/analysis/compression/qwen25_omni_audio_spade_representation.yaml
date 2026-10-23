@@ -1,0 +1,37 @@
+experiment: {name: qwen25_omni_audio_spade_representation, seed: 42}
+backbone:
+  name: qwen25_omni
+  model_id: Qwen/Qwen2.5-Omni-3B
+  model_revision: null
+  trust_remote_code: false
+  config: {torch_dtype: bfloat16, attn_implementation: eager, enable_talker: false}
+pipeline:
+  stages:
+    - name: spade_operation_only
+      placement: llm_level
+      execution_phase: prepare
+      plugin: structured_llm_layer_pruning
+      algorithm: structured_llm_layer_pruning
+      variant: structured_llm_layer_pruning.audio
+      binding: structured_llm_layer_pruning.audio.qwen25_omni
+      method: operation_compression
+      object_family: module_unit
+      object_subtype: transformer_layer
+      modalities: [audio]
+      target_modalities: [audio]
+      conditioning_modalities: []
+      preserved_modalities: [text, image, video]
+      coupling_policy: independent
+      media_alignment: none
+      operation: {type: prune, target_site: llm.layers, target_scope: llm, target_kind: layer, apply_mode: structural_rewrite, shape_effect: remove_module}
+      criterion: {selection_source: explicit}
+      activation_scope: {layers: [8]}
+analysis:
+  backend: lmms_eval
+  compression_mode: compressed
+  phase: post_compression
+  tasks: [mmau_test_mini]
+  runtime_batch_size: 1
+  sample_limit: 1
+  probes:
+    - {name: representation_dynamics, enabled: true, layers: [0], token_groups: [text, audio], save_raw: false}

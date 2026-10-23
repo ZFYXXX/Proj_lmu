@@ -1,0 +1,52 @@
+experiment:
+  name: qwen25_omni_3b_sft
+  seed: 42
+
+backbone:
+  name: qwen25_omni
+  # 由配套脚本或当前 shell 提供；CLI --checkpoint 可临时覆盖。
+  model_path: '${QWEN25_OMNI_MODEL_PATH}'
+  trust_remote_code: false
+
+train:
+  backend: ms_swift
+  compression_mode: none
+  # 一步只用于验证训练链路，不代表收敛或质量。
+  max_steps: 1
+  args:
+    # train.args 由 ms-swift 拥有；这里使用配套的最小数据集。
+    datasets: ['${MLLM_COMP_TRAIN_DATASET}']
+    # Qwen2.5-Omni 当前只训练 Thinker，不训练 Talker。
+    trainable_branch: thinker
+    enable_audio_output: false
+    torch_dtype: bfloat16
+    attn_impl: flash_attn
+    tuner_type: lora
+    per_device_train_batch_size: 1
+    gradient_accumulation_steps: 1
+    learning_rate: 0.0001
+    lora_rank: 4
+    lora_alpha: 8
+    target_modules: [all-linear]
+    freeze_vit: true
+    freeze_aligner: true
+    max_length: 128
+    gradient_checkpointing: false
+    split_dataset_ratio: 0
+    dataset_num_proc: 1
+    dataloader_num_workers: 0
+    load_from_cache_file: false
+    logging_steps: 1
+    save_steps: 1
+    save_total_limit: 1
+    report_to: [none]
+
+data:
+  # data 记录数据身份；ms-swift 实际输入来自 train.args.datasets。
+  dataset_id: '${MLLM_COMP_TRAIN_DATASET}'
+  sample_split: train
+
+output:
+  # 每次正式运行应设置新的目录。
+  run_dir: '${MLLM_COMP_TRAIN_RUN_DIR}'
+  manifest_path: '${MLLM_COMP_TRAIN_RUN_DIR}/manifest.json'

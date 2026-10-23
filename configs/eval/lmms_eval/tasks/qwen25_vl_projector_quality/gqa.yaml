@@ -1,0 +1,18 @@
+include: _template.yaml
+task: qwen25_projector_quality_gqa
+dataset_kwargs:
+  data_files:
+    testdev: /home/YinPeiran/datasets/lmms_eval_datasets/GQA/testdev_balanced_instructions/testdev-00000-of-00001.parquet
+  cache_dir: /home/ZhouFengyu/fastv-repro/MLLM-Comp-Platform/MLLM-Comp-Platform-main/outputs/analysis/projector_quality_local_cache
+test_split: testdev
+doc_to_visual: !function utils.gqa_doc_to_visual
+doc_to_text: !function utils.gqa_doc_to_text
+doc_to_target: answer
+metric_list:
+  - metric: exact_match
+    aggregation: mean
+    higher_is_better: true
+    ignore_case: true
+    ignore_punctuation: true
+lmms_eval_specific_kwargs:
+  default: {pre_prompt: "", post_prompt: "\nAnswer the question using a single word or phrase."}

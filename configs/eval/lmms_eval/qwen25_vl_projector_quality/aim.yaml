@@ -1,0 +1,63 @@
+experiment:
+  name: qwen25_vl_projector_quality_aim_k64
+  seed: 42
+backbone:
+  name: qwen25_vl
+  model_path: /home/ZhouFengyu/fastv-repro/models/Qwen2.5-VL-3B-Instruct
+  model_revision: 1b5a7674d40a0ac9acef541a46fed12d710bd36b
+  trust_remote_code: false
+  config:
+    torch_dtype: bfloat16
+    attn_implementation: sdpa
+    model_load_kwargs: {local_files_only: true}
+    processor_load_kwargs:
+      local_files_only: true
+      use_fast: false
+      min_pixels: 200704
+      max_pixels: 1605632
+pipeline:
+  stages:
+    - name: aim_projector_quality
+      enabled: true
+      placement: projector_level
+      execution_phase: forward
+      plugin: aim
+      algorithm: aim
+      variant: aim.image
+      binding: aim.image.qwen25_vl
+      method: token_compression
+      object_family: tensor_slot
+      object_subtype: post_encoder_pre_llm_image_features
+      modalities: [image]
+      conditioning_modalities: []
+      preserved_modalities: [text, video, audio]
+      coupling_policy: independent
+      media_alignment: spatial
+      operation: {type: merge, target_site: post_vision_merger_pre_llm_scatter}
+      criterion: {score_source: bipartite_feature_similarity}
+      schedule:
+        granularity: per_image
+        budgets: 64
+        selector: {modality: image}
+      config: {target_count: 64, min_visual_tokens: 1}
+analysis: {}
+train: {}
+eval:
+  backend: lmms_eval
+  compression_mode: compressed
+  target: compressed
+  checkpoint_path: /home/ZhouFengyu/fastv-repro/models/Qwen2.5-VL-3B-Instruct
+  tasks: [textvqa_val, chartqa, gqa, pope_random]
+  runtime_batch_size: 1
+  num_processes: 1
+  sample_limit: 64
+  generation: {max_new_tokens: 32, temperature: 0.0, do_sample: false, use_cache: true}
+  args:
+    force_simple: true
+    log_samples: true
+    verbosity: INFO
+    include_path: /home/ZhouFengyu/fastv-repro/lmms_eval/tasks
+data: {dataset_id: local-projector-quality, sample_split: validation}
+output:
+  run_dir: outputs/analysis/projector_quality_k64_64each/aim
+  manifest_path: outputs/analysis/projector_quality_k64_64each/aim/manifest.json

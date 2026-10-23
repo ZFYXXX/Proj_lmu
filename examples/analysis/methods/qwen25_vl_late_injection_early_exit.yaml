@@ -1,0 +1,33 @@
+experiment:
+  name: qwen25_vl_late_injection_early_exit_example
+  seed: 42
+
+backbone:
+  name: qwen25_vl
+  model_id: Qwen/Qwen2.5-VL-3B-Instruct
+  model_revision: 66285546d2b821cf421d4f5eb2576359d3770cd3
+  trust_remote_code: false
+  config:
+    torch_dtype: bfloat16
+    attn_implementation: eager
+
+pipeline:
+  stages: []
+
+analysis:
+  backend: lmms_eval
+  compression_mode: none
+  phase: pre_compression
+  tasks: [mme]
+  runtime_batch_size: 1
+  sample_limit: 1
+  probes:
+    - name: late_injection_early_exit
+      enabled: true
+      layers: [0]
+      experiment_types: [early_exit, late_injection]
+      early_exit_thresholds: [0]
+      late_injection_thresholds: [0]
+      metrics: [js, changed_prob_on_base_top1, top1_changed]
+      ranking_metric: js
+      save_raw: false

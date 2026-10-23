@@ -1,0 +1,25 @@
+experiment: {name: qwen25_omni_audio_layer_importance_example, seed: 42}
+backbone:
+  name: qwen25_omni
+  model_id: Qwen/Qwen2.5-Omni-3B
+  model_revision: null
+  trust_remote_code: false
+  config: {torch_dtype: bfloat16, attn_implementation: eager, enable_talker: false}
+pipeline: {stages: []}
+analysis:
+  backend: lmms_eval
+  compression_mode: none
+  phase: pre_compression
+  tasks: [mmau_test_mini]
+  runtime_batch_size: 1
+  sample_limit: 1
+  probes:
+    - name: layer_importance
+      enabled: true
+      layers: [0]
+      operations: [layer, attn, ffn]
+      target_token_types: [audio]
+      attn_edges: [a2a, a2t, t2a, t2t]
+      metrics: [js, changed_prob_on_base_top1, top1_changed]
+      ranking_metric: js
+      save_raw: false

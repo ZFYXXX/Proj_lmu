@@ -1,0 +1,18 @@
+# A concise request in the existing schema; identity and modality fields expand
+# from the selected backbone's registry. Both forward and generate exist, so the
+# phase remains explicit. See the full recipe for datasets and training options.
+experiment:
+  name: qwen25_omni_audio_minimal
+backbone:
+  name: qwen25_omni
+  model_path: ${QWEN25_OMNI_MODEL_PATH}
+pipeline:
+  stages:
+    - name: reduce_audio
+      algorithm: segmentwise_topk_audio
+      execution_phase: forward
+      config:
+        keep_ratio: 0.5
+train:
+  backend: ms_swift
+  compression_mode: compressed

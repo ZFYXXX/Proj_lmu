@@ -1,0 +1,16 @@
+include: _template.yaml
+task: qwen25_7b_ratio_ocrbench
+dataset_kwargs:
+  data_files:
+    test: /home/YinPeiran/datasets/lmms_eval_datasets/OCRBench/data/test-00000-of-00001.parquet
+test_split: test
+doc_to_text: !function utils.ocrbench_doc_to_text
+doc_to_target: answer
+process_results: !function utils.ocrbench_process_results
+generation_kwargs: {max_new_tokens: 128, temperature: 0.0, do_sample: false}
+lmms_eval_specific_kwargs:
+  default: {pre_prompt: "", post_prompt: ""}
+metric_list:
+  - metric: ocrbench_accuracy
+    aggregation: mean
+    higher_is_better: true

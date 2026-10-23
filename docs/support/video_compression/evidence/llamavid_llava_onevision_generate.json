@@ -1,0 +1,241 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "support_unit": {
+    "algorithm": "llamavid",
+    "variant": "llamavid.video",
+    "backbone": "llava_onevision",
+    "target_modality": "video",
+    "phase": "generate",
+    "binding": "llamavid.video.llava_onevision"
+  },
+  "canonical_config": {
+    "num_query": 32,
+    "bert_type": "qformer",
+    "compress_type": "mean"
+  },
+  "source_revisions": {
+    "checkpoint_runner_and_runtime_evidence": "eb941dbcdcb56a8b3d751c605761e905d17e5cf1",
+    "fp16_lineage_recovery": "e073208c81003c0f1e456917d8bdc8776b6c9d31",
+    "reference_compression_algorithm": "7e3ae876bc6306a4179f389e5f960225cd9e3a79",
+    "lmms_eval": "e9a5309ea6f4b8edacb813823cf8fdfd24bbd115"
+  },
+  "environment": {
+    "name": "mllm-comp-platform-dev",
+    "python": "3.10.20",
+    "torch": "2.8.0+cu128",
+    "transformers": "4.57.3",
+    "offline_inference": true,
+    "package_or_environment_changes": false,
+    "authorized_modelscope_asset_download": true
+  },
+  "checkpoint": {
+    "path": "/home/WuHao/checkpoints/ckpts-vlm/llava-onevision-qwen2-0.5b-ov",
+    "weight_file": "model.safetensors",
+    "total_weight_bytes": 1787335336,
+    "dtype": "float16",
+    "attention_implementation": "sdpa",
+    "local_files_only": true
+  },
+  "auxiliary_checkpoint": {
+    "role": "local BERT initialization for the trainable LLaMA-VID QFormer",
+    "path": "/home/WuHao/checkpoints/ckpts-aux/bert-base-uncased",
+    "modelscope_model_id": "AI-ModelScope/bert-base-uncased",
+    "modelscope_revision": "e36409b0e76ac5ebd555fdd3938f523ba67c7c23",
+    "loaded_weight_file": "model.safetensors",
+    "loaded_weight_bytes": 440449768,
+    "snapshot_file_count": 17,
+    "snapshot_total_bytes": 3454130910,
+    "hidden_size": 768,
+    "layers": 12,
+    "heads": 12,
+    "base_vocabulary": 30522,
+    "dec_expanded_vocabulary": 30523,
+    "qformer_queries": 32,
+    "cross_attention_layers": 6,
+    "qformer_parameter_count": 131723392,
+    "qformer_trainable": true,
+    "method_specific_checkpoint_required": false,
+    "download_authorized_by_user": true,
+    "local_files_only_for_validation_and_inference": true
+  },
+  "dataset": {
+    "task": "nextqa_mc_test",
+    "split": "test",
+    "parquet": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet",
+    "parquet_rows": 8564,
+    "parquet_size_bytes": 898657,
+    "video_root": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo",
+    "doc_ids": [3849, 442, 28, 205],
+    "decoded_frames_per_sample": 32,
+    "decode_policy": "uniform_local_decord"
+  },
+  "generation": {
+    "batch_size": 1,
+    "max_new_tokens": 4,
+    "do_sample": false,
+    "use_cache": true,
+    "baseline_and_compressed_same_preprocessing": true,
+    "finite_logits_required": true,
+    "signal_capture_delta_per_compressed_sample": 1,
+    "cached_decode_query_length": 1
+  },
+  "gpu": {
+    "physical_device": 0,
+    "name": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+    "free_before_mib": 82244,
+    "estimated_peak_mib": 32768,
+    "safety_margin_mib": 16384,
+    "required_free_mib": 49152,
+    "observed_peak_allocated_mib": 5686.964,
+    "observed_peak_reserved_mib": 10106.0,
+    "free_after_process_exit_mib": 82244,
+    "compute_processes_before": [
+      {
+        "pid": 101334,
+        "process_name": "/home/YinPeiran/.conda/envs/nuwa/bin/python3",
+        "used_memory_mib": 14942
+      }
+    ],
+    "gpu1_free_before_mib": 27306,
+    "gpu1_assignment": "not_admitted",
+    "concurrency_decision": "GPU 0 admitted with one unrelated process; GPU 1 did not satisfy estimate plus margin; one serialized job on GPU 0",
+    "launcher_gpu_snapshot_returned_exactly_to_baseline": true,
+    "launcher_process_snapshot_returned_exactly_to_baseline": true,
+    "other_processes_modified": false
+  },
+  "artifacts": {
+    "report": {
+      "path": ".goal-runs/video-compression-three-backbones/llamavid/llava_onevision/generate/20260828T113626Z-eb941db-llamavid-llava-infer-gpu0-a3/report.json",
+      "sha256": "992c72b20ffa090b6ac00c1ec49224b3f36939a7a8079a455d238ebb2fe7f0ff",
+      "size_bytes": 6800401
+    },
+    "lmms_eval_samples": {
+      "path": ".goal-runs/video-compression-three-backbones/llamavid/llava_onevision/generate/20260828T113626Z-eb941db-llamavid-llava-infer-gpu0-a3/samples.jsonl",
+      "sha256": "fa3a7d5b609ac1d633d28f4ffc1080924a526a409ca3e686d151910807593a5c",
+      "size_bytes": 1894
+    },
+    "independent_validation": {
+      "path": ".goal-runs/video-compression-three-backbones/llamavid/llava_onevision/generate/20260828T113626Z-eb941db-llamavid-llava-infer-gpu0-a3/independent-validation.json",
+      "sha256": "35b02d434bc309e78b4108304d6345651243556a8cf4c08276c44e10b999b454",
+      "size_bytes": 1711,
+      "check_count": 21
+    },
+    "launcher_log": {
+      "path": ".goal-logs/video-compression-three-backbones/llamavid/llava_onevision/generate/20260828T113626Z-eb941db-llamavid-llava-infer-gpu0-a3/launcher.log",
+      "sha256": "d5d82b1f6eb7f88dd13681a399ed8a19795850ab777d02a0d275f9380bd3f0e6",
+      "size_bytes": 1154
+    },
+    "exit_code": {
+      "path": ".goal-logs/video-compression-three-backbones/llamavid/llava_onevision/generate/20260828T113626Z-eb941db-llamavid-llava-infer-gpu0-a3/status",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "size_bytes": 2
+    }
+  },
+  "algorithm_evidence": {
+    "stages": [
+      "bert_qformer_cross_attention",
+      "context_attention_pool",
+      "mean_content_pool"
+    ],
+    "projected_features_shape_per_sample": [6272, 896],
+    "raw_pre_projector_features_shape_per_sample": [23328, 1152],
+    "result_features_shape_per_sample": [64, 896],
+    "signals_finite": true,
+    "tokens_per_temporal_unit": 2,
+    "temporal_units_per_sample": 32,
+    "bert_token_lengths": [30, 45, 46, 23],
+    "text_policy": "user_text_without_teacher_forced_answer",
+    "output_order": "context_then_content_per_temporal_unit",
+    "layout_source_groups": "first_two_causal_singletons_per_unit",
+    "layout_anchor_policy": "source_ordered_distinct_placeholders",
+    "value_lineage_policy": "exact_overlapping_weighted_full_rasters",
+    "qformer_registered_pre_optimizer": true,
+    "qformer_trainable": true,
+    "bert_local_only": true
+  },
+  "samples": {
+    "3849": {
+      "source_visual_tokens": 6272,
+      "result_visual_tokens": 64,
+      "baseline_prefill_length": 6326,
+      "compressed_prefill_length": 118,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "all_checks_passed": true
+    },
+    "442": {
+      "source_visual_tokens": 6272,
+      "result_visual_tokens": 64,
+      "baseline_prefill_length": 6341,
+      "compressed_prefill_length": 133,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "all_checks_passed": true
+    },
+    "28": {
+      "source_visual_tokens": 6272,
+      "result_visual_tokens": 64,
+      "baseline_prefill_length": 6342,
+      "compressed_prefill_length": 134,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "all_checks_passed": true
+    },
+    "205": {
+      "source_visual_tokens": 6272,
+      "result_visual_tokens": 64,
+      "baseline_prefill_length": 6319,
+      "compressed_prefill_length": 111,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "all_checks_passed": true
+    }
+  },
+  "verified_invariants": [
+    "local BERT tokenization and all six QFormer cross-attention layers ran on every fixed sample",
+    "context-attention and mean-content values were emitted in canonical alternating order for all 32 temporal units",
+    "all four samples reduced the native 6272 LLaVA video tokens to exactly 64 non-identity values",
+    "source groups, anchors, exact projected value lineage, LayoutDelta, native LLaVA splice, structural tokens, placeholder, masks, absent labels, and positions agreed",
+    "baseline and compressed cached generation produced finite logits and four tokens with unit-length decode queries",
+    "the trainable QFormer and all runtime signals remained finite and the unrelated GPU process was preserved"
+  ],
+  "regression": {
+    "local_diagnostic_and_kernel_slice": "7 passed, 10 skipped",
+    "installed_cuda_hidden_preflight": "17 passed",
+    "cuda_visible_devices": "",
+    "observed_gpu_peak_mib": 0
+  },
+  "attempts": [
+    {
+      "attempt": 1,
+      "run_id": "20260828T112856Z-3e2625a-llamavid-llava-infer-gpu0-a1",
+      "status": "failed",
+      "result": "FP16 serialized value-lineage metadata retained half-precision sum error; no sample evidence activated"
+    },
+    {
+      "attempt": 2,
+      "run_id": "20260828T113314Z-e073208-llamavid-llava-infer-gpu0-a2",
+      "status": "failed",
+      "result": "validator-only projected-uniformity assumption after successful first-sample compression and generation; no sample evidence activated"
+    },
+    {
+      "attempt": 3,
+      "run_id": "20260828T113626Z-eb941db-llamavid-llava-infer-gpu0-a3",
+      "status": "passed"
+    }
+  ],
+  "independent_artifact_validation": {
+    "status": "passed",
+    "attempts": 1,
+    "result": "21 independent stdlib-only scope, provenance, resource, GPU, four-sample QFormer/content/value-lineage, LLaVA layout, decoder, JSONL, boundary, and SHA-256 checks passed read-only"
+  },
+  "boundaries": {
+    "full_nextqa_benchmark": false,
+    "paper_quality_or_efficiency_reproduction": false,
+    "convergence_claim": false,
+    "training_claim": false,
+    "method_specific_checkpoint_claim": false
+  },
+  "recorded_at": "2026-08-28T19:40:00+08:00"
+}

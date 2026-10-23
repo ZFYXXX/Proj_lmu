@@ -1,0 +1,315 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "support_unit": {
+    "algorithm": "prunevid",
+    "variant": "prunevid.video",
+    "backbone": "llava_onevision",
+    "target_modality": "video",
+    "phase": "generate",
+    "binding": "prunevid.video.llava_onevision"
+  },
+  "canonical_config": {
+    "tau": 0.8,
+    "cluster_ratio": 0.5,
+    "temporal_ratio": 0.25,
+    "k": 7,
+    "min_tokens_for_cluster": 14,
+    "enable_vtp": true,
+    "vtp_selected_layer": 10,
+    "vtp_alpha": 0.4
+  },
+  "source_revisions": {
+    "installed_kernel_contract_and_real_checkpoint_runner": "3bb24b3bae744a667b57a7195dfd890f0f4a6bf7",
+    "reference_compression_algorithm": "7e3ae876bc6306a4179f389e5f960225cd9e3a79",
+    "lmms_eval": "e9a5309ea6f4b8edacb813823cf8fdfd24bbd115"
+  },
+  "environment": {
+    "name": "mllm-comp-platform-dev",
+    "python": "3.10.20",
+    "torch": "2.8.0+cu128",
+    "transformers": "4.57.3",
+    "offline": true,
+    "package_or_environment_changes": false,
+    "downloads": false
+  },
+  "checkpoint": {
+    "path": "/home/WuHao/checkpoints/ckpts-vlm/llava-onevision-qwen2-0.5b-ov",
+    "total_weight_bytes": 1787335336,
+    "weight_files": 1,
+    "dtype": "float16",
+    "attention_implementation": "sdpa",
+    "local_files_only": true
+  },
+  "auxiliary_checkpoint": {
+    "role": "existing frozen LLaVA SigLIP vision tower",
+    "path": "/home/WuHao/checkpoints/ckpts-vlm/siglip-so400m-patch14-384",
+    "total_weight_bytes": 3511950624,
+    "weight_files": 1,
+    "local_files_only": true,
+    "trainable": false,
+    "downloaded": false
+  },
+  "dataset": {
+    "task": "nextqa_mc_test",
+    "split": "test",
+    "parquet": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet",
+    "parquet_rows": 8564,
+    "parquet_size_bytes": 898657,
+    "video_root": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo",
+    "doc_ids": [3849, 442, 28, 205],
+    "decoded_frames_per_sample": 32,
+    "decode_policy": "uniform_local_decord",
+    "processor_pixel_shape_per_sample": [32, 3, 384, 384],
+    "projected_grid_per_frame": [14, 14],
+    "source_visual_tokens_per_sample": 6272
+  },
+  "generation": {
+    "batch_size": 1,
+    "max_new_tokens": 4,
+    "do_sample": false,
+    "use_cache": true,
+    "baseline_and_compressed_same_preprocessing": true,
+    "finite_logits_required": true,
+    "projector_capture_count_per_compressed_sample": 1,
+    "vtp_capture_count_per_compressed_sample": 1,
+    "cached_decode_query_length": 1,
+    "cached_decode_steps_per_generation": 3
+  },
+  "gpu": {
+    "physical_device": 1,
+    "name": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+    "free_before_mib": 97183,
+    "estimated_peak_mib": 49152,
+    "safety_margin_mib": 16384,
+    "required_free_mib": 65536,
+    "observed_peak_allocated_mib": 5416.641,
+    "observed_peak_reserved_mib": 10094.0,
+    "free_after_workload_before_process_exit_mib": 86417,
+    "free_after_process_exit_mib": 97183,
+    "selected_gpu_compute_processes_before": [],
+    "gpu0_existing_process_before": {
+      "pid": 320301,
+      "process_name": "python",
+      "used_memory_mib": 30044
+    },
+    "concurrency_decision": "GPU 0 and GPU 1 both admitted estimate plus margin; selected the higher-free GPU 1 and left the unrelated GPU 0 process untouched",
+    "other_processes_modified": false
+  },
+  "command": [
+    "/home/WuHao/miniconda3/envs/mllm-comp-platform-dev/bin/python",
+    "scripts/diagnostics/validate_llava_prunevid_video_compression_checkpoint.py",
+    "--checkpoint",
+    "/home/WuHao/checkpoints/ckpts-vlm/llava-onevision-qwen2-0.5b-ov",
+    "--nextqa_parquet",
+    "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet",
+    "--video_root",
+    "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo",
+    "--output_dir",
+    "/home/WuHao/code/MLLM-Comp-Platform-Workspace/dev/outputs/video_compression/prunevid/llava_onevision/inference/20260826-121402-3bb24b3-prunevid-llava-inference-a1",
+    "--code_revision",
+    "3bb24b3bae744a667b57a7195dfd890f0f4a6bf7",
+    "--physical_gpu",
+    "1",
+    "--max_new_tokens",
+    "4",
+    "--estimated_peak_mib",
+    "49152",
+    "--safety_margin_mib",
+    "16384"
+  ],
+  "artifacts": {
+    "processor_preflight": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260826-121127-3bb24b3-prunevid-llava-cpu-preflight-a1/processor_preflight.json",
+      "sha256": "7fef5abcc5a14dffedca124af3e68f054b79e78cf5295f62d3c7ea38924e1a8a",
+      "size_bytes": 8795
+    },
+    "report": {
+      "path": "outputs/video_compression/prunevid/llava_onevision/inference/20260826-121402-3bb24b3-prunevid-llava-inference-a1/report.json",
+      "sha256": "4ee19d6a685b02e1a45973bc14712ae6341091d4c576ea6e492b6fcbfdd19438",
+      "size_bytes": 16367407
+    },
+    "lmms_eval_samples": {
+      "path": "outputs/video_compression/prunevid/llava_onevision/inference/20260826-121402-3bb24b3-prunevid-llava-inference-a1/samples.jsonl",
+      "sha256": "60f7a8dbe9d8d96794c6db06e27e6bc3cb061cff6ccf7409b82e9e30e2b127e4",
+      "size_bytes": 2044
+    },
+    "launch_manifest": {
+      "path": "logs/video_compression/prunevid/llava_onevision/inference/20260826-121402-3bb24b3-prunevid-llava-inference-a1/launch.json",
+      "sha256": "888fbb569005c2b8c194e852252109d91f7f28e97929f9f3d08b4c2ac0aa1fc3",
+      "size_bytes": 1934
+    },
+    "exit_code": {
+      "path": "logs/video_compression/prunevid/llava_onevision/inference/20260826-121402-3bb24b3-prunevid-llava-inference-a1/exit_code",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "size_bytes": 2
+    },
+    "stdout_log": {
+      "path": "logs/video_compression/prunevid/llava_onevision/inference/20260826-121402-3bb24b3-prunevid-llava-inference-a1/stdout.log",
+      "sha256": "d898631ea14f069660eef61b6510ec975f9a0ab4848b58cad6918d0b28e039f2",
+      "size_bytes": 16367721
+    },
+    "stderr_log": {
+      "path": "logs/video_compression/prunevid/llava_onevision/inference/20260826-121402-3bb24b3-prunevid-llava-inference-a1/stderr.log",
+      "sha256": "a42aab6b4f86276e5323a4d5877fa03c9a2143eaa4b75f692d22b4b882cb0a00",
+      "size_bytes": 358
+    },
+    "read_only_validator": {
+      "path": "logs/video_compression/prunevid/llava_onevision/inference/20260826-121402-3bb24b3-prunevid-llava-inference-a1/validate_artifact.py",
+      "sha256": "53842d6fd40c5826b07ccb1e73fb3b14f33a62fcb56da87ecdd26e94b046af6a",
+      "size_bytes": 21898
+    },
+    "read_only_validation": {
+      "path": "logs/video_compression/prunevid/llava_onevision/inference/20260826-121402-3bb24b3-prunevid-llava-inference-a1/artifact_validation.json",
+      "sha256": "8e1e87cc407e12cc26982cad2e3033c2ff24c165ae2a8646bebf6cc4e704fb2c",
+      "size_bytes": 4526
+    }
+  },
+  "algorithm_evidence": {
+    "stages": ["temporal_spatial_reduce", "vtp_prefill_prune"],
+    "projector_stage": "temporal_spatial_reduce",
+    "vtp_stage": "after_decoder_layer_10",
+    "projected_features_shape_per_sample": [6272, 896],
+    "projected_signals_finite": true,
+    "frame_count": 32,
+    "tokens_per_frame": 196,
+    "temporal_cluster_target": 8,
+    "window_counts": [5, 4, 3, 3],
+    "static_output_counts": [281, 31, 32, 64],
+    "dynamic_output_counts": [1464, 3009, 2850, 2830],
+    "projector_result_counts": [1745, 3040, 2882, 2894],
+    "final_vtp_result_counts": [687, 1201, 1150, 1135],
+    "temporal_clustering": "deterministic_frame_mean_dpc_knn_contiguous_refinement",
+    "static_dynamic_partition": "window_mean_cosine_gt_tau",
+    "spatial_clustering": "deterministic_dpc_knn_floor_cluster_ratio",
+    "source_partition_exact": true,
+    "representatives_inside_groups": true,
+    "representatives_source_ordered": true,
+    "projector_output_order": "source_group_first_index",
+    "vtp_selection": "floor_alpha_static_and_each_dynamic_frame",
+    "vtp_attention_reduction": "max_heads_then_post_visual_queries",
+    "vtp_position_policy": "gather_native_positions",
+    "cache_policy": "compact_layers_zero_through_selected_inclusive",
+    "cache_boundary": "after_layer_10",
+    "cache_layers_compacted": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  },
+  "samples": {
+    "3849": {
+      "video_id": "3571539122",
+      "qid": 6,
+      "question_type": "TC",
+      "target": "E",
+      "source_visual_tokens": 6272,
+      "projector_visual_tokens": 1745,
+      "final_vtp_visual_tokens": 687,
+      "window_count": 5,
+      "static_output_count": 281,
+      "dynamic_output_count": 1464,
+      "baseline_prefill_length": 6326,
+      "compressed_projector_prefill_length": 1799,
+      "compressed_post_vtp_prefill_length": 741,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "all_checks_passed": true
+    },
+    "442": {
+      "video_id": "3064389881",
+      "qid": 2,
+      "question_type": "TN",
+      "target": "D",
+      "source_visual_tokens": 6272,
+      "projector_visual_tokens": 3040,
+      "final_vtp_visual_tokens": 1201,
+      "window_count": 4,
+      "static_output_count": 31,
+      "dynamic_output_count": 3009,
+      "baseline_prefill_length": 6341,
+      "compressed_projector_prefill_length": 3109,
+      "compressed_post_vtp_prefill_length": 1270,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "all_checks_passed": true
+    },
+    "28": {
+      "video_id": "6097011028",
+      "qid": 8,
+      "question_type": "CW",
+      "target": "B",
+      "source_visual_tokens": 6272,
+      "projector_visual_tokens": 2882,
+      "final_vtp_visual_tokens": 1150,
+      "window_count": 3,
+      "static_output_count": 32,
+      "dynamic_output_count": 2850,
+      "baseline_prefill_length": 6342,
+      "compressed_projector_prefill_length": 2952,
+      "compressed_post_vtp_prefill_length": 1220,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "all_checks_passed": true
+    },
+    "205": {
+      "video_id": "2597214137",
+      "qid": 6,
+      "question_type": "DL",
+      "target": "A",
+      "source_visual_tokens": 6272,
+      "projector_visual_tokens": 2894,
+      "final_vtp_visual_tokens": 1135,
+      "window_count": 3,
+      "static_output_count": 64,
+      "dynamic_output_count": 2830,
+      "baseline_prefill_length": 6319,
+      "compressed_projector_prefill_length": 2941,
+      "compressed_post_vtp_prefill_length": 1182,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "all_checks_passed": true
+    }
+  },
+  "verified_invariants": [
+    "projector and VTP callbacks each invoke exactly once per compressed sample",
+    "all four samples reduce from 6272 native projected tokens at both the projector and layer-10 VTP stages",
+    "the canonical 32 by 14 by 14 projected raster and finite projected signals are preserved",
+    "temporal windows cover all 32 frames contiguously and partition every projector result",
+    "static and per-frame dynamic ownership is complete, with stable source-ordered causal representatives",
+    "VTP retains exactly floor(alpha times count) members from every static and dynamic partition",
+    "the full sequence LayoutDelta drops only the selected visual tokens",
+    "DynamicCache layers 0 through 10 shrink physically and logically at the after-layer-10 boundary",
+    "LLaVA structural newline tokens and the single video placeholder are preserved",
+    "inference labels remain absent",
+    "attention mask, position IDs, and cache positions align before and after VTP",
+    "baseline and compressed cached decode each use three unit-query steps",
+    "baseline and compressed logits are finite",
+    "bounded four-token generation completes for all four fixed samples"
+  ],
+  "installed_regression": {
+    "targeted": "104 passed",
+    "aggregate": "1447 passed, 1 skipped",
+    "cuda_visible_devices": "",
+    "observed_gpu_peak_mib": 0
+  },
+  "attempts": [
+    {
+      "attempt": 1,
+      "run_id": "20260826-121402-3bb24b3-prunevid-llava-inference-a1",
+      "status": "passed",
+      "elapsed_seconds": 33.785
+    }
+  ],
+  "independent_artifact_validation": {
+    "status": "passed",
+    "attempts": 2,
+    "check_count": 239,
+    "first_attempt": "validator rejected an over-constrained assumption that cache telemetry contains only the touched layers; the immutable report correctly snapshots all 24 layers",
+    "recovery": "the validator was narrowed to require exact compaction for touched layers 0 through 10 and exact zero-length before/after state for untouched layers 11 through 23",
+    "second_attempt": "all scope, provenance, checkpoint, dataset, GPU, projector, VTP, window, partition, cache, LLaVA layout, generation, decode, artifact, and SHA-256 checks passed without modifying run artifacts"
+  },
+  "boundaries": {
+    "full_nextqa_benchmark": false,
+    "paper_quality_or_efficiency_reproduction": false,
+    "convergence_claim": false,
+    "training_claim": false
+  },
+  "recorded_at": "2026-08-26T12:14:13+08:00"
+}

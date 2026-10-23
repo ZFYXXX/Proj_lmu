@@ -1,0 +1,5 @@
+# Only needed to generate new ASR transcripts. Existing TextGrid/JSONL imports skip ASR.
+faster-whisper>=1.1,<2
+praatio>=6,<7
+# MFA 3.x + Kaldi belong in a separate conda environment; see README.zh.md.
+

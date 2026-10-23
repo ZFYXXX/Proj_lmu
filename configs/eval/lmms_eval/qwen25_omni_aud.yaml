@@ -1,0 +1,40 @@
+experiment:
+  name: qwen25_omni_lmms_eval
+  run_id: null
+  seed: 42
+
+backbone:
+  name: qwen25_omni
+  model_path: ${QWEN25_OMNI_MODEL_PATH}
+  model_revision: null
+  trust_remote_code: false
+  config:
+    torch_dtype: bfloat16
+    attn_implementation: flash_attention_2
+    enable_talker: false
+
+pipeline:
+  stages: []
+
+analysis: {}
+train: {}
+
+eval:
+  backend: lmms_eval
+  runtime_mode: default
+  compression_mode: none
+  target: baseline
+  checkpoint_path: ${QWEN25_OMNI_MODEL_PATH}
+  tasks: [mmau_test_mini]
+  runtime_batch_size: 1
+  generation:
+    until: []
+    temperature: 0.0
+  args:
+    use_audio_in_video: false
+    log_samples: true
+
+data:
+  dataset_id: mmau_test_mini
+  dataset_commit: null
+  sample_split: validation

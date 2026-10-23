@@ -1,0 +1,289 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "support_unit": {
+    "algorithm": "visionzip",
+    "variant": "visionzip.video",
+    "backbone": "qwen25_vl",
+    "target_modality": "video",
+    "phase": "generate",
+    "binding": "visionzip.video.qwen25_vl"
+  },
+  "canonical_config": {
+    "dominant_num": 126,
+    "contextual_num": 21,
+    "attn_layer": -2,
+    "hidden_state_layer": -2
+  },
+  "source_revisions": {
+    "installed_kernel_contract_and_real_checkpoint_runner": "6682c1f4f0ad02a292336ce72ab202c2e8d45756",
+    "reference_compression_algorithm": "7e3ae876bc6306a4179f389e5f960225cd9e3a79",
+    "lmms_eval": "e9a5309ea6f4b8edacb813823cf8fdfd24bbd115"
+  },
+  "environment": {
+    "name": "mllm-comp-platform-dev",
+    "python": "3.10.20",
+    "torch": "2.8.0+cu128",
+    "transformers": "4.57.3",
+    "qwen_vl_utils": "0.0.14",
+    "offline": true,
+    "package_or_environment_changes": false,
+    "downloads": false
+  },
+  "checkpoint": {
+    "path": "/home/WuHao/checkpoints/ckpts-vlm/Qwen2.5-VL-3B-Instruct",
+    "total_weight_bytes": 7509337976,
+    "weight_shards": 2,
+    "dtype": "bfloat16",
+    "attention_implementation": "sdpa",
+    "local_files_only": true
+  },
+  "dataset": {
+    "task": "nextqa_mc_test",
+    "split": "test",
+    "parquet": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet",
+    "parquet_rows": 8564,
+    "parquet_size_bytes": 898657,
+    "video_root": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo",
+    "doc_ids": [3849, 442, 28, 205],
+    "video_fps": 1.0,
+    "video_min_pixels": 125440,
+    "video_max_pixels": 131072,
+    "vision_provider": "qwen_vl_utils.process_vision_info",
+    "preprocessing_constraint": "each native post-merger temporal slice strictly exceeds the canonical 147-token result budget",
+    "decode_backend_observation": "torchcodec was attempted; the existing torchvision fallback decoded the successful run"
+  },
+  "generation": {
+    "batch_size": 1,
+    "max_new_tokens": 4,
+    "do_sample": false,
+    "use_cache": true,
+    "baseline_and_compressed_same_preprocessing": true,
+    "finite_logits_required": true,
+    "visionzip_capture_count_per_compressed_sample": 1,
+    "cached_decode_repairs_per_compressed_sample": 3
+  },
+  "gpu": {
+    "physical_device": 0,
+    "name": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+    "free_before_mib": 97212,
+    "estimated_peak_mib": 49152,
+    "safety_margin_mib": 16384,
+    "required_free_mib": 65536,
+    "observed_peak_allocated_mib": 8477.616,
+    "observed_peak_reserved_mib": 10134.0,
+    "free_after_workload_before_process_exit_mib": 86408,
+    "free_after_process_exit_mib": 97212,
+    "compute_processes_before": [],
+    "compute_processes_after": [],
+    "gpu1_free_before_mib": 97183,
+    "gpu1_free_after_mib": 97183,
+    "gpu1_assignment": "unassigned",
+    "concurrency_decision": "selected_highest_free_vram; single_job; other_gpu_unassigned",
+    "other_processes_modified": false
+  },
+  "command": [
+    "/home/WuHao/miniconda3/envs/mllm-comp-platform-dev/bin/python",
+    "scripts/diagnostics/validate_qwen25_vl_visionzip_video_compression_checkpoint.py",
+    "--checkpoint",
+    "/home/WuHao/checkpoints/ckpts-vlm/Qwen2.5-VL-3B-Instruct",
+    "--nextqa_parquet",
+    "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet",
+    "--video_root",
+    "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo",
+    "--output_dir",
+    "outputs/video_compression/visionzip/qwen25_vl/inference/20260826T083816-6682c1f-visionzip-qwen25-gpu0-a1",
+    "--code_revision",
+    "6682c1f4f0ad02a292336ce72ab202c2e8d45756",
+    "--physical_gpu",
+    "0",
+    "--max_new_tokens",
+    "4",
+    "--video_fps",
+    "1.0",
+    "--video_min_pixels",
+    "125440",
+    "--video_max_pixels",
+    "131072",
+    "--estimated_peak_mib",
+    "49152",
+    "--safety_margin_mib",
+    "16384"
+  ],
+  "artifacts": {
+    "report": {
+      "path": "outputs/video_compression/visionzip/qwen25_vl/inference/20260826T083816-6682c1f-visionzip-qwen25-gpu0-a1/report.json",
+      "sha256": "dc9bc7f1a326cb97626b1ba748d24aa527400bbeca7883284c84bfd0566d1792",
+      "size_bytes": 15745615
+    },
+    "lmms_eval_samples": {
+      "path": "outputs/video_compression/visionzip/qwen25_vl/inference/20260826T083816-6682c1f-visionzip-qwen25-gpu0-a1/samples.jsonl",
+      "sha256": "60db3ec63757cd134beb53d08aab8d9e907ebee328a3ec440058b2b40f0d76cd",
+      "size_bytes": 1883
+    },
+    "launch_manifest": {
+      "path": "outputs/video_compression/visionzip/qwen25_vl/inference/20260826T083816-6682c1f-visionzip-qwen25-gpu0-a1/launch_manifest.json",
+      "sha256": "1f0a7a86694f04c7565fd9c70d3c82a5d96542b43cc74564070dd6f65bc374eb",
+      "size_bytes": 2470
+    },
+    "exit_code": {
+      "path": "outputs/video_compression/visionzip/qwen25_vl/inference/20260826T083816-6682c1f-visionzip-qwen25-gpu0-a1/exit_code",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "size_bytes": 2
+    },
+    "run_script": {
+      "path": "outputs/video_compression/visionzip/qwen25_vl/inference/20260826T083816-6682c1f-visionzip-qwen25-gpu0-a1/run.sh",
+      "sha256": "6090ccb973c50f9e21e6173b3b4eab59935a91b8d4744583f75c8d7c21699c36",
+      "size_bytes": 1643
+    },
+    "log": {
+      "path": "logs/video_compression/visionzip/qwen25_vl/inference/20260826T083816-6682c1f-visionzip-qwen25-gpu0-a1/run.log",
+      "sha256": "60ca4c36726bedbe045ccb0b8aa87027b85fe67828155d2653eba1792f335c3a",
+      "size_bytes": 15751632
+    }
+  },
+  "algorithm_evidence": {
+    "selection_scope": "independent_per_temporal_slice",
+    "attention_statistic": "penultimate_mean_received",
+    "similarity": "penultimate_hidden_cosine",
+    "contextual_target_sampling": "released_prefix_stride",
+    "merge_value": "target_plus_mean_assigned_excluding_target",
+    "representative_policy": "merge_target_when_causal_else_source_group_first_index",
+    "attention_layer": -2,
+    "hidden_state_layer": -2,
+    "dominant_tokens_per_slice": 126,
+    "contextual_targets_per_slice": 21,
+    "result_tokens_per_slice": 147,
+    "source_partition_exact": true,
+    "merge_targets_inside_groups": true,
+    "representatives_source_ordered": true,
+    "contextual_aggregation_exercised": true,
+    "image_variant_shared": false
+  },
+  "qwen25_legalization_evidence": {
+    "source_video_grid_preserved": true,
+    "source_second_per_grid_ts_preserved": true,
+    "result_grid_policy": "irregular_sparse_source_anchors",
+    "representative_placeholders_source_ordered": true,
+    "result_mrope_equals_native_source_anchor_gather": true,
+    "attention_mask_aligned": true,
+    "labels_absent": true,
+    "position_ids_aligned": true,
+    "cache_position_aligned": true,
+    "cached_decode_repair_exercised": true
+  },
+  "samples": {
+    "3849": {
+      "video_id": "3571539122",
+      "qid": 6,
+      "question_type": "TC",
+      "target": "E",
+      "video_grid_thw": [6, 22, 30],
+      "source_tokens_per_slice": 165,
+      "source_visual_tokens": 990,
+      "result_visual_tokens": 882,
+      "baseline_prefill_length": 1044,
+      "compressed_prefill_length": 936,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "decode_repairs": 3,
+      "all_checks_passed": true
+    },
+    "442": {
+      "video_id": "3064389881",
+      "qid": 2,
+      "question_type": "TN",
+      "target": "D",
+      "video_grid_thw": [13, 22, 28],
+      "source_tokens_per_slice": 154,
+      "source_visual_tokens": 2002,
+      "result_visual_tokens": 1911,
+      "baseline_prefill_length": 2071,
+      "compressed_prefill_length": 1980,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "decode_repairs": 3,
+      "all_checks_passed": true
+    },
+    "28": {
+      "video_id": "6097011028",
+      "qid": 8,
+      "question_type": "CW",
+      "target": "B",
+      "video_grid_thw": [23, 18, 34],
+      "source_tokens_per_slice": 153,
+      "source_visual_tokens": 3519,
+      "result_visual_tokens": 3381,
+      "baseline_prefill_length": 3589,
+      "compressed_prefill_length": 3451,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "decode_repairs": 3,
+      "all_checks_passed": true
+    },
+    "205": {
+      "video_id": "2597214137",
+      "qid": 6,
+      "question_type": "DL",
+      "target": "A",
+      "video_grid_thw": [44, 22, 28],
+      "source_tokens_per_slice": 154,
+      "source_visual_tokens": 6776,
+      "result_visual_tokens": 6468,
+      "baseline_prefill_length": 6823,
+      "compressed_prefill_length": 6515,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "decode_repairs": 3,
+      "all_checks_passed": true
+    }
+  },
+  "verified_invariants": [
+    "compression callback and VisionZip signal capture invoked exactly once per compressed sample",
+    "every native temporal slice strictly exceeds and reduces to the canonical 147-token result budget",
+    "each temporal slice contains exactly 126 dominant singleton outputs plus 21 contextual targets",
+    "penultimate native attention and hidden-state tensors are finite and source aligned",
+    "all source tokens form an exact partition and all merge targets remain inside their groups",
+    "representative anchors preserve source order and contextual aggregation is exercised",
+    "the original video_grid_thw and second_per_grid_ts remain authoritative",
+    "result MRoPE positions equal an exact gather of native source anchor positions",
+    "LayoutDelta, placeholders, and decoder prefill reductions agree exactly",
+    "inference labels remain absent and attention masks, position IDs, and cache positions remain aligned",
+    "three cached-decode repairs complete without another VisionZip signal capture",
+    "baseline and compressed logits are finite and bounded four-token generation completes",
+    "visionzip.video evidence does not borrow from visionzip.image"
+  ],
+  "processor_preflight": {
+    "attempts": 2,
+    "attempt_1": "max_pixels=131072 alone left doc 3849 at 140 post-merger tokens per slice and was rejected before model or GPU allocation",
+    "attempt_2": "min_pixels=125440 and max_pixels=131072 produced per-slice counts 165, 154, 153, and 154 for docs 3849, 442, 28, and 205",
+    "gpu_peak_mib": 0,
+    "environment_or_asset_changes": false
+  },
+  "installed_regression": {
+    "pre_activation_targeted": "57 passed",
+    "targeted": "97 passed",
+    "aggregate": "1403 passed, 1 skipped",
+    "cuda_visible_devices": "",
+    "observed_gpu_peak_mib": 0
+  },
+  "attempts": [
+    {
+      "attempt": 1,
+      "run_id": "20260826T083816-6682c1f-visionzip-qwen25-gpu0-a1",
+      "status": "passed"
+    }
+  ],
+  "independent_artifact_validation": {
+    "status": "passed",
+    "attempts": 1,
+    "checks": "report, JSONL, launch, exit code, run script, log, checkpoint, dataset, four videos, GPU admission and release, processor window, VisionZip signals/groups, LayoutDelta, source grid/timing, sparse MRoPE, decoder lifecycle, and SHA-256"
+  },
+  "boundaries": {
+    "full_nextqa_benchmark": false,
+    "paper_quality_or_efficiency_reproduction": false,
+    "convergence_claim": false,
+    "training_claim": false
+  },
+  "recorded_at": "2026-08-26T08:38:16+08:00"
+}

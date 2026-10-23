@@ -1,0 +1,13 @@
+dataset_path: parquet
+output_type: generate_until
+generation_kwargs:
+  max_new_tokens: 16
+  temperature: 0.0
+  do_sample: false
+process_results: !function utils.smoke_process_results
+metric_list:
+  - metric: smoke_nonempty
+    aggregation: !function utils.aggregate_smoke_nonempty
+    higher_is_better: true
+metadata:
+  version: 0.0

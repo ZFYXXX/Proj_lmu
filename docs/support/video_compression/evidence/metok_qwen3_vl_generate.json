@@ -1,0 +1,448 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "support_unit": {
+    "algorithm": "metok",
+    "variant": "metok.video",
+    "backbone": "qwen3_vl",
+    "target_modality": "video",
+    "phase": "generate",
+    "binding": "metok.video.qwen3_vl"
+  },
+  "canonical_config": {
+    "segmentation_method": "similarity",
+    "num_segments": 4,
+    "keyframe_method": "similarity",
+    "keyframe_ratio": 0.4,
+    "top_k_events": 3,
+    "distinguish_important_events": true,
+    "s1_important": 2,
+    "s2_important": 4,
+    "s1_normal": 4,
+    "s2_normal": 8,
+    "pool_mode": "bilinear",
+    "non_keyframe_method": "adaptive_pool",
+    "keyframe_pool_enable": false,
+    "inside_compression": true,
+    "pruning_layers": [3, 10, 19],
+    "ratio": 0.76
+  },
+  "source_revisions": {
+    "qwen3_runtime_telemetry_and_real_checkpoint_runner": "d62dfce11ff4306ffc6d4bef8ef174fe51e844f8",
+    "fixed_set_frame_category_validation": "f2dc5b21116eb6d0ecb57e015f6f8b027884f6b2",
+    "support_activation_candidate": "a578db137747fa52c4a27e8df231276b8b91283d",
+    "reference_compression_algorithm": "7e3ae876bc6306a4179f389e5f960225cd9e3a79",
+    "lmms_eval": "e9a5309ea6f4b8edacb813823cf8fdfd24bbd115"
+  },
+  "environment": {
+    "name": "mllm-comp-platform-dev",
+    "python": "3.10.20",
+    "torch": "2.8.0+cu128",
+    "transformers": "4.57.3",
+    "qwen_vl_utils": "0.0.14",
+    "offline": true,
+    "package_or_environment_changes": false,
+    "downloads": false
+  },
+  "checkpoint": {
+    "path": "/home/WuHao/checkpoints/ckpts-vlm/Qwen3-VL-2B-Instruct",
+    "total_weight_bytes": 4255140312,
+    "weight_files": 1,
+    "decoder_layers": 28,
+    "vision_depth": 24,
+    "deepstack_indexes": [5, 11, 17],
+    "dtype": "bfloat16",
+    "attention_implementation": "sdpa",
+    "local_files_only": true
+  },
+  "auxiliary_checkpoint": {
+    "path": "/home/WuHao/checkpoints/ckpts-vlm/siglip-so400m-patch14-384",
+    "role": "frozen local METok frame-text similarity double tower",
+    "model_type": "siglip",
+    "total_weight_bytes": 3511950624,
+    "weight_files": 1,
+    "vision_and_text_towers_present": true,
+    "parameters_trainable": false,
+    "local_files_only": true
+  },
+  "dataset": {
+    "task": "nextqa_mc_test",
+    "split": "test",
+    "parquet": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet",
+    "parquet_rows": 8564,
+    "parquet_size_bytes": 898657,
+    "video_root": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo",
+    "doc_ids": [3849, 442, 28, 205]
+  },
+  "video_preprocessing": {
+    "fps": 1.0,
+    "max_pixels": 131072,
+    "image_patch_size": 16,
+    "provider": "qwen_vl_utils.process_vision_info",
+    "enable_thinking": false,
+    "processor_preflight_model_loaded": false,
+    "processor_preflight_siglip_tensors_loaded": false,
+    "processor_preflight_cuda_visible": false,
+    "source_grids": [[6, 20, 28], [13, 18, 26], [23, 16, 30], [44, 18, 26]],
+    "post_merger_tokens_per_temporal_slice": [140, 117, 120, 117],
+    "source_visual_tokens": [840, 1521, 2760, 5148],
+    "second_per_grid_ts": [[], [], [], []],
+    "timing_policy": "the installed Qwen3 processor authoritatively omits second_per_grid_ts; the bridge preserves that absence without fabrication",
+    "pixels_finite": true
+  },
+  "generation": {
+    "batch_size": 1,
+    "max_new_tokens": 4,
+    "do_sample": false,
+    "use_cache": true,
+    "baseline_and_compressed_same_preprocessing": true,
+    "finite_logits_required": true,
+    "projector_capture_count_per_compressed_sample": 1,
+    "pruning_capture_count_per_compressed_sample": 3,
+    "cached_decode_query_length": 1,
+    "cached_decode_steps_per_generation": 3
+  },
+  "gpu": {
+    "physical_device": 1,
+    "name": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+    "free_before_mib": 86119,
+    "estimated_peak_mib": 49152,
+    "safety_margin_mib": 16384,
+    "required_free_mib": 65536,
+    "observed_peak_allocated_mib": 6853.465,
+    "observed_peak_reserved_mib": 8430.0,
+    "free_after_process_exit_mib": 86119,
+    "selected_gpu_compute_processes_before": [
+      {
+        "pid": 364894,
+        "process_name": "/home/lixiaocong/miniforge3/envs/kof/bin/python3.9",
+        "used_memory_mib": 11000
+      }
+    ],
+    "selected_gpu_compute_processes_after": [
+      {
+        "pid": 364894,
+        "process_name": "/home/lixiaocong/miniforge3/envs/kof/bin/python3.9",
+        "used_memory_mib": 11000
+      }
+    ],
+    "gpu0_snapshot_before": {
+      "free_mib": 86150,
+      "unrelated_process_pid": 364893,
+      "unrelated_process_used_mib": 10998,
+      "assignment": "unassigned_and_untouched"
+    },
+    "concurrency_decision": "GPU 0 temporarily gained another process before launch, so the sole serialized job was rebound to the safer GPU 1; the new process later exited without intervention",
+    "other_processes_modified": false
+  },
+  "command": [
+    "/home/WuHao/miniconda3/envs/mllm-comp-platform-dev/bin/python",
+    "-m",
+    "scripts.diagnostics.validate_qwen3_vl_metok_video_compression_checkpoint",
+    "--checkpoint",
+    "/home/WuHao/checkpoints/ckpts-vlm/Qwen3-VL-2B-Instruct",
+    "--siglip_checkpoint",
+    "/home/WuHao/checkpoints/ckpts-vlm/siglip-so400m-patch14-384",
+    "--nextqa_parquet",
+    "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet",
+    "--video_root",
+    "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo",
+    "--output_dir",
+    ".goal-task/video-compression-three-backbones/runs/20260826T165925-f2dc5b2-metok-qwen3-gpu1-a2/evidence",
+    "--code_revision",
+    "f2dc5b21116eb6d0ecb57e015f6f8b027884f6b2",
+    "--physical_gpu",
+    "1",
+    "--max_new_tokens",
+    "4",
+    "--video_fps",
+    "1.0",
+    "--video_max_pixels",
+    "131072",
+    "--estimated_peak_mib",
+    "49152",
+    "--safety_margin_mib",
+    "16384"
+  ],
+  "artifacts": {
+    "processor_siglip_preflight": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260826T164754-d62dfce-metok-qwen3-cpu-preflight-a1/processor_siglip_preflight.json",
+      "sha256": "78799a2df0218835bad6ff772b022fbb02ab8b47cf215fa2c76ab67ca1419d5b",
+      "size_bytes": 12263
+    },
+    "report": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260826T165925-f2dc5b2-metok-qwen3-gpu1-a2/evidence/report.json",
+      "sha256": "47524701cceef04a96135bfa7df63caab33594a917fb30f0d9b5d5524d48ee65",
+      "size_bytes": 10239345
+    },
+    "lmms_eval_samples": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260826T165925-f2dc5b2-metok-qwen3-gpu1-a2/evidence/samples.jsonl",
+      "sha256": "e7c0f7db02f34e266c5c7f84b4f87eb46bf4e5cdf49ca26e1fcadb0528c52cb1",
+      "size_bytes": 1904
+    },
+    "run_log": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260826T165925-f2dc5b2-metok-qwen3-gpu1-a2/logs/run.log",
+      "sha256": "4af3848e344f8d8727f1e58c70cb622b7242939cc29d6adc4beb4c3519008429",
+      "size_bytes": 10244637,
+      "note": "the existing TorchCodec load warning is followed by the installed torchvision fallback; runner exit code is zero"
+    },
+    "gpu_admission": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260826T165925-f2dc5b2-metok-qwen3-gpu1-a2/gpu_admission.txt",
+      "sha256": "c0c0bd8f66fc707e74dd7a59ad96f8d7db8ec8ae0a0b51e8447b3e1accf4eb3e",
+      "size_bytes": 1303
+    },
+    "exit_code": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260826T165925-f2dc5b2-metok-qwen3-gpu1-a2/exit_code",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "size_bytes": 2
+    },
+    "run_script": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260826T165925-f2dc5b2-metok-qwen3-gpu1-a2/run.sh",
+      "sha256": "6fd9ab53e052330972f9b58c3e5bd52bca90b56898e951d7b39fe98f9f577681",
+      "size_bytes": 2895
+    },
+    "independent_validator": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260826T165925-f2dc5b2-metok-qwen3-gpu1-a2/validation/validate_metok_qwen3_artifacts.py",
+      "sha256": "311357364b9b1135a8d5e2f5df1541d38937f1d233f4fd4fbc22fcf19ef0ba5c",
+      "size_bytes": 18503
+    },
+    "independent_validation": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260826T165925-f2dc5b2-metok-qwen3-gpu1-a2/validation/independent_validation_a2.json",
+      "sha256": "233ee6c2e45f8e601611d23c64be96d9566dfe4cce903a61b780ec977451c007",
+      "size_bytes": 1192
+    },
+    "installed_pre_activation_targeted_log": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260826T165925-f2dc5b2-metok-qwen3-gpu1-a2/installed/pre_activation_targeted.log",
+      "sha256": "76924ed9f3987d37ccc43d4d77270fc42d83e4212ae01dda4ab603d9a825e53e",
+      "size_bytes": 179
+    },
+    "installed_pre_activation_aggregate_log": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260826T165925-f2dc5b2-metok-qwen3-gpu1-a2/installed/pre_activation_aggregate.log",
+      "sha256": "4652249d5467db27c196080b167347f8430112c8a5982c9d20fb2d1390d3feac",
+      "size_bytes": 1713
+    },
+    "installed_post_activation_targeted_log": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260826T165925-f2dc5b2-metok-qwen3-gpu1-a2/installed/post_activation_targeted.log",
+      "sha256": "989db0621f35931ddd692eb3e0136c6b8631ff9e585374579702889da944aa6c",
+      "size_bytes": 180
+    },
+    "installed_post_activation_aggregate_log": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260826T165925-f2dc5b2-metok-qwen3-gpu1-a2/installed/post_activation_aggregate.log",
+      "sha256": "3985512ac6e9470837573fe52d5e806e42ea0a7c4a2b7f97ce7be9092ff46d57",
+      "size_bytes": 1713
+    },
+    "failed_attempt_report": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260826T165051-d62dfce-metok-qwen3-gpu0-a1/evidence/report.json",
+      "sha256": "e26cf5ad57cc13e07153d25906b0407b904769f890a1a7c0f3f13f000ab4bba0",
+      "size_bytes": 2456
+    },
+    "failed_attempt_log": {
+      "path": ".goal-task/video-compression-three-backbones/runs/20260826T165051-d62dfce-metok-qwen3-gpu0-a1/logs/run.log",
+      "sha256": "9003531db582e0de3b2f6ed2a0c7bf2b18dfd1d27046278036ae3b2cd9658abb",
+      "size_bytes": 4775
+    }
+  },
+  "algorithm_evidence": {
+    "stages": ["event_keyframe_projector_pool", "decoder_attention_prune_3_10_19"],
+    "projector_stage": "event_segment_keyframe_adaptive_pool",
+    "decoder_pruning_layers": [3, 10, 19],
+    "source_visual_tokens": [840, 1521, 2760, 5148],
+    "projector_result_counts": [141, 240, 400, 896],
+    "layer3_result_counts": [104, 178, 303, 678],
+    "layer10_result_counts": [77, 132, 228, 513],
+    "layer19_result_counts": [0, 0, 0, 0],
+    "final_rope_deltas": [84, 169, 345, 572],
+    "event_count_per_sample": [4, 4, 4, 4],
+    "important_event_count_per_sample": [3, 3, 3, 3],
+    "category_coverage": {
+      "important_keyframe": 32,
+      "important_non_keyframe": 49,
+      "normal_keyframe": 4,
+      "normal_non_keyframe": 1
+    },
+    "stride_coverage": [2, 4, 8],
+    "projector_mrope_policy": "gather native three-axis positions by source-stable projector representatives",
+    "decoder_mrope_policy": "gather the current native three-axis positions at every pruning stage",
+    "deepstack_projector_policy": "replay the exact main projector source groups on all three native branches",
+    "deepstack_decoder_policy": "all three native branches are consumed before layer-3 pruning begins",
+    "visual_pos_masks_policy": "gather exact cumulative sequence indices at every pruning stage",
+    "cache_policy": "physically and logically compact layers already materialized before boundaries 3, 10, and 19",
+    "cache_layers_compacted": [[0, 1, 2], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]],
+    "complete_events_keyframes_source_groups_mrope_masks_deepstack_cache_and_decode_in_report": true
+  },
+  "samples": {
+    "3849": {
+      "video_id": "3571539122",
+      "qid": 6,
+      "question_type": "TC",
+      "target": "E",
+      "video_grid_thw": [6, 20, 28],
+      "temporal_placeholder_spans": 6,
+      "source_visual_tokens": 840,
+      "projector_visual_tokens": 141,
+      "layer3_visual_tokens": 104,
+      "layer10_visual_tokens": 77,
+      "layer19_visual_tokens": 0,
+      "baseline_prefill_length": 942,
+      "compressed_projector_prefill_length": 243,
+      "compressed_boundary_prefill_lengths": [206, 179, 102],
+      "final_rope_delta": 84,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "all_checks_passed": true
+    },
+    "442": {
+      "video_id": "3064389881",
+      "qid": 2,
+      "question_type": "TN",
+      "target": "D",
+      "video_grid_thw": [13, 18, 26],
+      "temporal_placeholder_spans": 13,
+      "source_visual_tokens": 1521,
+      "projector_visual_tokens": 240,
+      "layer3_visual_tokens": 178,
+      "layer10_visual_tokens": 132,
+      "layer19_visual_tokens": 0,
+      "baseline_prefill_length": 1700,
+      "compressed_projector_prefill_length": 419,
+      "compressed_boundary_prefill_lengths": [357, 311, 179],
+      "final_rope_delta": 169,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "all_checks_passed": true
+    },
+    "28": {
+      "video_id": "6097011028",
+      "qid": 8,
+      "question_type": "CW",
+      "target": "B",
+      "video_grid_thw": [23, 16, 30],
+      "temporal_placeholder_spans": 23,
+      "source_visual_tokens": 2760,
+      "projector_visual_tokens": 400,
+      "layer3_visual_tokens": 303,
+      "layer10_visual_tokens": 228,
+      "layer19_visual_tokens": 0,
+      "baseline_prefill_length": 3030,
+      "compressed_projector_prefill_length": 670,
+      "compressed_boundary_prefill_lengths": [573, 498, 270],
+      "final_rope_delta": 345,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "all_checks_passed": true
+    },
+    "205": {
+      "video_id": "2597214137",
+      "qid": 6,
+      "question_type": "DL",
+      "target": "A",
+      "video_grid_thw": [44, 18, 26],
+      "temporal_placeholder_spans": 44,
+      "source_visual_tokens": 5148,
+      "projector_visual_tokens": 896,
+      "layer3_visual_tokens": 678,
+      "layer10_visual_tokens": 513,
+      "layer19_visual_tokens": 0,
+      "baseline_prefill_length": 5584,
+      "compressed_projector_prefill_length": 1332,
+      "compressed_boundary_prefill_lengths": [1114, 949, 436],
+      "final_rope_delta": 572,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "all_checks_passed": true
+    }
+  },
+  "verified_invariants": [
+    "the projector callback invokes exactly once and three decoder pruning callbacks invoke per compressed sample",
+    "all four samples reduce visual tokens non-identically at the projector and again before layers 3 and 10, then remove the remaining visual tokens before layer 19",
+    "four similarity events and the top three important events are produced for every sample",
+    "the fixed four-sample set covers important/non-important, keyframe/non-keyframe combinations and canonical strides 2, 4, and 8",
+    "authoritative video_grid_thw and native second_per_grid_ts absence remain unchanged",
+    "interleaved temporal placeholder spans cover every source token exactly",
+    "source groups and source-ordered causal representatives partition the native visual raster",
+    "projector and every decoder stage gather native three-axis MRoPE positions exactly",
+    "the exact projector source groups are replayed on all three DeepStack branches",
+    "all three DeepStack branches are consumed before decoder pruning begins",
+    "visual_pos_masks equal compacted visual sequence indices at every pruning stage",
+    "rope deltas are recomputed from final active rotary positions",
+    "DynamicCache layers already materialized at boundaries 3, 10, and 19 shrink physically and logically",
+    "baseline and compressed cached decode each use three unit-query steps",
+    "baseline and compressed logits are finite",
+    "bounded four-token generation completes for all four fixed samples"
+  ],
+  "installed_regression": {
+    "local_initial_targeted": "66 passed, 12 skipped",
+    "local_affected_compatibility": "99 passed, 19 skipped",
+    "local_initial_aggregate": "1130 passed, 216 skipped",
+    "local_recovery_targeted": "24 passed",
+    "local_recovery_aggregate": "1132 passed, 216 skipped",
+    "installed_pre_activation_targeted": "79 passed",
+    "installed_pre_activation_aggregate": "1502 passed, 1 skipped",
+    "installed_post_activation_targeted": "129 passed",
+    "installed_post_activation_aggregate": "1502 passed, 1 skipped",
+    "support_activation_candidate": "a578db137747fa52c4a27e8df231276b8b91283d",
+    "cuda_visible_devices": "",
+    "observed_gpu_peak_mib": 0
+  },
+  "attempts": [
+    {
+      "attempt": "processor-preflight-1",
+      "run_id": "20260826T164754-d62dfce-metok-qwen3-cpu-preflight-a1",
+      "status": "failed_before_resource_load",
+      "error": "the transient script directory was first on sys.path and the project scripts package was not importable",
+      "recovery": "reran the same script with the resolved Dev workspace on PYTHONPATH",
+      "gpu_visible": false,
+      "model_loaded": false
+    },
+    {
+      "attempt": "processor-preflight-2",
+      "run_id": "20260826T164754-d62dfce-metok-qwen3-cpu-preflight-a1",
+      "status": "passed",
+      "gpu_visible": false,
+      "model_loaded": false,
+      "siglip_weight_tensors_loaded": false
+    },
+    {
+      "attempt": 1,
+      "run_id": "20260826T165051-d62dfce-metok-qwen3-gpu0-a1",
+      "status": "failed_validator_only",
+      "physical_gpu": 0,
+      "error": "the Qwen2.5 shared validator required all four frame categories inside each individual sample even though category completeness is a fixed-set defining-path requirement",
+      "observed": "compression, MRoPE, masks, DeepStack, cache, finite generation, and bounded decode checks all passed",
+      "recovery": "f2dc5b2 retained exact per-sample keyframe/stride flags and moved completeness to the four-sample aggregate",
+      "other_processes_modified": false
+    },
+    {
+      "attempt": "gpu0-prelaunch-reroute",
+      "status": "not_launched",
+      "reason": "GPU 0 gained PID 397097 using 13196 MiB after the first snapshot",
+      "recovery": "selected GPU 1 with more free memory and removed only the unlaunched exact output directory",
+      "other_processes_modified": false
+    },
+    {
+      "attempt": 2,
+      "run_id": "20260826T165925-f2dc5b2-metok-qwen3-gpu1-a2",
+      "status": "passed",
+      "physical_gpu": 1,
+      "elapsed_seconds": 15.473,
+      "other_processes_modified": false
+    }
+  ],
+  "independent_artifact_validation": {
+    "status": "passed",
+    "attempts": 2,
+    "validator": "Python standard library only; no project imports",
+    "first_attempt": "correctly rejected an assumption that cumulative activation counters reset per sample; no source artifact changed",
+    "scope": "scope, canonical config, revisions, checkpoint and SigLIP, CPU preflight, fixed samples, GPU admission and process identity, non-identity reduction, finite bounded generation, event/keyframe/stride coverage, three-stage layouts, native MRoPE, DeepStack, visual_pos_masks, cache, JSONL alignment, boundaries, and SHA-256 immutability",
+    "artifacts_modified": false
+  },
+  "boundaries": {
+    "full_nextqa_benchmark": false,
+    "paper_quality_or_efficiency_reproduction": false,
+    "convergence_claim": false,
+    "training_claim": false,
+    "batch_above_one": false,
+    "multiple_videos_per_sample": false
+  },
+  "recorded_at": "2026-08-26T17:12:17+08:00"
+}

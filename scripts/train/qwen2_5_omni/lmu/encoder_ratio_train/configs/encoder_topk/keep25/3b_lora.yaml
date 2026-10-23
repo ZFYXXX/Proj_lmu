@@ -1,0 +1,90 @@
+# Target final audio-token retention: 25%; chunk and layer rounding can change the realized ratio.
+experiment:
+  name: lmu_train_aud_3b_lora_encoder_topk_keep25
+  seed: 42
+
+backbone:
+  name: qwen25_omni
+  model_path: '${QWEN25_OMNI_MODEL_PATH}'
+  trust_remote_code: false
+  config:
+    use_audio_in_video: false
+    sampling_rate: 16000
+
+pipeline:
+  stages:
+    - name: audio_encoder_attention_topk
+      placement: encoder_level
+      execution_phase: forward
+      plugin: encoder_attention_topk_audio
+      algorithm: encoder_attention_topk_audio
+      variant: encoder_attention_topk_audio.audio
+      binding: encoder_attention_topk_audio.audio.qwen25_omni
+      enabled: true
+      method: token_compression
+      object_family: tensor_slot
+      object_subtype: audio_encoder_layer_post_mhsa_pre_ffn
+      modalities: [audio]
+      target_modalities: [audio]
+      conditioning_modalities: []
+      preserved_modalities: [text, image, video]
+      coupling_policy: independent
+      media_alignment: temporal
+      token_roles: [observation]
+      operation:
+        type: keep
+        target_site: audio_encoder_layer_post_mhsa_pre_ffn
+      criterion:
+        score_source: mean_received_self_attention
+      schedule:
+        keep_ratio: 0.640
+        minimum_keep_tokens: 2
+      activation_scope:
+        layers: [3, 6, 9]
+
+train:
+  backend: ms_swift
+  compression_mode: compressed
+  runtime_mode: default
+  max_steps: null
+  args:
+    datasets: ['${MLLM_COMP_TRAIN_DATASET}']
+    system: 'You are an audio understanding model that answers multiple choice questions based on audio content.'
+    trainable_branch: thinker
+    enable_audio_output: false
+    tuner_type: lora
+    lora_rank: 8
+    lora_alpha: 32
+    target_modules: [all-linear]
+    freeze_llm: false
+    freeze_vit: true
+    freeze_aligner: true
+    torch_dtype: bfloat16
+    attn_impl: flash_attn
+    max_length: 4096
+    gradient_checkpointing: true
+    learning_rate: 0.00002
+    num_train_epochs: 1
+    per_device_train_batch_size: 8
+    per_device_eval_batch_size: 1
+    gradient_accumulation_steps: 4
+    warmup_ratio: 0.05
+    split_dataset_ratio: 0.01
+    eval_steps: 500
+    save_steps: 500
+    save_total_limit: 4
+    load_from_cache_file: true
+    dataset_num_proc: 4
+    dataloader_num_workers: 4
+    deepspeed: zero2
+    logging_steps: 5
+    report_to: [wandb]
+    run_name: lmu_audio_3b_lora_encoder_topk_keep25
+
+data:
+  dataset_id: '${MLLM_COMP_TRAIN_DATASET}'
+  sample_split: train
+
+output:
+  run_dir: '${MLLM_COMP_TRAIN_RUN_DIR}'
+  manifest_path: '${MLLM_COMP_TRAIN_RUN_DIR}/manifest.json'

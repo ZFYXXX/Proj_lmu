@@ -1,0 +1,8 @@
+dataset_path: parquet
+output_type: generate_until
+doc_to_visual: !function utils.visual
+generation_kwargs:
+  temperature: 0.0
+  do_sample: false
+metadata:
+  version: 1.0

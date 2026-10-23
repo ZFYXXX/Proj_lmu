@@ -1,0 +1,244 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "support_unit": {
+    "algorithm": "vqtoken",
+    "variant": "vqtoken.video",
+    "backbone": "qwen3_vl",
+    "target_modality": "video",
+    "phase": "generate",
+    "binding": "vqtoken.video.qwen3_vl"
+  },
+  "canonical_config": {
+    "num_clusters": 32,
+    "adaptive": false,
+    "use_cross_attention": false
+  },
+  "source_revisions": {
+    "installed_kernel_and_shared_contract": "99d6c31247ddf9f37cecdce88c542d90b0e381ca",
+    "qwen3_native_spans_and_real_checkpoint_runner": "db2de3a79c2fcba486e40d22f30c967ac74382eb",
+    "qwen3_decorated_provider_call_contract": "e47f4f3b55f0c8d85ee3bbeef101145aa66faeb9",
+    "qwen3_cached_decode_contract": "ca16fddabe56774b67fce03c18097808317815f0",
+    "lmms_eval": "e9a5309ea6f4b8edacb813823cf8fdfd24bbd115"
+  },
+  "environment": {
+    "name": "mllm-comp-platform-dev",
+    "python": "3.10.20",
+    "torch": "2.8.0+cu128",
+    "transformers": "4.57.3",
+    "qwen_vl_utils": "0.0.14",
+    "offline": true,
+    "package_or_environment_changes": false,
+    "downloads": false
+  },
+  "checkpoint": {
+    "path": "/home/WuHao/checkpoints/ckpts-vlm/Qwen3-VL-2B-Instruct",
+    "total_weight_bytes": 4255140312,
+    "weight_files": 1,
+    "dtype": "bfloat16",
+    "attention_implementation": "sdpa",
+    "local_files_only": true
+  },
+  "dataset": {
+    "task": "nextqa_mc_test",
+    "split": "test",
+    "parquet": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet",
+    "parquet_rows": 8564,
+    "parquet_size_bytes": 898657,
+    "video_root": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo",
+    "doc_ids": [3849, 442, 28, 205],
+    "video_fps": 1.0,
+    "video_max_pixels": 131072,
+    "enable_thinking": false,
+    "vision_provider": "qwen_vl_utils.process_vision_info"
+  },
+  "generation": {
+    "batch_size": 1,
+    "max_new_tokens": 4,
+    "do_sample": false,
+    "use_cache": true,
+    "baseline_and_compressed_same_preprocessing": true,
+    "finite_logits_required": true
+  },
+  "gpu": {
+    "physical_device": 0,
+    "name": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+    "free_before_mib": 97212,
+    "estimated_peak_mib": 40960,
+    "safety_margin_mib": 16384,
+    "required_free_mib": 57344,
+    "observed_peak_allocated_mib": 5108.204,
+    "observed_peak_reserved_mib": 6030.0,
+    "free_after_workload_before_process_exit_mib": 90512,
+    "free_after_process_exit_mib": 97212,
+    "compute_processes_before": [],
+    "compute_processes_after": [],
+    "gpu1_free_before_mib": 97183,
+    "gpu1_assignment": "unassigned",
+    "concurrency_decision": "selected_highest_free_vram; single_job; other_gpu_unassigned",
+    "other_processes_modified": false
+  },
+  "command": [
+    "/home/WuHao/miniconda3/envs/mllm-comp-platform-dev/bin/python",
+    "scripts/diagnostics/validate_qwen3_vl_video_compression_checkpoint.py",
+    "--checkpoint",
+    "/home/WuHao/checkpoints/ckpts-vlm/Qwen3-VL-2B-Instruct",
+    "--nextqa_parquet",
+    "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet",
+    "--video_root",
+    "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo",
+    "--output_dir",
+    "outputs/video_compression/vqtoken/qwen3_vl/inference/20260826T073600-ca16fdd-vqtoken-qwen3-gpu0-a3",
+    "--code_revision",
+    "ca16fddabe56774b67fce03c18097808317815f0",
+    "--physical_gpu",
+    "0",
+    "--max_new_tokens",
+    "4",
+    "--video_fps",
+    "1.0",
+    "--video_max_pixels",
+    "131072",
+    "--estimated_peak_mib",
+    "40960",
+    "--safety_margin_mib",
+    "16384"
+  ],
+  "artifacts": {
+    "report": {
+      "path": "outputs/video_compression/vqtoken/qwen3_vl/inference/20260826T073600-ca16fdd-vqtoken-qwen3-gpu0-a3/report.json",
+      "sha256": "7b0e9d2e5dd52ababce7280b0a4e8b76c1afdb7cf282318fb269ced6a1ed347d",
+      "size_bytes": 4251934
+    },
+    "lmms_eval_samples": {
+      "path": "outputs/video_compression/vqtoken/qwen3_vl/inference/20260826T073600-ca16fdd-vqtoken-qwen3-gpu0-a3/samples.jsonl",
+      "sha256": "cfd0fc97608c61ad20653b1fe76575e46a3dd091140aeb776056b7335a1a2021",
+      "size_bytes": 1922
+    },
+    "launch_manifest": {
+      "path": "outputs/video_compression/vqtoken/qwen3_vl/inference/20260826T073600-ca16fdd-vqtoken-qwen3-gpu0-a3/launch_manifest.json",
+      "sha256": "858c4f14ed13e6e3c67f0d45c4b419b49a1e82287de26b7dd97df6249d13848e",
+      "size_bytes": 2445
+    },
+    "log": {
+      "path": "logs/video_compression/vqtoken/qwen3_vl/inference/20260826T073600-ca16fdd-vqtoken-qwen3-gpu0-a3/run.log",
+      "sha256": "a2dc3882b1e1de4aa3e704c6760c121aa760e9e60fd12a89f0089a34ea0bf9dd",
+      "size_bytes": 4257226
+    }
+  },
+  "samples": {
+    "3849": {
+      "target": "E",
+      "video_grid_thw": [6, 20, 28],
+      "native_placeholder_span_count": 6,
+      "source_visual_tokens": 840,
+      "result_visual_tokens": 32,
+      "baseline_prefill_length": 942,
+      "compressed_prefill_length": 134,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "decode_repairs": 3,
+      "deepstack_result_shapes": [[32, 2048], [32, 2048], [32, 2048]],
+      "all_checks_passed": true
+    },
+    "442": {
+      "target": "D",
+      "video_grid_thw": [13, 18, 26],
+      "native_placeholder_span_count": 13,
+      "source_visual_tokens": 1521,
+      "result_visual_tokens": 32,
+      "baseline_prefill_length": 1700,
+      "compressed_prefill_length": 211,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "decode_repairs": 3,
+      "deepstack_result_shapes": [[32, 2048], [32, 2048], [32, 2048]],
+      "all_checks_passed": true
+    },
+    "28": {
+      "target": "B",
+      "video_grid_thw": [23, 16, 30],
+      "native_placeholder_span_count": 23,
+      "source_visual_tokens": 2760,
+      "result_visual_tokens": 32,
+      "baseline_prefill_length": 3030,
+      "compressed_prefill_length": 302,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "decode_repairs": 3,
+      "deepstack_result_shapes": [[32, 2048], [32, 2048], [32, 2048]],
+      "all_checks_passed": true
+    },
+    "205": {
+      "target": "A",
+      "video_grid_thw": [44, 18, 26],
+      "native_placeholder_span_count": 44,
+      "source_visual_tokens": 5148,
+      "result_visual_tokens": 32,
+      "baseline_prefill_length": 5584,
+      "compressed_prefill_length": 468,
+      "baseline_generated_tokens": 4,
+      "compressed_generated_tokens": 4,
+      "decode_repairs": 3,
+      "deepstack_result_shapes": [[32, 2048], [32, 2048], [32, 2048]],
+      "all_checks_passed": true
+    }
+  },
+  "verified_invariants": [
+    "compression callback invoked exactly once per sample",
+    "non-identity visual-token reduction",
+    "canonical global fixed K equals 32",
+    "video_grid_thw and native source-token counts agree",
+    "native per-frame interleaved placeholder spans are preserved and compacted",
+    "LayoutDelta, placeholder spans, visual_pos_masks, and decoder length changes agree",
+    "sparse representative anchors preserve source order",
+    "sparse MRoPE gather exactly follows representative anchors",
+    "all three DeepStack streams replay the main compression layout",
+    "inference labels remain absent",
+    "attention mask, position IDs, rope deltas, and cache positions align",
+    "residual video grid metadata is repaired on cached decode",
+    "baseline and compressed logits are finite",
+    "generation is bounded and completes"
+  ],
+  "preflight_recoveries": [
+    {
+      "assumption": "the Qwen2.5-VL fixture bound 128 * 28 * 28 is also admissible to the installed Qwen3-VL processor",
+      "result": "disproved before model or GPU allocation by the installed processor minimum",
+      "recovery": "froze the Qwen3-VL fixture at 128 * 32 * 32 = 131072 and reran the CPU processor audit successfully"
+    },
+    {
+      "assumption": "one native Qwen3-VL video occupies one globally contiguous placeholder span",
+      "result": "disproved by the installed processor, which emits one interleaved span per temporal grid slice",
+      "recovery": "legalized strictly ordered multi-span placeholders while preserving every interleaved timestamp or text token"
+    }
+  ],
+  "attempts": [
+    {
+      "attempt": 1,
+      "run_id": "20260826T072426-db2de3a-vqtoken-qwen3-gpu0-a1",
+      "status": "failed_after_checkpoint_load",
+      "error": "the pinned Qwen3 language-model decorator exposed use_cache both explicitly and in variadic kwargs",
+      "recovery": "reconstructed the bound provider call with explicit parameters authoritative over decorator extras"
+    },
+    {
+      "attempt": 2,
+      "run_id": "20260826T073236-e47f4f3-vqtoken-qwen3-gpu0-a2",
+      "status": "failed_after_checkpoint_load",
+      "error": "cached decode retained video_grid_thw after one-shot pixel_values_videos was consumed",
+      "recovery": "classified that native residual metadata shape by the completed generation lifecycle and covered it with an installed regression"
+    },
+    {
+      "attempt": 3,
+      "run_id": "20260826T073600-ca16fdd-vqtoken-qwen3-gpu0-a3",
+      "status": "passed",
+      "elapsed_seconds_excluding_model_load": 12.024
+    }
+  ],
+  "boundaries": {
+    "full_nextqa_benchmark": false,
+    "paper_quality_or_efficiency_reproduction": false,
+    "convergence_claim": false,
+    "training_claim": false
+  },
+  "recorded_at": "2026-08-26T07:36:00+08:00"
+}

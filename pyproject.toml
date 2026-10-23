@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools==83.0.0", "wheel==0.47.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mllm-comp-platform"
+version = "0.0.0"
+description = "Multimodal LLM compression research, evaluation, and training framework."
+readme = "README.md"
+requires-python = "==3.10.20"
+license = { text = "MIT" }
+dependencies = [
+    "PyYAML==6.0.3",
+    "typing_extensions==4.15.0",
+]
+
+[project.optional-dependencies]
+analysis-plots = ["matplotlib==3.10.9"]
+qwen3-vl = [
+    "transformers==4.57.3",
+    "qwen-vl-utils==0.0.14",
+]
+
+[project.scripts]
+mllm-comp = "mllm_comp.cli.main:main"
+
+[project.entry-points."lmms_eval.models"]
+mllm_comp = "mllm_comp.integrations.lmms_eval.plugin:get_model_manifests"
+
+[tool.setuptools.packages.find]
+include = ["mllm_comp*"]
+
+[tool.setuptools.package-data]
+"mllm_comp.compressors.comparison" = ["LICENSE", "NOTICE.md", "assets/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "gpu: opt-in tests that require a real CUDA model runtime",
+]

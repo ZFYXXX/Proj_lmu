@@ -1,0 +1,76 @@
+experiment:
+  name: qwen25_vl_bifocal_train_step
+  seed: 42
+
+backbone:
+  name: qwen25_vl
+  model_path: ${QWEN25_VL_MODEL_PATH}
+  trust_remote_code: false
+
+pipeline:
+  stages:
+    - name: bifocal_stage1_image_train
+      enabled: true
+      placement: projector_level
+      execution_phase: forward
+      plugin: bifocal
+      algorithm: bifocal
+      variant: bifocal.image
+      binding: bifocal.image.qwen25_vl
+      method: token_compression
+      object_family: tensor_slot
+      object_subtype: merged_image_features
+      modalities: [image]
+      conditioning_modalities: [text]
+      preserved_modalities: [text, video, audio]
+      coupling_policy: independent
+      media_alignment: spatial
+      operation: {type: merge, target_site: post_vision_merger_pre_llm_scatter}
+      criterion: {score_source: vit_column_mass_and_query_relevance}
+      schedule:
+        granularity: per_image
+        selector: {modality: image}
+      config:
+        s1_frac: 0.25
+        k_frac: 0.75
+        metric: vit_attn
+        metric_agg: mass
+        vit_block: 31
+
+analysis: {}
+train:
+  backend: ms_swift
+  compression_mode: compressed
+  max_steps: 1
+  args:
+    datasets: ["${MLLM_COMP_TRAIN_DATASET}"]
+    trainable_branch: language_model
+    tuner_type: lora
+    target_modules: [all-linear]
+    lora_rank: 4
+    lora_alpha: 8
+    torch_dtype: bfloat16
+    attn_impl: eager
+    per_device_train_batch_size: 1
+    gradient_accumulation_steps: 1
+    learning_rate: 0.0001
+    gradient_checkpointing: true
+    max_length: 1024
+    freeze_vit: true
+    freeze_aligner: false
+    split_dataset_ratio: 0
+    load_from_cache_file: false
+    dataset_num_proc: 1
+    dataloader_num_workers: 0
+    logging_steps: 1
+    save_steps: 1
+    save_total_limit: 1
+    report_to: [none]
+
+eval: {}
+data:
+  dataset_id: ${MLLM_COMP_TRAIN_DATASET}
+  sample_split: train
+output:
+  run_dir: ${MLLM_COMP_TRAIN_RUN_DIR}
+  manifest_path: ${MLLM_COMP_TRAIN_RUN_DIR}/manifest.json

@@ -1,0 +1,61 @@
+experiment:
+  name: qwen3_vl_14bench
+  run_id: null
+  seed: 42
+
+backbone:
+  name: qwen3_vl
+  model_path: ${QWEN3_VL_MODEL_PATH}
+  model_revision: null
+  trust_remote_code: false
+  config:
+    torch_dtype: bfloat16
+    attn_implementation: flash_attention_2
+    model_load_kwargs:
+      local_files_only: true
+    processor_load_kwargs:
+      local_files_only: true
+      min_pixels: 200704
+      max_pixels: 1605632
+
+pipeline:
+  stages: []
+
+analysis: {}
+train: {}
+
+eval:
+  backend: lmms_eval
+  compression_mode: none
+  target: baseline
+  checkpoint_path: ${QWEN3_VL_MODEL_PATH}
+  tasks:
+    - gqa
+    - vqav2_val
+    - ok_vqa_val2014
+    - textvqa_val
+    - docvqa_val
+    - ocrbench
+    - scienceqa_img
+    - ai2d
+    - mmstar
+    - refcoco_bbox_rec_testA
+    - refcoco_bbox_rec_testB
+    - refcoco+_bbox_rec_testA
+    - refcoco+_bbox_rec_testB
+    - refcocog_bbox_rec_test
+  runtime_batch_size: 1
+  num_processes: 1
+  sample_limit: null
+  # Empty by design: task YAML and Qwen3_VL.DEFAULT_GEN_KWARGS own generation.
+  generation: {}
+  args:
+    seed: [0, 1234, 1234, 1234]
+    force_simple: true
+    log_samples: true
+    verbosity: DEBUG
+
+data:
+  dataset_id: null
+  dataset_commit: null
+  sample_split: validation

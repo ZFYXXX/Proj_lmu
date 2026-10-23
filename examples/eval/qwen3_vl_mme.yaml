@@ -1,0 +1,27 @@
+experiment:
+  name: qwen3_vl_mme
+  seed: 42
+
+backbone:
+  name: qwen3_vl
+  model_path: ${QWEN3_VL_MODEL_PATH}
+  trust_remote_code: false
+  config:
+    torch_dtype: bfloat16
+    attn_implementation: flash_attention_2
+
+eval:
+  backend: lmms_eval
+  compression_mode: none
+  target: baseline
+  tasks: [mme]
+  runtime_batch_size: 1
+  num_processes: 1
+  distributed_launcher: accelerate
+  args:
+    log_samples: true
+    verbosity: INFO
+
+output:
+  run_dir: ${MLLM_COMP_RUN_DIR}
+  manifest_path: ${MLLM_COMP_RUN_DIR}/manifest.json

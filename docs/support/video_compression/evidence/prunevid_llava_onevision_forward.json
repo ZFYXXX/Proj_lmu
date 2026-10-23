@@ -1,0 +1,283 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "support_unit": {
+    "algorithm": "prunevid",
+    "variant": "prunevid.video",
+    "backbone": "llava_onevision",
+    "target_modality": "video",
+    "phase": "forward",
+    "binding": "prunevid.video.llava_onevision"
+  },
+  "canonical_config": {
+    "cluster_ratio": 0.5,
+    "enable_vtp": true,
+    "k": 7,
+    "min_tokens_for_cluster": 14,
+    "tau": 0.8,
+    "temporal_ratio": 0.25,
+    "vtp_alpha": 0.4,
+    "vtp_selected_layer": 10
+  },
+  "source_revisions": {
+    "installed_kernel_contract_and_generate_runner": "3bb24b3bae744a667b57a7195dfd890f0f4a6bf7",
+    "five_step_training_and_reload_harness": "51ab91765c4fce09c1a790289ec641b74e30dcc1",
+    "runtime_and_gpu_bound": "b4b11e392edafafe0baad55df901b369affeec9d",
+    "reference_compression_algorithm": "7e3ae876bc6306a4179f389e5f960225cd9e3a79",
+    "lmms_eval": "e9a5309ea6f4b8edacb813823cf8fdfd24bbd115"
+  },
+  "environment": {
+    "name": "mllm-comp-platform-dev",
+    "python": "3.10.20",
+    "torch": "2.8.0+cu128",
+    "transformers": "4.57.3",
+    "dtype": "bfloat16",
+    "attention_implementation": "sdpa",
+    "gradient_checkpointing": false,
+    "offline": true,
+    "package_or_environment_changes": false,
+    "downloads": false
+  },
+  "checkpoint": {
+    "path": "/home/WuHao/checkpoints/ckpts-vlm/llava-onevision-qwen2-0.5b-ov",
+    "total_weight_bytes": 1787335336,
+    "weight_files": 1,
+    "local_files_only": true
+  },
+  "fixture": {
+    "kind": "nextqa_mc_test_derived_sft_code_correctness_fixture",
+    "task": "nextqa_mc_test",
+    "split": "test",
+    "doc_id": 442,
+    "video_id": "3064389881",
+    "target": "D",
+    "parquet": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet",
+    "video_root": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo",
+    "decoded_frames": 32,
+    "decode_policy": "uniform_local_decord",
+    "source_visual_tokens": 6272,
+    "quality_or_training_data_claim": false
+  },
+  "training": {
+    "batch_size": 1,
+    "optimizer": "AdamW",
+    "learning_rate": 0.01,
+    "weight_decay": 0.0,
+    "optimizer_steps": 5,
+    "gradient_accumulation_steps": 1,
+    "intended_trainable_handle": "llm.final_norm.weight",
+    "selected_trainable_parameters": ["model.norm.weight"],
+    "compressor_trainable_parameters": 0,
+    "source_visual_tokens_each_step": [6272, 6272, 6272, 6272, 6272],
+    "projector_visual_tokens_each_step": [3035, 3035, 3035, 3035, 3035],
+    "final_vtp_visual_tokens_each_step": [1202, 1202, 1202, 1202, 1202],
+    "losses": [
+      0.8463132381439209,
+      0.8463146686553955,
+      0.846315860748291,
+      0.8463167548179626,
+      0.8463184237480164
+    ],
+    "gradient_norms": [
+      0.06562686711549759,
+      0.06562677770853043,
+      0.06562678515911102,
+      0.06562678515911102,
+      0.06562966108322144
+    ],
+    "max_parameter_deltas": [0.015625, 0.015625, 0.015625, 0.015625, 0.015625],
+    "compression_triggered_each_step": true,
+    "both_defining_stages_triggered_each_step": true,
+    "loss_finite_each_step": true,
+    "backward_succeeded_each_step": true,
+    "target_gradient_finite_nonzero_each_step": true,
+    "target_updated_each_step": true,
+    "layout_stable_across_steps": true,
+    "use_cache": false,
+    "cache_policy": "none_training_forward"
+  },
+  "prunevid_evidence": {
+    "defining_stages": ["temporal_spatial_reduce", "vtp_prefill_prune"],
+    "frame_count": 32,
+    "tokens_per_frame": 196,
+    "grid_height": 14,
+    "grid_width": 14,
+    "temporal_cluster_target": 8,
+    "window_frame_counts": [6, 5, 13, 8],
+    "static_output_count": 32,
+    "dynamic_output_count": 3003,
+    "projector_source_group_count": 3035,
+    "projector_non_singleton_source_group_count": 1660,
+    "projector_source_partition_exact_each_step": true,
+    "projector_representatives_source_ordered_each_step": true,
+    "vtp_selected_layer": 10,
+    "vtp_alpha": 0.4,
+    "vtp_expected_keep_count": 1202,
+    "vtp_source_partition_exact_each_step": true,
+    "vtp_position_policy": "gather_native_positions",
+    "vtp_training_cache_policy": "none_training_forward",
+    "image_variant_shared": false,
+    "training_free_compressor": true
+  },
+  "llava_legalization": {
+    "source_placeholder_count": 6272,
+    "projector_placeholder_count": 3035,
+    "final_vtp_placeholder_count": 1202,
+    "source_visual_span": [14, 6287],
+    "projector_visual_span": [14, 3050],
+    "structural_newline_count": 1,
+    "structural_tokens_preserved_each_step": true,
+    "projector_and_vtp_capture_count_each_step": 1,
+    "completion_only_labels_and_logits_aligned_each_step": true,
+    "dense_positions_rebuilt_each_step": true,
+    "training_logits_shape": [1, 1274, 151647]
+  },
+  "lightweight_checkpoint": {
+    "format": "mllm_comp_selected_parameter_checkpoint",
+    "global_step": 5,
+    "tensor_names": ["model.norm.weight"],
+    "tensor_dtype": "BF16",
+    "tensor_shape": [896],
+    "tensor_parameter_count": 896,
+    "tensor_sha256": "6d3bd197af8aed4c589318f4283f990bf01212c87ac28db54f0a4cc6607cbc99",
+    "config_sha256": "9aee195b25056927319358da4e77b23a79f02f3f5728519d0b245b4e3a5d7594",
+    "training_state_sha256": "b27c92a6cf5a2fbc40accdb744ab5f2442c6eb4ec9a80983a21097a6a8f80b8e",
+    "fresh_base_checkpoint_reload": true,
+    "tensor_reload_exact": true,
+    "post_reload_compression_triggered": true,
+    "post_reload_source_visual_tokens": 6272,
+    "post_reload_projector_visual_tokens": 3035,
+    "post_reload_final_vtp_visual_tokens": 1202,
+    "post_reload_logits_shape": [1, 1271, 151647],
+    "post_reload_logits_finite": true,
+    "post_reload_labels_absent": true,
+    "post_reload_prunevid_path_exact": true,
+    "post_reload_llava_layout_aligned": true
+  },
+  "gpu": {
+    "physical_device": 1,
+    "logical_device": 0,
+    "name": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+    "free_before_mib": 62134,
+    "estimated_peak_mib": 32768,
+    "safety_margin_mib": 16384,
+    "required_free_mib": 49152,
+    "observed_peak_allocated_mib": 5786.06,
+    "observed_peak_reserved_mib": 6712.0,
+    "free_after_process_exit_mib": 62134,
+    "gpu0_free_before_mib": 60816,
+    "concurrency_decision": "both GPUs admitted; serialized the sole run on the slightly freer GPU 1 and left GPU 0 unassigned",
+    "other_process_snapshots_unchanged": true,
+    "other_processes_modified": false
+  },
+  "command": [
+    "/home/WuHao/miniconda3/envs/mllm-comp-platform-dev/bin/python",
+    "-m",
+    "scripts.diagnostics.validate_llava_prunevid_video_training_checkpoint",
+    "--checkpoint",
+    "/home/WuHao/checkpoints/ckpts-vlm/llava-onevision-qwen2-0.5b-ov",
+    "--nextqa_parquet",
+    "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet",
+    "--video_root",
+    "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo",
+    "--output_dir",
+    "/home/WuHao/code/MLLM-Comp-Platform-Workspace/dev/outputs/video_compression/prunevid/llava_onevision/training/20260827t154108-b4b11e3-prunevid-llava-train-gpu1-a1",
+    "--code_revision",
+    "b4b11e392edafafe0baad55df901b369affeec9d",
+    "--physical_gpu",
+    "1",
+    "--estimated_peak_mib",
+    "32768",
+    "--safety_margin_mib",
+    "16384",
+    "--learning_rate",
+    "0.01",
+    "--seed",
+    "42"
+  ],
+  "artifacts": {
+    "report": {
+      "path": "outputs/video_compression/prunevid/llava_onevision/training/20260827t154108-b4b11e3-prunevid-llava-train-gpu1-a1/report.json",
+      "sha256": "7790fd146af9e25fb5b13a73c13edf250e444f7362d330bb29ff09858dedc57d",
+      "size_bytes": 17199682
+    },
+    "progress": {
+      "path": "outputs/video_compression/prunevid/llava_onevision/training/20260827t154108-b4b11e3-prunevid-llava-train-gpu1-a1/progress.jsonl",
+      "sha256": "aad661edb2e99b81acb28e4b411e0fa03d5ce6e02d3cad06c0f856f1dc339cb0",
+      "size_bytes": 4269229
+    },
+    "fixture": {
+      "path": "outputs/video_compression/prunevid/llava_onevision/training/20260827t154108-b4b11e3-prunevid-llava-train-gpu1-a1/fixture.json",
+      "sha256": "375f2ecd510c6e549d9e2394390f7325a16fc6e0285c22b9da189d65c4985904",
+      "size_bytes": 627
+    },
+    "checkpoint_tensor": {
+      "path": "outputs/video_compression/prunevid/llava_onevision/training/20260827t154108-b4b11e3-prunevid-llava-train-gpu1-a1/checkpoint-5/adapter_model.safetensors",
+      "sha256": "6d3bd197af8aed4c589318f4283f990bf01212c87ac28db54f0a4cc6607cbc99",
+      "size_bytes": 1880
+    },
+    "independent_validation": {
+      "path": "outputs/video_compression/prunevid/llava_onevision/training/20260827t154108-b4b11e3-prunevid-llava-train-gpu1-a1/independent_validation.json",
+      "sha256": "33f39eb3aa8acec6c8afc3ac673a8403643dbe9ae4a62e9cc516b0dbaa7d4116",
+      "size_bytes": 16309
+    },
+    "validation_attempts": {
+      "path": "outputs/video_compression/prunevid/llava_onevision/training/20260827t154108-b4b11e3-prunevid-llava-train-gpu1-a1/validation_attempts.json",
+      "sha256": "783f93ab44983268d958874a00b5482032f7c794cafe05cb3c87cb0fb336e3d1",
+      "size_bytes": 857
+    },
+    "log": {
+      "path": "logs/video_compression/prunevid/llava_onevision/training/20260827t154108-b4b11e3-prunevid-llava-train-gpu1-a1/stdout.log",
+      "sha256": "c3524232a52f4261c4f9cc146aec8f36e8ba6bf60a64112420495a9d8da5f136",
+      "size_bytes": 1826
+    },
+    "launch_script": {
+      "path": "logs/video_compression/prunevid/llava_onevision/training/20260827t154108-b4b11e3-prunevid-llava-train-gpu1-a1/run.sh",
+      "sha256": "b7532e1f3b31fd2e81a586a9bbc19a79378ce69a813b584f3f157ea8b09b2ba3",
+      "size_bytes": 1895
+    },
+    "launch_manifest": {
+      "path": "outputs/video_compression/prunevid/llava_onevision/training/20260827t154108-b4b11e3-prunevid-llava-train-gpu1-a1/launch_manifest.final.json",
+      "sha256": "436047d69455484e0777990bef9d63c54c7952e3a3829d35d11ca168a13d1c4b",
+      "size_bytes": 5425
+    }
+  },
+  "verified_invariants": [
+    "exactly five optimizer steps on the shared doc-442 batch-one fixture",
+    "PruneVid projector temporal/static-dynamic reduction and layer-10 VTP both trigger exactly once per step",
+    "the canonical projector path reduces 6272 source visual tokens to 3035 with an exact source partition",
+    "the canonical VTP path reduces 3035 projector tokens to 1202 with exact static/dynamic budgets",
+    "training use_cache is false and the recorded cache policy is none_training_forward rather than a false DynamicCache compaction claim",
+    "LLaVA placeholder, structural newline, completion-only labels, logits, dense positions, and splice lengths follow both LayoutDelta stages",
+    "loss and logits are finite on every step",
+    "the one intended facade final-norm target has finite non-zero gradients and updates",
+    "the lightweight checkpoint contains exactly the intended BF16 tensor",
+    "fresh base-checkpoint reload reproduces the saved tensor exactly",
+    "post-reload compressed inference is finite and preserves both PruneVid stages and LLaVA layout invariants"
+  ],
+  "attempts": [
+    {
+      "attempt": 1,
+      "run_id": "20260827t154108-b4b11e3-prunevid-llava-train-gpu1-a1",
+      "status": "passed",
+      "elapsed_seconds": 156.121
+    }
+  ],
+  "independent_artifact_validation": {
+    "status": "passed",
+    "stdlib_only": true,
+    "checks": 400,
+    "attempts": 2,
+    "first_attempt_correction": "the validator expected execution_phase inside the compact progress.start scope; it was narrowed to the recorded support-unit identity without changing GPU artifacts",
+    "source_artifacts_unchanged": true
+  },
+  "boundaries": {
+    "test_derived_code_correctness_fixture": true,
+    "full_nextqa_benchmark": false,
+    "paper_quality_or_efficiency_reproduction": false,
+    "convergence_claim": false,
+    "batch_greater_than_one": false,
+    "single_sample_multiple_videos": false
+  },
+  "recorded_at": "2026-08-27T15:41:19+08:00"
+}

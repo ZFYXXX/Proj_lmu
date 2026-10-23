@@ -1,0 +1,40 @@
+experiment:
+  name: qwen25_vl_residual_stream_decomposition_example
+  seed: 42
+
+backbone:
+  name: qwen25_vl
+  model_id: Qwen/Qwen2.5-VL-3B-Instruct
+  model_revision: 66285546d2b821cf421d4f5eb2576359d3770cd3
+  trust_remote_code: false
+  config:
+    torch_dtype: bfloat16
+    attn_implementation: eager
+
+pipeline:
+  stages: []
+
+analysis:
+  backend: lmms_eval
+  compression_mode: none
+  phase: pre_compression
+  tasks: [mme]
+  runtime_batch_size: 1
+  sample_limit: 1
+  probes:
+    - name: residual_stream_decomposition
+      enabled: true
+      layers: [0]
+      causal_layers: [0]
+      causal_operations: [attn, ffn]
+      token_groups: [all, system, text, vision]
+      metrics:
+        - update_norm
+        - residual_ratio
+        - cosine_to_input
+        - js
+        - changed_prob_on_base_top1
+        - top1_changed
+      ranking_metric: js
+      collect_residual_stats: true
+      save_raw: false

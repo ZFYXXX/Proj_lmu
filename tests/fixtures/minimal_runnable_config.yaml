@@ -1,0 +1,16 @@
+experiment:
+  name: cli-test
+backbone:
+  name: qwen25_omni
+  model_path: /models/qwen25-omni-fixture
+pipeline:
+  stages: []
+analysis: {}
+train: {}
+eval:
+  tasks: [mme]
+data:
+  dataset_id: fixture
+output:
+  run_dir: runs/test
+  manifest_path: runs/test/manifest.json

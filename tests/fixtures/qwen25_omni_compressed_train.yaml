@@ -1,0 +1,58 @@
+experiment:
+  name: qwen25-omni-compressed-train-fixture
+  seed: 42
+
+backbone:
+  name: qwen25_omni
+  model_id: Qwen/fixture
+
+pipeline:
+  stages:
+    - name: audio_segmentwise_topk
+      placement: projector_level
+      execution_phase: forward
+      plugin: segmentwise_topk_audio
+      algorithm: segmentwise_topk_audio
+      variant: segmentwise_topk_audio.audio
+      binding: segmentwise_topk_audio.audio.qwen25_omni
+      method: token_compression
+      object_family: tensor_slot
+      modalities: [audio]
+      target_modalities: [audio]
+      conditioning_modalities: []
+      preserved_modalities: [text, image, video]
+      coupling_policy: independent
+      media_alignment: temporal
+      token_roles: [observation]
+      operation:
+        type: keep
+        budget_type: keep_ratio
+        target_site: audio_encoder_output_pre_projector
+      criterion:
+        ranking: descending
+        score_source: encoder_last_layer_attention
+      schedule:
+        granularity: per_audio
+        keep_ratio: 0.5
+        selector:
+          modality: audio
+
+analysis: {}
+
+train:
+  backend: ms_swift
+  compression_mode: compressed
+  runtime_mode: default
+  max_steps: 1
+  args:
+    datasets: [tests/fixtures/ms_swift_text_smoke.jsonl]
+    tuner_type: full
+
+eval: {}
+
+data:
+  dataset_id: tests/fixtures/ms_swift_text_smoke.jsonl
+
+output:
+  run_dir: runs/qwen25-omni-compressed-train-fixture
+  manifest_path: runs/qwen25-omni-compressed-train-fixture/manifest.json

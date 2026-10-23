@@ -1,0 +1,347 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "support_unit": {
+    "algorithm": "llamavid",
+    "variant": "llamavid.video",
+    "backbone": "qwen3_vl",
+    "target_modality": "video",
+    "phase": "generate",
+    "binding": "llamavid.video.qwen3_vl"
+  },
+  "canonical_config": {
+    "num_query": 32,
+    "bert_type": "qformer",
+    "compress_type": "mean"
+  },
+  "provenance": {
+    "code_revision": "6d7efa194f94e173ff6e4146c3e86ee4ba5929df",
+    "reference_revision": "7e3ae876bc6306a4179f389e5f960225cd9e3a79",
+    "command": "/home/WuHao/code/MLLM-Comp-Platform-Workspace/dev/scripts/diagnostics/validate_qwen3_vl_llamavid_video_compression_checkpoint.py --checkpoint /home/WuHao/checkpoints/ckpts-vlm/Qwen3-VL-2B-Instruct --bert_checkpoint /home/WuHao/checkpoints/ckpts-aux/bert-base-uncased --nextqa_parquet /home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet --video_root /home/WuHao/datasets/lmms_eval_datasets/NExTQA/NExTVideo --output_dir /home/WuHao/code/MLLM-Comp-Platform-Workspace/dev/.goal-runs/video-compression-three-backbones/llamavid/qwen3_vl/generate/20260906T201540Z-6d7efa1-llamavid-qwen3_vl-infer-gpu1-a1 --code_revision 6d7efa194f94e173ff6e4146c3e86ee4ba5929df --physical_gpu 1 --max_new_tokens 4 --estimated_peak_mib 32768 --safety_margin_mib 16384",
+    "checkpoint": {
+      "path": "/home/WuHao/checkpoints/ckpts-vlm/Qwen3-VL-2B-Instruct",
+      "config_path": "/home/WuHao/checkpoints/ckpts-vlm/Qwen3-VL-2B-Instruct/config.json",
+      "weight_files": [
+        {
+          "name": "model.safetensors",
+          "size_bytes": 4255140312
+        }
+      ],
+      "total_weight_bytes": 4255140312
+    },
+    "auxiliary_checkpoints": {
+      "bert_checkpoint": {
+        "path": "/home/WuHao/checkpoints/ckpts-aux/bert-base-uncased",
+        "config_path": "/home/WuHao/checkpoints/ckpts-aux/bert-base-uncased/config.json",
+        "weight_files": [
+          {
+            "name": "model.safetensors",
+            "size_bytes": 440449768
+          }
+        ],
+        "total_weight_bytes": 440449768
+      }
+    },
+    "nextqa_parquet": "/home/WuHao/datasets/lmms_eval_datasets/NExTQA/MC/test-00000-of-00001.parquet",
+    "nextqa_parquet_size_bytes": 898657,
+    "fixed_doc_ids": [
+      3849,
+      442,
+      28,
+      205
+    ],
+    "video_preprocessing": {
+      "fps": 1,
+      "max_pixels": 131072,
+      "image_patch_size": 16,
+      "enable_thinking": false
+    }
+  },
+  "environment": {
+    "python": "3.10.20",
+    "torch": "2.8.0+cu128",
+    "transformers": "4.57.3",
+    "cuda_visible_devices": "1",
+    "logical_device": "cuda:0",
+    "logical_device_count": 1,
+    "gpu_name": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+    "dtype": "bfloat16",
+    "attention_implementation": "sdpa",
+    "offline": true
+  },
+  "gpu": {
+    "before": {
+      "physical_device": 1,
+      "name": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+      "uuid": "GPU-51c7266f-391b-e0f6-1387-0f3ea8430ef6",
+      "total_memory_mib": 97887,
+      "used_memory_mib": 42337,
+      "free_memory_mib": 54912,
+      "compute_processes": [
+        {
+          "pid": 2095,
+          "process_name": "/home/lixiaocong/venvs/simtoolreal-isaacsim-py311/bin/python",
+          "used_memory_mib": 42203
+        }
+      ]
+    },
+    "admission": {
+      "estimated_peak_mib": 32768,
+      "safety_margin_mib": 16384,
+      "required_free_mib": 49152,
+      "observed_free_mib": 54912,
+      "decision": "admitted_with_existing_compute_processes",
+      "concurrency": 1
+    },
+    "observed_peak_allocated_mib": 5400.92,
+    "observed_peak_reserved_mib": 6260,
+    "after": {
+      "physical_device": 1,
+      "name": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+      "uuid": "GPU-51c7266f-391b-e0f6-1387-0f3ea8430ef6",
+      "total_memory_mib": 97887,
+      "used_memory_mib": 49288,
+      "free_memory_mib": 47961,
+      "compute_processes": [
+        {
+          "pid": 2095,
+          "process_name": "/home/lixiaocong/venvs/simtoolreal-isaacsim-py311/bin/python",
+          "used_memory_mib": 42203
+        },
+        {
+          "pid": 841115,
+          "process_name": "/home/WuHao/miniconda3/envs/mllm-comp-platform-dev/bin/python",
+          "used_memory_mib": 6946
+        }
+      ]
+    },
+    "other_processes_modified": false,
+    "launcher_gpu_after_process_exit": [
+      "0, NVIDIA RTX PRO 6000 Blackwell Workstation Edition, GPU-e97378fb-0ff8-ef7f-10d2-f89b5e3fcac7, 97887, 8881, 88368",
+      "1, NVIDIA RTX PRO 6000 Blackwell Workstation Edition, GPU-51c7266f-391b-e0f6-1387-0f3ea8430ef6, 97887, 42337, 54912"
+    ],
+    "launcher_processes_after": [
+      "GPU-e97378fb-0ff8-ef7f-10d2-f89b5e3fcac7, 841117, /home/WuHao/miniconda3/envs/mllm-comp-platform-dev/bin/python, 8816",
+      "GPU-51c7266f-391b-e0f6-1387-0f3ea8430ef6, 2095, /home/lixiaocong/venvs/simtoolreal-isaacsim-py311/bin/python, 42203"
+    ],
+    "concurrency_decision": "Two independent inference jobs on explicitly distinct physical devices, each admitted with 16384 MiB safety margin."
+  },
+  "samples": [
+    {
+      "doc_id": 3849,
+      "video_id": "3571539122",
+      "source_visual_tokens": 840,
+      "result_visual_tokens": 12,
+      "baseline_prefill_length": 942,
+      "compressed_prefill_length": 114,
+      "generated_tokens": 4,
+      "checks": {
+        "compression_applied": true,
+        "non_identity_token_reduction": true,
+        "source_grid_count_exact": true,
+        "raw_raster_exact": true,
+        "canonical_two_tokens_per_unit": true,
+        "canonical_config_exact": true,
+        "defining_stages_exact": true,
+        "temporal_recipe_exact": true,
+        "source_ordered_anchors_exact": true,
+        "structural_singletons_exact": true,
+        "exact_overlapping_value_lineage": true,
+        "placeholder_counts_exact": true,
+        "layout_counts_exact": true,
+        "grid_preserved": true,
+        "sparse_grid_policy": true,
+        "mrope_exact": true,
+        "sequence_reduction_exact": true,
+        "generation_lengths_exact": true,
+        "cached_decode_repaired": true,
+        "rope_delta_published": true,
+        "labels_absent": true,
+        "provider_capture_once": true,
+        "local_bert_bound": true,
+        "prompt_conditioning_exact": true,
+        "bert_token_policy": true,
+        "raw_provider_exact": true,
+        "qformer_registered_trainable": true,
+        "compression_state_api": true,
+        "finite_signals": true,
+        "finite_generation": true,
+        "decoder_alignment": true,
+        "one_native_video": true,
+        "temporal_placeholder_spans": true,
+        "visual_masks_compacted": true,
+        "deepstack_count": true,
+        "deepstack_layout_shared": true,
+        "deepstack_weighted_values_replayed": true,
+        "deepstack_shapes": true
+      }
+    },
+    {
+      "doc_id": 442,
+      "video_id": "3064389881",
+      "source_visual_tokens": 1521,
+      "result_visual_tokens": 26,
+      "baseline_prefill_length": 1700,
+      "compressed_prefill_length": 205,
+      "generated_tokens": 4,
+      "checks": {
+        "compression_applied": true,
+        "non_identity_token_reduction": true,
+        "source_grid_count_exact": true,
+        "raw_raster_exact": true,
+        "canonical_two_tokens_per_unit": true,
+        "canonical_config_exact": true,
+        "defining_stages_exact": true,
+        "temporal_recipe_exact": true,
+        "source_ordered_anchors_exact": true,
+        "structural_singletons_exact": true,
+        "exact_overlapping_value_lineage": true,
+        "placeholder_counts_exact": true,
+        "layout_counts_exact": true,
+        "grid_preserved": true,
+        "sparse_grid_policy": true,
+        "mrope_exact": true,
+        "sequence_reduction_exact": true,
+        "generation_lengths_exact": true,
+        "cached_decode_repaired": true,
+        "rope_delta_published": true,
+        "labels_absent": true,
+        "provider_capture_once": true,
+        "local_bert_bound": true,
+        "prompt_conditioning_exact": true,
+        "bert_token_policy": true,
+        "raw_provider_exact": true,
+        "qformer_registered_trainable": true,
+        "compression_state_api": true,
+        "finite_signals": true,
+        "finite_generation": true,
+        "decoder_alignment": true,
+        "one_native_video": true,
+        "temporal_placeholder_spans": true,
+        "visual_masks_compacted": true,
+        "deepstack_count": true,
+        "deepstack_layout_shared": true,
+        "deepstack_weighted_values_replayed": true,
+        "deepstack_shapes": true
+      }
+    },
+    {
+      "doc_id": 28,
+      "video_id": "6097011028",
+      "source_visual_tokens": 2760,
+      "result_visual_tokens": 46,
+      "baseline_prefill_length": 3030,
+      "compressed_prefill_length": 316,
+      "generated_tokens": 4,
+      "checks": {
+        "compression_applied": true,
+        "non_identity_token_reduction": true,
+        "source_grid_count_exact": true,
+        "raw_raster_exact": true,
+        "canonical_two_tokens_per_unit": true,
+        "canonical_config_exact": true,
+        "defining_stages_exact": true,
+        "temporal_recipe_exact": true,
+        "source_ordered_anchors_exact": true,
+        "structural_singletons_exact": true,
+        "exact_overlapping_value_lineage": true,
+        "placeholder_counts_exact": true,
+        "layout_counts_exact": true,
+        "grid_preserved": true,
+        "sparse_grid_policy": true,
+        "mrope_exact": true,
+        "sequence_reduction_exact": true,
+        "generation_lengths_exact": true,
+        "cached_decode_repaired": true,
+        "rope_delta_published": true,
+        "labels_absent": true,
+        "provider_capture_once": true,
+        "local_bert_bound": true,
+        "prompt_conditioning_exact": true,
+        "bert_token_policy": true,
+        "raw_provider_exact": true,
+        "qformer_registered_trainable": true,
+        "compression_state_api": true,
+        "finite_signals": true,
+        "finite_generation": true,
+        "decoder_alignment": true,
+        "one_native_video": true,
+        "temporal_placeholder_spans": true,
+        "visual_masks_compacted": true,
+        "deepstack_count": true,
+        "deepstack_layout_shared": true,
+        "deepstack_weighted_values_replayed": true,
+        "deepstack_shapes": true
+      }
+    },
+    {
+      "doc_id": 205,
+      "video_id": "2597214137",
+      "source_visual_tokens": 5148,
+      "result_visual_tokens": 88,
+      "baseline_prefill_length": 5584,
+      "compressed_prefill_length": 524,
+      "generated_tokens": 4,
+      "checks": {
+        "compression_applied": true,
+        "non_identity_token_reduction": true,
+        "source_grid_count_exact": true,
+        "raw_raster_exact": true,
+        "canonical_two_tokens_per_unit": true,
+        "canonical_config_exact": true,
+        "defining_stages_exact": true,
+        "temporal_recipe_exact": true,
+        "source_ordered_anchors_exact": true,
+        "structural_singletons_exact": true,
+        "exact_overlapping_value_lineage": true,
+        "placeholder_counts_exact": true,
+        "layout_counts_exact": true,
+        "grid_preserved": true,
+        "sparse_grid_policy": true,
+        "mrope_exact": true,
+        "sequence_reduction_exact": true,
+        "generation_lengths_exact": true,
+        "cached_decode_repaired": true,
+        "rope_delta_published": true,
+        "labels_absent": true,
+        "provider_capture_once": true,
+        "local_bert_bound": true,
+        "prompt_conditioning_exact": true,
+        "bert_token_policy": true,
+        "raw_provider_exact": true,
+        "qformer_registered_trainable": true,
+        "compression_state_api": true,
+        "finite_signals": true,
+        "finite_generation": true,
+        "decoder_alignment": true,
+        "one_native_video": true,
+        "temporal_placeholder_spans": true,
+        "visual_masks_compacted": true,
+        "deepstack_count": true,
+        "deepstack_layout_shared": true,
+        "deepstack_weighted_values_replayed": true,
+        "deepstack_shapes": true
+      }
+    }
+  ],
+  "artifacts": {
+    "report": ".goal-runs/video-compression-three-backbones/llamavid/qwen3_vl/generate/20260906T201540Z-6d7efa1-llamavid-qwen3_vl-infer-gpu1-a1/report.json",
+    "report_sha256": "bea163ca205b8972d59397bb02576569129294a911ea95e97684a7d609d4ab1e",
+    "lmms_eval_samples": ".goal-runs/video-compression-three-backbones/llamavid/qwen3_vl/generate/20260906T201540Z-6d7efa1-llamavid-qwen3_vl-infer-gpu1-a1/samples.jsonl",
+    "samples_sha256": "e041c257642f9eb5a8206ee68dbd6ecfe7b6a83e86324985622fac779695ce9b",
+    "launcher_logs": ".goal-logs/video-compression-three-backbones/llamavid/qwen3_vl/generate/20260906T201540Z-6d7efa1-llamavid-qwen3_vl-infer-gpu1-a1",
+    "launcher_exit_code": 0
+  },
+  "regression": {
+    "local": "12 passed",
+    "installed_cuda_hidden": "24 passed"
+  },
+  "boundaries": {
+    "full_nextqa_benchmark": false,
+    "paper_quality_or_efficiency_reproduction": false,
+    "convergence_claim": false,
+    "training_claim": false,
+    "method_specific_checkpoint_claim": false
+  },
+  "recorded_at": "2026-09-06T20:17:01Z"
+}
