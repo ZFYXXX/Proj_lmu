@@ -1065,7 +1065,8 @@ class LMMSEvalRequestBridge:
                 cache_hook=cache_hook,
             )
         generation_kwargs, stops = self._generation_kwargs(request_generation)
-        with sgl_target_generation(self.runtime, processed, generation_kwargs):
+        from .request_performance import request_performance
+        with request_performance(self.runtime, processed, sample.sample_id), sgl_target_generation(self.runtime, processed, generation_kwargs):
             result = self.facade.runner.generate(
                 self.runtime,
                 state,

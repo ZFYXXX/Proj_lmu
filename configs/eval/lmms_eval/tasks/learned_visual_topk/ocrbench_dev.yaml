@@ -1,0 +1,3 @@
+include: ocrbench.yaml
+task: learned_topk_ocrbench_dev
+process_docs: !function topk_utils.ocrbench_development

@@ -81,6 +81,10 @@ def main(args):
         torch.cuda.manual_seed(42 + rank)
         examples = load_examples(Path(protocol['training_manifest']))
         bundle = load_runtime(identity, device)
+        if any(p.requires_grad for p in bundle['model'].parameters()):
+            raise ValueError('Backbone must be entirely frozen before training')
+        manifest.update(frozen_parameters=sum(p.numel() for p in bundle['model'].parameters()),
+                        base_identity_sha256=identity['identity_sha256'], revision=identity['revision'])
         llm = bundle['llm']
         llm.gradient_checkpointing_enable(gradient_checkpointing_kwargs={'use_reentrant': False})
         selector = LearnedVisualTopK(LearnedVisualTopKSpec(llm.config.hidden_size)).to(device)
@@ -167,6 +171,7 @@ def main(args):
             metrics = dict(zip(totals, values.tolist()))
             if rank == 0:
                 record = {'step': step, 'global_examples_seen': step * 8, **metrics,
+                    'global_sample_ids': [e['sample_id'] for e in examples[(step - 1) * 8:step * 8]],
                     'gradient_norm': float(norm), 'learning_rate': scheduler.get_last_lr()[0],
                     'elapsed_s_this_attempt': time.perf_counter() - start}
                 with (output / f'training_from_step_{attempt_start_step}_{attempt_id}.jsonl').open('a') as log:
