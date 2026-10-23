@@ -40,7 +40,7 @@ def test_float64_gradcheck():
 def test_mass_and_boundary_gradients(k):
     x = torch.linspace(-10, 10, 2048).reshape(1, -1).requires_grad_()
     p = continuous_topk(x, k)
-    assert abs(float(p.sum()) - k) < .001
+    assert abs(float(p.detach().sum()) - k) < .001
     (p * torch.arange(2048)).sum().backward()
     assert torch.isfinite(x.grad).all()
 

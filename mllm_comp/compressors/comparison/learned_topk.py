@@ -25,6 +25,8 @@ class QwenLearnedTopKComparison(QwenProjectorComparison):
         self.soft_training = config.get("training_mode", "hard") == "soft"
         if config.get("training_mode", "hard") not in {"soft", "hard"} or (self.soft_training and str(phase) != "forward"):
             raise ValueError("Soft training is forward-only; generation must physically compact")
+        if random and (self.soft_training or config.get('checkpoint_path')):
+            raise ValueError('Random pruning is hard-only and has no trained checkpoint')
         self.base_identity = None
         if random:
             self.selector = None
@@ -40,6 +42,8 @@ class QwenLearnedTopKComparison(QwenProjectorComparison):
                 raise ValueError("Selector/runtime checkpoint mismatch")
             self.base_identity = identity["identity_sha256"]
             self.selector = load_selector(config["checkpoint_path"], base_identity=self.base_identity, device=device)
+            if any(getattr(self.selector.spec, key) != config[key] for key in ('target_count', 'width', 'seed')):
+                raise ValueError('Selector checkpoint/config specification mismatch')
         else:
             self.selector = LearnedVisualTopK(LearnedVisualTopKSpec(self.decoder.config.hidden_size,
                 config["width"], config["target_count"], config["seed"])).to(device)

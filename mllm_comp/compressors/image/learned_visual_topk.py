@@ -131,6 +131,7 @@ def save_selector(module, folder, *, base_identity, provenance):
     save_file({k: v.detach().cpu().contiguous() for k, v in module.state_dict().items()}, str(folder / "selector.safetensors"))
     atomic_write_json(folder / "selector_config.json", {"format": FORMAT, "spec": asdict(module.spec),
         "implementation_hash": implementation_hash(), "base_identity_sha256": base_identity,
+        "weights_sha256": hashlib.sha256((folder / 'selector.safetensors').read_bytes()).hexdigest(),
         "source": SOURCE, "provenance": provenance})
 
 
@@ -142,6 +143,8 @@ def load_selector(folder, *, base_identity, device):
         raise ValueError("Selector format or implementation hash mismatch")
     if config["base_identity_sha256"] != base_identity:
         raise ValueError("Selector belongs to a different base checkpoint")
+    if config['source'] != SOURCE or config.get('weights_sha256') != hashlib.sha256((folder / 'selector.safetensors').read_bytes()).hexdigest():
+        raise ValueError('Selector source/weights integrity check failed')
     module = LearnedVisualTopK(LearnedVisualTopKSpec(**config["spec"]))
     module.load_state_dict(load_file(str(folder / "selector.safetensors")), strict=True)
     return module.to(device)
