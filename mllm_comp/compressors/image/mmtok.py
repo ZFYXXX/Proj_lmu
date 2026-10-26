@@ -201,15 +201,13 @@ def mmtok_image_tokens(
     if resolved_target == source_count:
         selection_order = torch.arange(source_count, device=projected_tokens.device)
     else:
-        projected = torch.nn.functional.normalize(
-            projected_tokens.float(), dim=-1, eps=1e-8
-        )
-        vision = torch.nn.functional.normalize(
-            vision_tokens.float(), dim=-1, eps=1e-8
-        )
-        text = torch.nn.functional.normalize(
-            text_embeddings.float(), dim=-1, eps=1e-8
-        )
+        # Match the release: normalize in the input dtype, then compute FP32
+        # coverage. Early promotion changed many BF16 greedy selections.
+        def released_normalize(value):
+            return (value / value.norm(dim=-1, keepdim=True).clamp(min=1e-8)).float()
+        projected = released_normalize(projected_tokens)
+        vision = released_normalize(vision_tokens)
+        text = released_normalize(text_embeddings)
         text_vision = torch.nn.functional.softmax(
             (text @ projected.transpose(0, 1)) / float(active.text_temperature),
             dim=1,
@@ -254,6 +252,7 @@ def mmtok_image_tokens(
             "coverage_objective": "custom" if rules and "scorer" in rules else "text_vision_plus_alpha_vision_vision",
             **rule_metadata(rules),
             "coverage_compute_dtype": "float32",
+            "normalization_policy": "official_input_dtype_then_float32",
             "retain_ratio": float(active.retain_ratio),
             "requested_target_count": (
                 active.target_count if target_count is None else target_count

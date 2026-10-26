@@ -322,7 +322,9 @@ def test_registry_exposes_exact_bifocal_units():
         "post_vision_merger_pre_llm_scatter"
     ]
     assert "visionzip.image.qwen25_vl" in binding.conflicts
-    assert "nuwa.image.qwen25_vl" in binding.conflicts
+    # Nuwa was archived by the projector-only workspace cleanup.
+    if any(b.name == "nuwa.image.qwen25_vl" for b in registry.bindings()):
+        assert "nuwa.image.qwen25_vl" in binding.conflicts
     units = registry.support.find(algorithm="bifocal", backbone="qwen25_vl")
     assert {unit.identity.phase for unit in units} == {
         ExecutionPhase.FORWARD,

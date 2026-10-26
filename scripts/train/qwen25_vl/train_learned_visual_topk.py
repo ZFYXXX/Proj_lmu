@@ -17,10 +17,13 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT))
 from mllm_comp.analysis.common.anchor7b_runtime import load_runtime, file_sha, validate_identity
 from mllm_comp.analysis.common.learned_topk_experiment import (
-    available_gpus, batch_indices, dependency_identity, digest_json, lr_multiplier, owned_output,
+    available_gpus, batch_indices, cooperative_pause, dependency_identity, digest_json, lr_multiplier, owned_output, shared_policy,
     restore_training_state, rng_state, save_training_state, source_identity, training_loss,
 )
 from mllm_comp.compressors.image.learned_visual_topk import LearnedVisualTopK, LearnedVisualTopKSpec
+from mllm_comp.analysis.common.topk_training_modes import (
+    TRAINING_MODES, parameter_digest, selection_diagnostics, training_selection,
+)
 from mllm_comp.core.serialization import atomic_write_json
 from scripts.train.qwen25_vl.train_learned_hybrid import load_examples, prepare_example
 
@@ -37,6 +40,27 @@ def main(args):
     from mllm_comp.compressors.comparison.learned_topk import QwenLearnedTopKComparison
     protocol_path = args.protocol.resolve()
     protocol = json.loads(protocol_path.read_text())
+    contextual = protocol.get('selector_type') == 'context_visual_topk'
+    wordwise = protocol.get('selector_type') == 'word_visual_topk'
+    save_fn = load_fn = None
+    binding = QwenLearnedTopKComparison
+    if contextual:
+        from mllm_comp.compressors.image.context_visual_topk import (
+            ContextVisualTopK, ContextVisualTopKSpec, prompt_question,
+            save_selector as save_fn, load_selector as load_fn,
+        )
+        from mllm_comp.compressors.comparison.context_topk import QwenContextTopKComparison
+        binding = QwenContextTopKComparison
+    if wordwise:
+        from mllm_comp.compressors.image.word_visual_topk import (
+            WordVisualTopK,WordVisualTopKSpec,prompt_word_question,evidence_masks,evidence_loss,
+            save_selector as save_fn,load_selector as load_fn,
+        )
+        from mllm_comp.compressors.comparison.word_topk import QwenWordTopKComparison
+        binding = QwenWordTopKComparison
+    mask_mode = protocol['training'].get('training_mask_mode', 'soft')
+    if mask_mode not in TRAINING_MODES:
+        raise ValueError('Unknown frozen training mask mode')
     source = source_identity(ROOT)
     if source != protocol['source']:
         raise ValueError('Run from the exact prepared execution worktree')
@@ -59,10 +83,15 @@ def main(args):
     torch.use_deterministic_algorithms(True)
     torch.backends.cuda.matmul.allow_tf32 = False
     torch.cuda.set_device(device)
+    policy = shared_policy()
+    if policy != protocol.get('resource_policy'):
+        raise ValueError('Resource policy differs from the frozen run')
+    if policy:
+        torch.cuda.set_per_process_memory_fraction(policy['allocator_fraction'], device)
     if world > 1:
         dist.init_process_group('nccl', device_id=device)
     output = owned_output(args.output)
-    contract = {**protocol['training'], 'protocol_sha256': file_sha(protocol_path),
+    contract = {**protocol['training'], 'resource_policy': policy, 'protocol_sha256': file_sha(protocol_path),
                 'source': source, 'world_size': world, 'base_identity_sha256': identity['identity_sha256']}
     manifest = {'status': 'running', 'started_utc': now(), 'contract': contract,
                 'contract_hash': digest_json(contract), 'steps_completed': 0, 'gpu_ids': visible[:world]}
@@ -87,13 +116,38 @@ def main(args):
                         base_identity_sha256=identity['identity_sha256'], revision=identity['revision'])
         llm = bundle['llm']
         llm.gradient_checkpointing_enable(gradient_checkpointing_kwargs={'use_reentrant': False})
-        selector = LearnedVisualTopK(LearnedVisualTopKSpec(llm.config.hidden_size)).to(device)
-        optimizer = torch.optim.AdamW(selector.parameters(), lr=2e-4, weight_decay=.01)
+        if contextual or wordwise:
+            from mllm_comp.compressors.image.learned_visual_topk import load_selector as load_visual
+            visual = load_visual(protocol['warmstart_checkpoint'], base_identity=identity['identity_sha256'], device='cpu')
+            if wordwise:
+                selector=WordVisualTopK(WordVisualTopKSpec(**protocol['word_spec']),visual=visual).to(device)
+                frozen_prior_digest=parameter_digest(selector.visual)
+                evidence_path=protocol.get('evidence_training_manifest')
+                evidence_rows=json.loads(Path(evidence_path).read_text())['rows'] if evidence_path else {}
+                if set(evidence_rows)-{e['sample_id'] for e in examples}:raise ValueError('Unknown supervised training sample')
+                manifest.update(visual_prior_frozen=True,visual_prior_sha256=frozen_prior_digest,
+                    verified_evidence_training_images=len(evidence_rows),evidence_loss_active=bool(evidence_rows))
+            else:
+                selector = ContextVisualTopK(ContextVisualTopKSpec(llm.config.hidden_size,
+                    context_mode=protocol['training']['context_mode']), visual=visual).to(device)
+                manifest.update(context_mode=selector.spec.context_mode,
+                    context_additional_parameters=selector.context_projection.weight.numel())
+            manifest['warmstart_checkpoint']=protocol['warmstart_checkpoint']
+        else:
+            selector = LearnedVisualTopK(LearnedVisualTopKSpec(llm.config.hidden_size)).to(device)
+        manifest.update(training_mask_mode=mask_mode,
+            initial_parameter_sha256=parameter_digest(selector),
+            training_physical_compression=False,
+            backward_estimator='VisionSelector continuous sigmoid-threshold Jacobian')
+        if protocol.get('initial_parameter_sha256', manifest['initial_parameter_sha256']) != manifest['initial_parameter_sha256']:
+            raise ValueError('Scorer initialization differs from the matched-arm contract')
+        trainable=[p for p in selector.parameters() if p.requires_grad]
+        optimizer = torch.optim.AdamW(trainable, lr=2e-4, weight_decay=.01)
         scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_multiplier)
         if args.resume:
             pointer = json.loads((output / 'latest.json').read_text())
             step = restore_training_state(output / pointer['checkpoint'], selector=selector,
-                optimizer=optimizer, scheduler=scheduler, contract=contract, rank=rank, device=device)
+                optimizer=optimizer, scheduler=scheduler, contract=contract, rank=rank, device=device, load_fn=load_fn)
         if step >= args.stop_after:
             raise ValueError('Requested stop point is not after the resumed checkpoint')
         if not args.resume:
@@ -102,14 +156,24 @@ def main(args):
             bundle['model'].eval()
             with torch.inference_mode():
                 expected = bundle['model'](**first['prompt_inputs'], use_cache=False).logits
-                identity_session = QwenLearnedTopKComparison(bundle['model'], {'target_count': len(first['visual'])}).install()
+                identity_cfg = {'target_count': len(first['visual'])}
+                if contextual:
+                    identity_cfg['context_mode'] = selector.spec.context_mode
+                if wordwise:
+                    identity_cfg.update(match_width=selector.spec.match_width,template_token_ids=selector.spec.template_token_ids)
+                identity_session = binding(bundle['model'], identity_cfg).install()
                 try:
                     actual = bundle['model'](**first['prompt_inputs'], use_cache=False).logits
                     torch.testing.assert_close(actual, expected, rtol=1e-5, atol=1e-5)
                 finally:
                     identity_session.uninstall()
                 del expected, actual
-                session = QwenLearnedTopKComparison(bundle['model'], {'target_count': 128}).install()
+                smoke_cfg = {'target_count': 128}
+                if contextual:
+                    smoke_cfg['context_mode'] = selector.spec.context_mode
+                if wordwise:
+                    smoke_cfg.update(match_width=selector.spec.match_width,template_token_ids=selector.spec.template_token_ids)
+                session = binding(bundle['model'], smoke_cfg).install()
                 try:
                     bundle['model'].generate(**first['prompt_inputs'], max_new_tokens=2, min_new_tokens=2,
                         do_sample=False, repetition_penalty=1.05, use_cache=True,
@@ -126,6 +190,12 @@ def main(args):
         attempt_start_step = step
         attempt_id = time.time_ns()
         while step < args.stop_after:
+            torch.cuda.synchronize(device)
+            active_start = time.perf_counter()
+            if policy:
+                free_bytes, _ = torch.cuda.mem_get_info(device)
+                if free_bytes < policy['minimum_free_mib_at_step'] * 1024**2:
+                    raise RuntimeError('Shared GPU headroom fell below 8 GiB; stopping safely at the last checkpoint')
             selector.train()
             totals = {}
             indices = batch_indices(step, world_size=world, rank=rank)
@@ -135,7 +205,14 @@ def main(args):
                 with torch.no_grad():
                     teacher, targets = answer_logits(bundle, state['hidden'], state['positions'], state['teacher_inputs']['labels'])
                 llm.train()
-                selection = selector(state['features'], soft=True)
+                if wordwise:
+                    question,audit=prompt_word_question(bundle['model'],state['prompt_inputs'],selector.spec.template_token_ids)
+                    selection=training_selection(selector,state['features'],mask_mode,question=question)
+                elif contextual:
+                    question, audit = prompt_question(bundle['model'], state['prompt_inputs'])
+                    selection = training_selection(selector, state['features'], mask_mode, question=question)
+                else:
+                    selection = training_selection(selector, state['features'], mask_mode)
                 visual = torch.tensor(state['visual'], device=device)
                 hidden = state['hidden'].index_copy(1, visual, selection['tokens'][None])
                 if hidden.shape != state['hidden'].shape:
@@ -145,6 +222,15 @@ def main(args):
                     if not torch.equal(targets, student_targets):
                         raise ValueError('Teacher/student answer labels changed')
                     loss, metrics = training_loss(student, teacher, targets, selection, step)
+                    if wordwise:
+                        annotation=evidence_rows.get(examples[index]['sample_id'])
+                        masks=evidence_masks(annotation,height=state['height'],width=state['width'],
+                            image_fingerprint=examples[index]['image_fingerprint'])
+                        supervised=evidence_loss(selection['scores'],*masks) if masks else selection['scores'].sum()*0
+                        loss=loss+protocol['training']['evidence_weight']*supervised
+                        metrics.update(evidence_loss=float(supervised.detach()),evidence_supervised=float(masks is not None),
+                            removed_format_tokens=audit['removed_format_tokens'],**selection['word_diagnostics'])
+                metrics.update(selection_diagnostics(selection))
                 (loss / len(indices)).backward()
                 for key, value in metrics.items():
                     totals[key] = totals.get(key, 0.) + value / len(indices)
@@ -152,12 +238,23 @@ def main(args):
             if any(p.grad is not None for p in bundle['model'].parameters()):
                 raise ValueError('Frozen backbone accumulated gradients')
             for param in selector.parameters():
+                if not param.requires_grad:
+                    if param.grad is not None:raise ValueError('Frozen selector prior accumulated gradients')
+                    continue
                 if param.grad is None:
                     raise ValueError('Selector parameter has no gradient')
                 if world > 1:
                     dist.all_reduce(param.grad)
                     param.grad.div_(world)
-            norm = torch.nn.utils.clip_grad_norm_(selector.parameters(), 1.)
+            branch_gradients={}
+            if wordwise:
+                for name,param in selector.named_parameters():
+                    if param.requires_grad:
+                        value=float(param.grad.norm())
+                        if not np.isfinite(value) or value<=0:raise ValueError(f'Word matching branch has invalid gradient: {name}')
+                        branch_gradients[name]=value
+                if parameter_digest(selector.visual)!=frozen_prior_digest:raise ValueError('Frozen visual prior changed')
+            norm = torch.nn.utils.clip_grad_norm_(trainable, 1.)
             if not torch.isfinite(norm) or norm <= 0:
                 raise ValueError('Selector gradient is nonfinite or zero')
             optimizer.step()
@@ -171,9 +268,11 @@ def main(args):
             metrics = dict(zip(totals, values.tolist()))
             if rank == 0:
                 record = {'step': step, 'global_examples_seen': step * 8, **metrics,
+                    'training_mask_mode': mask_mode,
                     'global_sample_ids': [e['sample_id'] for e in examples[(step - 1) * 8:step * 8]],
                     'gradient_norm': float(norm), 'learning_rate': scheduler.get_last_lr()[0],
                     'elapsed_s_this_attempt': time.perf_counter() - start}
+                if wordwise:record['branch_gradient_norms']=branch_gradients
                 with (output / f'training_from_step_{attempt_start_step}_{attempt_id}.jsonl').open('a') as log:
                     log.write(json.dumps(record, allow_nan=False) + '\n')
                 print(json.dumps(record), flush=True)
@@ -187,14 +286,16 @@ def main(args):
                 if rank == 0:
                     folder = output / 'checkpoints' / f'step_{step:06d}_{time.time_ns()}'
                     save_training_state(folder, selector=selector, optimizer=optimizer, scheduler=scheduler,
-                        step=step, contract=contract, random_states=states)
+                        step=step, contract=contract, random_states=states, save_fn=save_fn)
                     atomic_write_json(output / 'latest.json', {'step': step, 'checkpoint': str(folder.relative_to(output))})
                     manifest.update(steps_completed=step, global_examples_seen=step * 8,
-                        trainable_parameters=sum(p.numel() for p in selector.parameters()),
+                        trainable_parameters=sum(p.numel() for p in selector.parameters() if p.requires_grad),
                         peak_allocated_bytes_rank0=torch.cuda.max_memory_allocated(device))
                     atomic_write_json(output / 'manifest.json', manifest)
                 if world > 1:
                     dist.barrier()
+            torch.cuda.synchronize(device)
+            cooperative_pause(time.perf_counter() - active_start)
         if rank == 0:
             manifest.update(status='complete' if step == 320 else 'stopped_at_checkpoint', finished_utc=now())
             atomic_write_json(output / 'manifest.json', manifest)

@@ -875,6 +875,8 @@ class LMMSEvalRequestBridge:
                         translated[key] = current[key]
             if current.get("num_beams") is not None:
                 translated["num_beams"] = current["num_beams"]
+            if self.backbone_name == "qwen3_5" and "repetition_penalty" in current:
+                translated["repetition_penalty"] = current["repetition_penalty"]
             return translated, stops
 
         translated.update(merged)

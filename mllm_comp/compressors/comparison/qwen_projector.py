@@ -204,6 +204,13 @@ class QwenProjectorComparison(OperationComparison):
         keep = ~layout.vision[0].clone()
         keep[visual_ids.index_select(0, local)] = True
         indices = keep.nonzero(as_tuple=True)[0]
+        if self.method == "prunesid":
+            # The official K<=150 path feeds semantic-group order into the
+            # causal decoder. A Boolean keep mask would silently sort it away.
+            if not torch.equal(visual_ids, torch.arange(int(visual_ids[0]), int(visual_ids[-1]) + 1, device=visual_ids.device)):
+                raise ValueError("PruneSID requires one contiguous image placeholder span")
+            indices = torch.cat((indices[indices < visual_ids[0]],
+                visual_ids.index_select(0, local), indices[indices > visual_ids[-1]]))
         labels = self.labels.get()
         if labels is not None:
             self.labels.set(compact_ignored_labels(labels, indices, source_length=hidden.shape[1], operation=self.method))
@@ -228,6 +235,9 @@ class QwenProjectorComparison(OperationComparison):
             "visual_tokens_per_decoder_layer": [len(local)] * len(self.layers),
             "layer_averaged_retention_ratio": len(local) / count,
             "native_grid": [height, width], "selected_indices": local.tolist(), **stats}
+        self.last_selection["gathered_visual_indices"] = [int(i) for i in indices[updated.vision[0]] - visual_ids[0]]
+        if self.last_selection["gathered_visual_indices"] != local.tolist():
+            raise ValueError("Projector gather changed selector output order")
         return call["inputs_embeds"]
 
     def runtime_metadata(self):

@@ -1,0 +1,22 @@
+<!doctype html><html lang="zh"><meta charset="utf-8"><title>视觉证据独立核查</title>
+<style>body{font:16px system-ui;max-width:1200px;margin:24px auto;padding:0 16px;background:#f5f6f8;color:#17202a}button,input{font:inherit;padding:7px;margin:4px}canvas{display:block;max-width:100%;background:white;border:1px solid #bbb;cursor:crosshair}#question{white-space:pre-wrap;padding:14px;background:white}#status{padding:10px;color:#355}small{display:block;margin:12px 0}</style>
+<h1>视觉证据独立核查</h1><p>本页面不显示正确答案、模型预测或 Token 选择。请标出回答问题需要的区域；不确定时不要确认。</p>
+<label>核查人<input id="reviewer" placeholder="姓名或可追踪编号"></label><label>当前区域组<input id="group" value="evidence"></label>
+<small>在图像上拖动添加矩形。可用不同组名分别标记对象、数字、图例、单位等。几何覆盖不等于信息充分。</small>
+<button id="prev">上一张</button><button id="next">下一张</button><button id="clear">清空当前框</button><button id="verify">确认当前证据框已核查</button><button id="download">下载已核查标注</button>
+<div id="status"></div><div id="question"></div><canvas id="canvas"></canvas>
+<script>
+const items=__REVIEW_DATA__, annotations=new Map();let current=0,start=null,boxes=[],image=new Image();
+const $=id=>document.getElementById(id),canvas=$('canvas'),ctx=canvas.getContext('2d');
+function key(item){return item.task+':'+item.source_doc_id}
+function draw(){ctx.clearRect(0,0,canvas.width,canvas.height);ctx.drawImage(image,0,0,canvas.width,canvas.height);ctx.strokeStyle='#e34444';ctx.lineWidth=2;for(const b of boxes){const [x0,y0,x1,y1]=b.box;ctx.strokeRect(x0*canvas.width,y0*canvas.height,(x1-x0)*canvas.width,(y1-y0)*canvas.height);ctx.fillStyle='#e34444';ctx.fillText(b.name,x0*canvas.width+4,y0*canvas.height+16)}}
+function show(){const item=items[current],saved=annotations.get(key(item));boxes=saved?structuredClone(saved.boxes):[];$('question').textContent=item.question;$('status').textContent=`${current+1}/${items.length} · ${item.task} · 原题 ${item.source_doc_id} · 已核查 ${annotations.size} 张`;image=new Image();image.onload=()=>{canvas.width=Math.min(1200,image.width);canvas.height=Math.round(image.height*canvas.width/image.width);draw()};image.src=item.image}
+function point(event){const r=canvas.getBoundingClientRect();return [(event.clientX-r.left)/r.width,(event.clientY-r.top)/r.height].map(v=>Math.max(0,Math.min(1,v)))}
+canvas.onpointerdown=e=>{start=point(e);canvas.setPointerCapture(e.pointerId)};
+canvas.onpointerup=e=>{if(!start)return;const end=point(e),box=[Math.min(start[0],end[0]),Math.min(start[1],end[1]),Math.max(start[0],end[0]),Math.max(start[1],end[1])];start=null;if(box[2]-box[0]<.002||box[3]-box[1]<.002)return;annotations.delete(key(items[current]));boxes.push({name:$('group').value.trim()||'evidence',box});draw()};
+$('clear').onclick=()=>{boxes=[];annotations.delete(key(items[current]));draw()};
+$('prev').onclick=()=>{if(current>0){current--;show()}};$('next').onclick=()=>{if(current+1<items.length){current++;show()}};
+$('verify').onclick=()=>{const reviewer=$('reviewer').value.trim();if(!reviewer||!boxes.length){alert('请填写核查人，并标记至少一个证据区域。不确定时请勿确认。');return}annotations.set(key(items[current]),{reviewer,boxes:structuredClone(boxes),reviewed_at:new Date().toISOString()});$('status').textContent+=' · 当前已确认'};
+$('download').onclick=()=>{const rows={};for(const item of items){const saved=annotations.get(key(item));if(!saved)continue;const groups={};for(const b of saved.boxes)(groups[b.name]??=[]).push(b.box);rows[key(item)]={status:'verified',source:'human',reviewer:saved.reviewer,reviewed_at:saved.reviewed_at,image_fingerprint:item.image_fingerprint,coordinate_space:'normalized_original_image',groups:Object.entries(groups).map(([name,boxes])=>({name,boxes}))}}const result={format:'selector_evidence_annotations_v1',rows,unreviewed_count:items.length-annotations.size};const url=URL.createObjectURL(new Blob([JSON.stringify(result,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='selector_evidence_annotations.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
+show();
+</script></html>

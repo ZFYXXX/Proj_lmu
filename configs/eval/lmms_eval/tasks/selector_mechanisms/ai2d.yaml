@@ -1,0 +1,2 @@
+include: ../context_visual_topk/ai2d.yaml
+process_docs: !function mechanism_utils.ai2d_subset

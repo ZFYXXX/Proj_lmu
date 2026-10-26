@@ -2,7 +2,7 @@
 
 Source: ZhengyaoFang/PruneSID @ 4ef17d96b390027f31243bc7e1d27bdee77792a5,
 prunesid/prunesid_qwen/modeling_qwen2_vl.py (Apache-2.0 per upstream README).
-The Qwen2.5 binding preserves native source order/M-RoPE, bounds PCA rank,
+The Qwen2.5 binding preserves released selection order/original M-RoPE, bounds PCA rank,
 uses request-local seeded randomized PCA, and never duplicates source tokens.
 Fixed K is an evaluation adaptation, not the release's need_token_num/576 rule.
 """
@@ -47,7 +47,8 @@ def select_prunesid_indices(features, *, cfg):
         "trained": False, "pca_seed": cfg["pca_seed"],
         "budget_adapter": "fixed_count_or_explicit_retention_ratio",
         "official_budget_rule": "max(round(N*need_token_num/576),16)",
-        "position_adapter": "source_order_original_sparse_mrope"}
+        "position_adapter": "official_order_original_sparse_mrope",
+        "numeric_policy": "official_input_dtype_nms_threshold"}
     if k == n:
         return [torch.arange(n, device=x.device)], {**metadata, "identity": True}
     rank = min(max(k // 4, 4), n, dim, k)
@@ -65,8 +66,9 @@ def select_prunesid_indices(features, *, cfg):
     scores = weights.clone()
     # Upstream computes this cosine in the input dtype, then casts to FP32.
     normalized = F.normalize(x, dim=-1)
-    similarity = (normalized @ normalized.T).float()
-    threshold = max(k / (n / 18), 1) * similarity.triu().mean()
+    similarity_native = normalized @ normalized.T
+    threshold = max(k / (n / 18), 1) * similarity_native.triu().mean()
+    similarity = similarity_native.float()
     counts, nms_counts, members = [], [], []
     for group in range(rank):
         ids = (groups == group).nonzero(as_tuple=True)[0]
@@ -100,12 +102,14 @@ def select_prunesid_indices(features, *, cfg):
         extra = min(int(upper[group] - quotas[group]), k - int(quotas.sum()))
         quotas[group] += extra
     chosen = []
+    # Upstream sorts the entire score matrix, not each group's local subset.
+    # Preserve its within-group tie breaking as well as its group order.
+    source_order = scores.argsort(descending=True, dim=0)
     for group, ids in enumerate(members):
-        # Restrict fallback to actual members, unlike upstream global zero-score
-        # sorting. This makes degenerate inputs safe and forbids duplicate IDs.
-        order = scores[ids, group].argsort(descending=True)
-        chosen.append(ids[order[:int(quotas[group])]])
-    indices = torch.cat(chosen).sort().values
+        chosen.append(source_order[:int(quotas[group]), group])
+    indices = torch.cat(chosen)
+    if k > 150:
+        indices = indices.sort().values
     if len(indices) != k or len(indices.unique()) != k:
         raise ValueError("PruneSID allocation lost or duplicated tokens")
     return [indices], {**metadata, "pca_rank": rank,

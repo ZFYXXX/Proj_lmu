@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT))
 from mllm_comp.analysis.common.anchor7b_runtime import file_sha, validate_identity
 from mllm_comp.analysis.common.learned_topk_experiment import (
-    available_gpus, dependency_identity, development_indices, owned_output, reject_overlap, source_identity, validate_training_entries,
+    available_gpus, dependency_identity, development_indices, owned_output, reject_overlap, shared_policy, source_identity, validate_training_entries,
 )
 from mllm_comp.core.serialization import atomic_write_json, atomic_write_text
 
@@ -41,7 +41,7 @@ def now():
     return datetime.now(timezone.utc).isoformat()
 
 
-def prepare(root):
+def prepare(root, trained_run=None):
     import pyarrow.parquet as pq
     from PIL import Image
     from mllm_comp.analysis.common.visual_token_phenomena import media_fingerprint
@@ -81,7 +81,29 @@ def prepare(root):
         for path in inputs:
             print(f'Pinning input: {path.name}', flush=True)
             hashes[str(path)] = file_sha(path)
+        training_reference = None
+        if trained_run is not None:
+            trained_run = trained_run.resolve()
+            training_manifest = json.loads((trained_run / 'training/manifest.json').read_text())
+            if training_manifest['status'] != 'complete' or training_manifest['steps_completed'] != 320:
+                raise ValueError('External training run must have completed fixed step320')
+            checkpoint = latest(trained_run / 'training')
+            from mllm_comp.compressors.image.learned_visual_topk import load_selector
+            selector = load_selector(checkpoint, base_identity=identity['identity_sha256'], device='cpu')
+            if selector.spec.target_count != 128 or selector.spec.width != 256 or selector.spec.seed != 42:
+                raise ValueError('External step320 selector has a different frozen specification')
+            pointer = json.loads((trained_run / 'training/latest.json').read_text())
+            if pointer['step'] != 320:
+                raise ValueError('External pointer does not identify step320')
+            references = [trained_run / 'protocol.json', trained_run / 'training/manifest.json',
+                          trained_run / 'training/latest.json', checkpoint / 'selector.safetensors',
+                          checkpoint / 'selector_config.json', checkpoint / 'complete.json']
+            hashes.update({str(p): file_sha(p) for p in references})
+            training_reference = {'run': str(trained_run), 'checkpoint': str(checkpoint),
+                'weights_sha256': file_sha(checkpoint / 'selector.safetensors'),
+                'scope': 'Evaluation-only restart: fixed step320 weights, no retraining or checkpoint selection'}
         protocol = {'created_utc': now(), 'source': source, 'allowed_gpus': [0, 1], 'input_hashes': hashes,
+            'resource_policy': shared_policy(),
             'dependencies': dependency_identity(), 'python': sys.version,
             'gpu_inventory': subprocess.check_output(['nvidia-smi', '--query-gpu=index,name,uuid,driver_version,memory.total', '--format=csv'], text=True),
             'identity_path': str(identity_path), 'training_manifest': str(manifest_path),
@@ -99,6 +121,8 @@ def prepare(root):
                 'native_dynamic_resolution': True, 'processor_pixels': [200704, 1605632],
                 'bootstrap': '10000 paired image-cluster resamples; fixed model step320, no selection'},
             'claims': 'single-training-seed exploration; Qwen adaptations, not certified paper reproductions'}
+        if training_reference is not None:
+            protocol.update(trained_run_root=str(trained_run), training_reference=training_reference)
         atomic_write_json(root / 'protocol.json', protocol)
         atomic_write_json(root / 'manifest.json', {'status': 'prepared', 'source': source, 'protocol_sha256': file_sha(root / 'protocol.json')})
     except BaseException as exc:
@@ -110,6 +134,8 @@ def validate(root):
     protocol = json.loads((root / 'protocol.json').read_text())
     if source_identity(ROOT) != protocol['source']:
         raise ValueError('Source snapshot changed or a different import location was used')
+    if shared_policy() != protocol.get('resource_policy'):
+        raise ValueError('Resource sharing policy changed')
     if dependency_identity() != protocol['dependencies']:
         raise ValueError('Software or editable evaluator changed')
     for path, checksum in protocol['input_hashes'].items():
@@ -146,9 +172,12 @@ def execute(command, log, gpus, extra_env=None):
         raise RuntimeError('GPU became busy before launch; no job started')
     env = {**os.environ, 'CUDA_VISIBLE_DEVICES': ','.join(map(str, gpus)), 'OMP_NUM_THREADS': '2',
            'PYTHONPATH': str(ROOT), 'TOKENIZERS_PARALLELISM': 'false', 'CUBLAS_WORKSPACE_CONFIG': ':4096:8', **(extra_env or {})}
-    env.update(HF_HOME=str(owned_output(log.parent / 'cache/huggingface')),
-               HF_DATASETS_CACHE=str(owned_output(log.parent / 'cache/datasets')),
-               XDG_CACHE_HOME=str(owned_output(log.parent / 'cache/xdg')))
+    cache_overrides = extra_env or {}
+    env.update(HF_HOME=str(owned_output(cache_overrides.get('HF_HOME', log.parent / 'cache/huggingface'))),
+               HF_DATASETS_CACHE=str(owned_output(cache_overrides.get('HF_DATASETS_CACHE', log.parent / 'cache/datasets'))),
+               XDG_CACHE_HOME=str(owned_output(cache_overrides.get('XDG_CACHE_HOME', log.parent / 'cache/xdg'))))
+    for key in ('HF_HOME', 'HF_DATASETS_CACHE', 'XDG_CACHE_HOME'):
+        Path(env[key]).mkdir(parents=True, exist_ok=True)
     log.parent.mkdir(parents=True, exist_ok=True)
     with log.open('x') as stream:
         subprocess.run(command, cwd=ROOT, env=env, stdout=stream, stderr=subprocess.STDOUT, check=True)
@@ -188,6 +217,10 @@ def gates(root, gpus):
 
 
 def freeze_release(root, protocol):
+    if 'local_changes_sha256' in protocol['source']:
+        atomic_write_json(root / 'release.json', {'status': 'hash_frozen_local_source_not_git_committed',
+            'source': protocol['source'], 'protocol_sha256': file_sha(root / 'protocol.json'), 'time': now()})
+        return
     tag = 'learned-visual-topk-v1.0.0'
     commit = protocol['source']['commit']
     existing = subprocess.run(['git', '-C', str(ROOT), 'rev-parse', '--verify', f'refs/tags/{tag}^{{commit}}'],
@@ -214,7 +247,7 @@ def eval_config(root, protocol, method, phase, output):
     elif method in ('initial_selector', 'trained_selector'):
         algorithm, cfg = 'learned_visual_topk', {'target_count': 128, 'width': 256, 'seed': 42}
         if method == 'trained_selector':
-            trained = root / 'training'
+            trained = Path(protocol.get('trained_run_root', root)) / 'training'
             manifest = json.loads((trained / 'manifest.json').read_text())
             if manifest['status'] != 'complete' or manifest['steps_completed'] != 320:
                 raise ValueError('Evaluate only the fixed completed step320 selector')
@@ -246,23 +279,23 @@ def eval_config(root, protocol, method, phase, output):
         'output': {'run_dir': str(output), 'manifest_path': str(output / 'manifest.json')}}
 
 
-def check_eval(run, method, phase):
+def check_eval(run, method, phase, *, tasks=None, counts=None, development_count=250, prefix='learned_topk'):
     import math
     results = list(run.glob('**/*_results.json'))
     if len(results) != 1:
         raise ValueError('Expected one native result file')
     native = json.loads(results[0].read_text())['results']
     sample_count, sample_keys = 0, set()
-    for task in DATA:
-        name = f'learned_topk_{task}' + ('_dev' if phase == 'dev' else '')
+    for task in (DATA if tasks is None else tasks):
+        name = f'{prefix}_{task}' + ('_dev' if phase == 'dev' else '')
         files = list(run.glob(f'**/*_samples_{name}.jsonl'))
         if len(files) != 1 or name not in native:
             raise ValueError(f'Missing native samples/metric: {name}')
         rows = [json.loads(s) for s in files[0].read_text().splitlines()]
-        n = 8 if phase == 'smoke' else 250 if phase == 'dev' else COUNTS[task]
+        n = 8 if phase == 'smoke' else development_count if phase == 'dev' else (COUNTS if counts is None else counts)[task]
         if len(rows) != n or {r['doc_id'] for r in rows} != set(range(n)):
             raise ValueError('Missing or duplicate native predictions')
-        metric = 'relaxed_overall' if task == 'chartqa' else 'ocrbench_accuracy'
+        metric = {'chartqa': 'relaxed_overall', 'ocrbench': 'ocrbench_accuracy', 'ai2d': 'exact_match'}[task]
         if not all(math.isfinite(float(r[metric])) for r in rows):
             raise ValueError('Nonfinite native score')
         sample_keys.update((name, int(r['doc_id'])) for r in rows)
@@ -317,8 +350,11 @@ def check_eval(run, method, phase):
     return checked
 
 
-def evaluate(root, protocol, gpus, phase):
+def evaluate(root, protocol, gpus, phase, methods=None):
     import yaml
+    methods = tuple(METHODS if methods is None else methods)
+    if not methods or len(set(methods)) != len(methods) or set(methods) - set(METHODS):
+        raise ValueError('Unknown, empty, or duplicate evaluation methods')
     prerequisite = 'smoke' if phase == 'dev' else 'dev' if phase == 'full' else None
     if prerequisite and not (root / f'eval_{prerequisite}_complete.json').exists():
         raise ValueError(f'Complete {prerequisite} before {phase}')
@@ -343,16 +379,32 @@ def evaluate(root, protocol, gpus, phase):
             atomic_write_json(pointer, {'run': str(run), 'requests': checks['requests'], 'source': protocol['source'],
                 'config': str(config_path), 'config_sha256': file_sha(config_path), 'completed_utc': now()})
     with ThreadPoolExecutor(max_workers=len(gpus)) as pool:
-        futures = [pool.submit(worker, gpu, list(METHODS[i::len(gpus)])) for i, gpu in enumerate(gpus)]
+        futures = [pool.submit(worker, gpu, list(methods[i::len(gpus)])) for i, gpu in enumerate(gpus)]
         for future in futures:
             future.result()
-    atomic_write_json(root / f'eval_{phase}_complete.json', {'status': 'complete', 'methods': list(METHODS), 'time': now()})
+    atomic_write_json(root / f'eval_{phase}_complete.json', {'status': 'complete', 'methods': list(methods), 'time': now()})
 
 
 def run_command(args):
     root = owned_output(args.root)
     if args.command == 'prepare':
-        return prepare(root)
+        return prepare(root, args.trained_run)
+    if args.command in ('pipeline', 'evaluate-all'):
+        from types import SimpleNamespace
+        stages = [('eval', 'smoke'), ('eval', 'dev'), ('eval', 'full'), ('report', 'full')]
+        if args.command == 'pipeline':
+            stages = [('gates', 'smoke'), ('train', 'smoke'), *stages]
+        for command, phase in stages:
+            marker = root / ('gates_passed.json' if command == 'gates' else
+                f'eval_{phase}_complete.json' if command == 'eval' else 'summary.json' if command == 'report' else 'training/manifest.json')
+            if marker.exists() and (command != 'train' or json.loads(marker.read_text()).get('status') == 'complete'):
+                continue
+            stage_args = SimpleNamespace(**{**vars(args), 'command': command, 'phase': phase})
+            stage_args.resume = command == 'train' and (root / 'training/latest.json').exists()
+            atomic_write_json(root / 'pipeline_stage.json', {'command': command, 'phase': phase, 'status': 'running', 'time': now()})
+            run_command(stage_args)
+            atomic_write_json(root / 'pipeline_stage.json', {'command': command, 'phase': phase, 'status': 'complete', 'time': now()})
+        return
     protocol = validate(root)
     if args.command == 'report':
         from scripts.eval.lmms_eval.report_learned_visual_topk import report
@@ -382,7 +434,7 @@ def main(args):
             manifest.update(status='running', current_command=args.command, current_phase=args.phase, updated_utc=now())
             atomic_write_json(root / 'manifest.json', manifest)
             result = run_command(args)
-            manifest.update(status='complete' if args.command == 'report' else f'{args.command}_complete', updated_utc=now())
+            manifest.update(status='complete' if args.command in ('report', 'pipeline', 'evaluate-all') else f'{args.command}_complete', updated_utc=now())
             atomic_write_json(root / 'manifest.json', manifest)
             return result
         except Exception as exc:
@@ -396,7 +448,8 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('command', choices=['prepare', 'gates', 'train', 'eval', 'report'])
+    parser.add_argument('command', choices=['prepare', 'gates', 'train', 'eval', 'report', 'pipeline', 'evaluate-all'])
+    parser.add_argument('--trained-run', type=Path, help='Read-only completed step320 training run for an evaluation-only restart')
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--gpus', type=int, nargs='+', choices=[0, 1], default=[0, 1])
     parser.add_argument('--phase', choices=['smoke', 'dev', 'full'], default='smoke')

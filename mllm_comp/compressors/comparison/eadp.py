@@ -183,7 +183,9 @@ def visual_similarity(image_features: torch.Tensor) -> torch.Tensor:
 
     if image_features.ndim != 3:
         raise ValueError("EADP image features must have shape [crops,N,D]")
-    normalized = F.normalize(image_features.float(), dim=-1, eps=1e-8)
+    # The released Qwen kernel rounds normalization in the input dtype before
+    # its FP32 coverage matmul. Moving .float() earlier changes greedy picks.
+    normalized = (image_features / image_features.norm(dim=-1, keepdim=True).clamp(min=1e-8)).float()
     cosine = torch.bmm(normalized, normalized.transpose(1, 2)).clamp(-1, 1)
     return 0.5 * (cosine + 1.0)
 
@@ -248,7 +250,7 @@ def compute_eadp_importance(
     # token embeddings first, then normalizing that mean. Averaging already
     # normalized token vectors is not equivalent when embedding norms differ.
     global_text = F.normalize(
-        text_raw.mean(dim=0, keepdim=True), dim=-1, eps=1e-8
+        text_embeddings.mean(dim=0, keepdim=True).float(), dim=-1, eps=1e-8
     )
 
     # These leading minus signs look counter-intuitive but are present in both

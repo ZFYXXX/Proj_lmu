@@ -36,8 +36,13 @@ class BifocalSpec:
     s1_merge: str = ""
     s1_mu: float = 1.0
     word_space: int = 0
+    target_count: int | None = None
 
     def __post_init__(self) -> None:
+        if self.target_count is not None and (
+            isinstance(self.target_count, bool) or not isinstance(self.target_count, int) or self.target_count < 1
+        ):
+            raise ValueError("bifocal target_count must be a positive integer or None")
         block = self.block
         if isinstance(block, str):
             b = block.strip().lower()
@@ -122,7 +127,7 @@ class BifocalSpec:
         )
 
     def budget(self, N: int, H: int, W: int) -> tuple[int, int, int, int] | None:
-        NT = int(round(N * self.s1_frac))
+        NT = min(N, self.target_count) if self.target_count is not None else int(round(N * self.s1_frac))
         if NT < 1:
             return None
         blk = self.block_for(H, W, NT)
@@ -487,6 +492,8 @@ def bifocal_image_tokens(
         "stage": "stage1",
         "grid": (H, W),
         "source_tokens": int(N),
+        "budget_policy": "fixed_count" if spec.target_count is not None else "native_fraction",
+        "target_count": spec.target_count,
     }
     b = spec.budget(N, H, W)
     if b is None:

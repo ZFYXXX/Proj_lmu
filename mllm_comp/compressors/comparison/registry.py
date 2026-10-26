@@ -187,6 +187,24 @@ def register_comparison_contracts(registry):
     register_prunesid_contracts(registry)
     from .learned_topk import register_contracts as register_learned_topk
     register_learned_topk(registry)
+    from .context_topk import register_contracts as register_context_topk
+    register_context_topk(registry)
+    from .word_topk import register_contracts as register_word_topk
+    register_word_topk(registry)
+    from .protected_topk import register_contracts as register_protected_topk
+    register_protected_topk(registry)
+    from .recovered_topk import register_contracts as register_recovered_topk
+    register_recovered_topk(registry)
+    from .qwen35_topk import register_contracts as register_qwen35_topk
+    register_qwen35_topk(registry)
+    from .selector_condition import register_contracts as register_selector_condition
+    register_selector_condition(registry)
+    from .selector_mechanism import register_contracts as register_selector_mechanism
+    register_selector_mechanism(registry)
+    from .context_topk_ot import register_contracts as register_context_topk_ot
+    register_context_topk_ot(registry)
+    from .bifocal_two_stage import register_contracts as register_bifocal_two_stage
+    register_bifocal_two_stage(registry)
 
 
 def register_prunesid_contracts(registry):

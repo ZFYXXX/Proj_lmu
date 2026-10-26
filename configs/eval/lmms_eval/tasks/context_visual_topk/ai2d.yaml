@@ -1,0 +1,29 @@
+dataset_path: parquet
+output_type: generate_until
+doc_to_visual: !function context_utils.visual
+task: context_topk_ai2d
+dataset_kwargs:
+  data_files:
+    test: /home/YinPeiran/datasets/lmms_eval_datasets/ai2d/data/test-*.parquet
+test_split: test
+doc_to_text: !function context_utils.ai2d_doc_to_text
+doc_to_target: !function context_utils.ai2d_doc_to_target
+model_specific_target_kwargs: {default: mcq}
+generation_kwargs: {max_new_tokens: 16, temperature: 0.0, do_sample: false, repetition_penalty: 1.05}
+lmms_eval_specific_kwargs:
+  default:
+    prompt_format: mcq
+    pre_prompt: ""
+    post_prompt: "\nAnswer with the option's letter from the given choices directly."
+filter_list:
+  - name: flexible-extract
+    filter:
+      - function: !function context_utils.MultiChoiceRegexFilter
+        group_select: 0
+        ignore_case: true
+        ignore_punctuation: true
+        regex_pattern: "([A-Z])\\."
+process_results: !function context_utils.ai2d_results
+metric_list:
+  - {metric: exact_match, aggregation: mean, higher_is_better: true}
+  - {metric: leading_option_accuracy, aggregation: mean, higher_is_better: true}

@@ -30,14 +30,61 @@ def source_identity(root):
     root = Path(root).resolve()
     def git(*args):
         return subprocess.check_output(['git', '-C', str(root), *args], text=True).strip()
-    if git('status', '--porcelain', '--untracked-files=normal'):
+    dirty = git('status', '--porcelain', '--untracked-files=normal')
+    if dirty and os.environ.get('MLLM_TOPK_HASH_LOCAL_SOURCE') != '1':
         raise ValueError('Freeze a clean source commit before preparing/running an experiment')
     import mllm_comp
     actual = Path(mllm_comp.__file__).resolve()
     if not actual.is_relative_to(root):
         raise ValueError(f'Imported source outside the execution snapshot: {actual}')
-    return {'commit': git('rev-parse', 'HEAD'), 'source_root': str(root),
-            'module_path': str(actual), 'tree': git('rev-parse', 'HEAD^{tree}')}
+    result = {'commit': git('rev-parse', 'HEAD'), 'source_root': str(root),
+              'module_path': str(actual), 'tree': git('rev-parse', 'HEAD^{tree}')}
+    if dirty:
+        patch = subprocess.check_output(['git', '-C', str(root), 'diff', '--binary', 'HEAD'])
+        h = hashlib.sha256(patch)
+        untracked = git('ls-files', '--others', '--exclude-standard').splitlines()
+        for name in sorted(untracked):
+            h.update(name.encode())
+            h.update((root / name).read_bytes())
+        result.update(local_changes_sha256=h.hexdigest(), source_policy='uncommitted hash-frozen snapshot; no automatic Git commit')
+    return result
+
+
+def shared_policy():
+    if os.environ.get('MLLM_TOPK_NORMAL_GPU') == '1':
+        if os.environ.get('MLLM_TOPK_SHARED_GPU') == '1':
+            raise ValueError('Choose normal execution or throttled sharing, not both')
+        return {'mode': 'user_authorized_normal_unthrottled', 'allocator_fraction': 1., 'duty_cycle': 1.,
+                'minimum_free_mib_at_launch': 32768, 'minimum_free_mib_at_step': 8192,
+                'cpu_priority': 'normal nice 0 / two compute threads',
+                'scope': 'No allocator fraction restriction or cooperative pauses; no eviction of other GPU users'}
+    if os.environ.get('MLLM_TOPK_SHARED_GPU') != '1':
+        return None
+    fraction = float(os.environ.get('MLLM_TOPK_MEMORY_FRACTION', '.4'))
+    duty = float(os.environ.get('MLLM_TOPK_DUTY_CYCLE', '.5'))
+    if not 0 < fraction <= .4 or not 0 < duty <= .5:
+        raise ValueError('Shared mode requires allocator fraction <=.4 and duty cycle <=.5')
+    return {'mode': 'user_authorized_shared_gpu', 'allocator_fraction': fraction, 'duty_cycle': duty,
+            'minimum_free_mib_at_launch': 49152, 'minimum_free_mib_at_step': 8192,
+            'cpu_priority': 'nice 15 / two compute threads',
+            'scope': 'Cooperative pauses; not a hard GPU compute quota. No changes to other users processes.'}
+
+
+def gpu_free_mib():
+    lines = subprocess.check_output(['nvidia-smi', '--query-gpu=index,memory.free', '--format=csv,noheader,nounits'], text=True)
+    return {int(a.strip()): int(b.strip()) for a, b in (line.split(',') for line in lines.splitlines())}
+
+
+def cooperative_pause(active_seconds):
+    import time
+    policy = shared_policy()
+    if policy is None:
+        return 0.
+    pause = max(0., active_seconds * (1 / policy['duty_cycle'] - 1))
+    end = time.monotonic() + pause
+    while time.monotonic() < end:
+        time.sleep(min(30., max(0., end - time.monotonic())))
+    return pause
 
 
 def dependency_identity():
@@ -73,6 +120,10 @@ def gpu_processes():
 
 
 def available_gpus(requested, *, processes=None, uid=None, allow_own=False):
+    policy = shared_policy()
+    if policy:
+        free = gpu_free_mib()
+        return [i for i in requested if free.get(i, 0) >= policy['minimum_free_mib_at_launch']]
     uid = os.getuid() if uid is None else uid
     processes = gpu_processes() if processes is None else processes
     return [i for i in requested if not any(p['gpu'] == i and
@@ -130,11 +181,16 @@ def training_loss(student, teacher, targets, selection, step):
     import torch.nn.functional as F
     if student.shape != teacher.shape or targets.shape != student.shape[:-1]:
         raise ValueError('Teacher/student answer alignment mismatch')
-    ce = F.cross_entropy(student.float(), targets)
-    kl = F.kl_div(F.log_softmax(student.float(), -1), F.softmax(teacher.detach().float(), -1),
-                  reduction='batchmean').clamp_min(0)
-    bce = F.binary_cross_entropy(selection['soft_weights'].float(), selection['hard_mask'].detach().float())
-    loss = ce + .5 * kl + bce_weight(step) * bce
+    # Casting inputs alone does not disable an outer CUDA autocast context:
+    # probability-space BCE is explicitly rejected there. Keep the intended
+    # thresholded soft-mask BCE and its gradients, rather than substituting
+    # unthresholded scorer logits in a different loss.
+    with torch.autocast(device_type=student.device.type, enabled=False):
+        ce = F.cross_entropy(student.float(), targets)
+        kl = F.kl_div(F.log_softmax(student.float(), -1), F.softmax(teacher.detach().float(), -1),
+                      reduction='batchmean').clamp_min(0)
+        bce = F.binary_cross_entropy(selection['soft_weights'].float(), selection['hard_mask'].detach().float())
+        loss = ce + .5 * kl + bce_weight(step) * bce
     if not torch.isfinite(loss):
         raise ValueError('Nonfinite selector training loss')
     return loss, {'loss': float(loss.detach()), 'answer_ce': float(ce.detach()),
@@ -158,19 +214,19 @@ def restore_rng(state, device=None):
         torch.cuda.set_rng_state(state['cuda'].cpu(), device)
 
 
-def save_training_state(folder, *, selector, optimizer, scheduler, step, contract, random_states):
+def save_training_state(folder, *, selector, optimizer, scheduler, step, contract, random_states, save_fn=None):
     import torch
     from mllm_comp.compressors.image.learned_visual_topk import save_selector
     from mllm_comp.core.serialization import atomic_write_json
     folder = owned_output(folder)
-    save_selector(selector, folder, base_identity=contract['base_identity_sha256'], provenance=contract)
+    (save_fn or save_selector)(selector, folder, base_identity=contract['base_identity_sha256'], provenance=contract)
     torch.save({'contract_hash': digest_json(contract), 'step': step, 'optimizer': optimizer.state_dict(),
                 'scheduler': scheduler.state_dict(), 'random_states': random_states}, folder / 'training_state.pt')
     atomic_write_json(folder / 'complete.json', {'step': step, 'contract_hash': digest_json(contract),
         'training_state_sha256': hashlib.sha256((folder / 'training_state.pt').read_bytes()).hexdigest()})
 
 
-def restore_training_state(folder, *, selector, optimizer, scheduler, contract, rank=0, device=None):
+def restore_training_state(folder, *, selector, optimizer, scheduler, contract, rank=0, device=None, load_fn=None):
     import torch
     from mllm_comp.compressors.image.learned_visual_topk import load_selector
     folder = Path(folder)
@@ -182,7 +238,7 @@ def restore_training_state(folder, *, selector, optimizer, scheduler, contract, 
     state = torch.load(folder / 'training_state.pt', map_location='cpu', weights_only=False)
     if state['contract_hash'] != digest_json(contract):
         raise ValueError('Resume rejected: code/config/data/base/world-size contract changed')
-    saved = load_selector(folder, base_identity=contract['base_identity_sha256'], device='cpu')
+    saved = (load_fn or load_selector)(folder, base_identity=contract['base_identity_sha256'], device='cpu')
     selector.load_state_dict(saved.state_dict(), strict=True)
     optimizer.load_state_dict(state['optimizer'])
     scheduler.load_state_dict(state['scheduler'])

@@ -19,11 +19,13 @@ def load_file(name, path):
     return module
 
 
-def test_eadp_matches_released_qwen_scores_and_selected_set():
+@pytest.mark.parametrize("dtype", [torch.float32, torch.bfloat16])
+def test_eadp_matches_released_qwen_scores_and_selected_set(dtype):
     from mllm_comp.compressors.comparison.eadp import compute_eadp_importance, normalize_eadp_config, select_eadp_indices
     official = load_file("official_eadp", SOURCES / "research_sources/EADP/Qwen_vl/model/pruner.py")
     torch.manual_seed(314)
     x, text = torch.randn(1, 48, 24), torch.randn(11, 24)
+    x, text = x.to(dtype), text.to(dtype)
     cfg = normalize_eadp_config({"tokens_per_crop": 12, "beta": 2.})
     importance, _, _ = compute_eadp_importance(x, text, patches_per_side=8, grid_height=6, cfg=cfg)
     pruner = official.VisualTokenPruner(visual_token_num=12, beta=2., device="cpu")
@@ -34,19 +36,22 @@ def test_eadp_matches_released_qwen_scores_and_selected_set():
     assert ids[0].tolist() == expected_ids[0].sort().values.tolist()
 
 
-def test_mmtok_matches_official_coverage_selector():
+@pytest.mark.parametrize("dtype", [torch.float32, torch.bfloat16])
+def test_mmtok_matches_official_coverage_selector(dtype):
     from mllm_comp.compressors.image.mmtok import MMTokSpec, mmtok_image_tokens
     official = load_file("official_mmtok_selector", SOURCES / "MMTok/mmtok/core/semantic_selector.py")
     torch.manual_seed(315)
     projected, vision, text = torch.randn(64, 24), torch.randn(64, 16), torch.randn(9, 24)
+    projected, vision, text = projected.to(dtype), vision.to(dtype), text.to(dtype)
     expected, _ = official.SemanticTokenSelector(target_vision_tokens=16).mm_coverage_selection(
         text, projected, vision, tv_temp=.01, vv_temp=.2)
     actual = mmtok_image_tokens(projected, vision, text, spec=MMTokSpec(target_count=16, text_temperature=.01))
     assert actual.indices.tolist() == expected
 
 
-@pytest.mark.parametrize("k", [32, 64, 128])
-def test_prunesid_matches_released_selection_set(k):
+@pytest.mark.parametrize("dtype", [torch.float32, torch.bfloat16])
+@pytest.mark.parametrize("k", [32, 64, 128, 192])
+def test_prunesid_matches_released_selection_set(k, dtype):
     from mllm_comp.compressors.comparison.prunesid import select_prunesid_indices
     path = SOURCES / "research_sources/PruneSID/prunesid/prunesid_qwen/modeling_qwen2_vl.py"
     if not path.is_file():
@@ -65,8 +70,8 @@ def test_prunesid_matches_released_selection_set(k):
     namespace = {"torch": torch, "F": torch.nn.functional, "np": np, "math": math}
     exec(compile(ast.fix_missing_locations(ast.Module(body=[*functions, reference], type_ignores=[])), str(path), "exec"), namespace)
     torch.manual_seed(316)
-    x = torch.randn(1, 240, 48)
+    x = torch.randn(1, 240, 48).to(dtype)
     torch.manual_seed(0)
     _, expected = namespace["reference"](x[0], k)
     actual, _ = select_prunesid_indices(x, cfg={"tokens_per_crop": k, "pca_seed": 0})
-    assert actual[0].tolist() == expected.sort().values.tolist()
+    assert actual[0].tolist() == expected.tolist()

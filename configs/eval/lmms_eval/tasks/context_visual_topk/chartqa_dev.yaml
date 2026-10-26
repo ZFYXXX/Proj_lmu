@@ -1,0 +1,3 @@
+include: chartqa.yaml
+task: context_topk_chartqa_dev
+process_docs: !function context_utils.chartqa_development
