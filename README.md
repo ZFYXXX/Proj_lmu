@@ -6,6 +6,9 @@
 > [Projector 工作区说明](docs/guides/projector_only_20261023.zh.md)。
 > 下方旧版全模态说明属于历史平台能力；需要审计时使用 `MLLM_COMP_METHOD_PROFILE=full`。
 
+仓库归档清理与可恢复路径见[清理记录](docs/guides/repository_cleanup_20261027.zh.md)。
+小规模图像评测集的本地规模、适用性与官方来源见[数据集选择说明](docs/guides/small_dataset_selection_20261026.md)。
+
 > Accelerating the development of multimodal compression with `MLLM-Comp-Platform`.
 
 多模态压缩研究与实验框架，支持现有图像、视频、音频方法及基座接入。训练使用 ms-swift，评测使用 lmms-eval，CLI/YAML 与 Python 共用实验入口。
