@@ -21,6 +21,7 @@ from mllm_comp.analysis.common.topk_training_modes import parameter_digest,train
 from mllm_comp.core.serialization import atomic_write_json as write_json
 from scripts.train.qwen25_vl.train_learned_hybrid import load_examples
 
+KINDS = (*KINDS, "image")
 
 def read(path):return json.loads(Path(path).read_text())
 
@@ -39,13 +40,24 @@ def train(root,kind,output,*,smoke=False):
     device=torch.device("cuda:0")
     bundle=load_bundle(identity,device)
     examples=load_examples(Path(p["training_manifest"]))
-    if kind in ("question","word"):
+    head_load,head_save=load_head,save_head
+    if kind=="image":
+        from mllm_comp.compressors.comparison.qwen35_image_context import (
+            create_image_head,load_image_head,save_image_head,
+        )
+        prior=Path(p["visual_prior_path"])
+        if read(prior/"head_config.json")["provenance"].get("step")!=320:
+            raise ValueError("Image context requires the fixed Qwen3.5 step320 visual prior")
+        visual=load_head(prior,identity=identity,device="cpu")
+        head_load,head_save=load_image_head,save_image_head
+    elif kind in ("question","word"):
         pointer=read(root/"training/visual/latest.json")
         if pointer["step"]!=320:raise ValueError("Complete the visual prior before conditioned heads")
         visual=load_head(root/"training/visual"/pointer["checkpoint"],identity=identity,device="cpu")
     else:visual=None
     from mllm_comp.compressors.image.word_visual_topk import template_patterns
-    module=create_head(kind,identity["hidden_size"],visual=visual,patterns=template_patterns(bundle["processor"].tokenizer)).to(device)
+    module=(create_image_head(identity["hidden_size"],visual=visual) if kind=="image" else
+        create_head(kind,identity["hidden_size"],visual=visual,patterns=template_patterns(bundle["processor"].tokenizer))).to(device)
     optimizer=torch.optim.AdamW([x for x in module.parameters() if x.requires_grad],lr=2e-4,weight_decay=.01)
     scheduler=torch.optim.lr_scheduler.LambdaLR(optimizer,lr_multiplier)
     contract={"protocol_sha256":p["protocol_sha256"],"kind":kind,"source":p["source"],
@@ -62,7 +74,7 @@ def train(root,kind,output,*,smoke=False):
         from mllm_comp.analysis.common.anchor7b_runtime import file_sha
         if state["contract"]!=contract or file_sha(checkpoint/"training_state.pt")!=pointer["state_sha256"]:
             raise ValueError("Resume contract or state hash changed")
-        restored=load_head(checkpoint,identity=identity,device=device)
+        restored=head_load(checkpoint,identity=identity,device=device)
         module.load_state_dict(restored.state_dict());del restored
         optimizer.load_state_dict(state["optimizer"]);scheduler.load_state_dict(state["scheduler"])
         restore_rng(state["rng"],device);step=state["step"]
@@ -122,7 +134,7 @@ def train(root,kind,output,*,smoke=False):
     def save(step):
         from mllm_comp.analysis.common.anchor7b_runtime import file_sha
         checkpoint=output/"checkpoints"/f"step_{step:06d}_{time.time_ns()}"
-        save_head(module,checkpoint,kind=kind,identity=identity,provenance={"step":step,"contract":contract})
+        head_save(module,checkpoint,kind=kind,identity=identity,provenance={"step":step,"contract":contract})
         torch.save({"step":step,"contract":contract,"optimizer":optimizer.state_dict(),"scheduler":scheduler.state_dict(),
                     "rng":rng_state(device)},checkpoint/"training_state.pt")
         write_json(output/"latest.json",{"step":step,"checkpoint":str(checkpoint.relative_to(output)),
@@ -138,7 +150,7 @@ def train(root,kind,output,*,smoke=False):
                 pointer=read(output/"latest.json");checkpoint=output/pointer["checkpoint"]
                 replay=torch.load(checkpoint/"training_state.pt",map_location="cpu",weights_only=False)
                 if replay["step"]!=1 or replay["contract"]!=contract:raise ValueError("Wrong replay checkpoint")
-                restored=load_head(checkpoint,identity=identity,device=device)
+                restored=head_load(checkpoint,identity=identity,device=device)
                 module.load_state_dict(restored.state_dict());del restored
                 optimizer.load_state_dict(replay["optimizer"])
                 scheduler.load_state_dict(replay["scheduler"]);restore_rng(replay["rng"],device)

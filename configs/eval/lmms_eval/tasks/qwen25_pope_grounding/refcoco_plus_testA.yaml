@@ -1,0 +1,23 @@
+task: refcoco+_bbox_rec_testA_local
+dataset_path: parquet
+dataset_kwargs:
+  data_files:
+    testA:
+      - /home/YinPeiran/datasets/lmms_eval_datasets/RefCOCOplus/data/testA-00000-of-00001.parquet
+test_split: testA
+process_docs: !function grounding_utils.process_docs
+output_type: generate_until
+doc_to_visual: !function grounding_utils.doc_to_visual
+doc_to_text: !function grounding_utils.doc_to_text
+doc_to_target: bbox
+process_results: !function grounding_utils.process_results
+generation_kwargs: {max_new_tokens: 64, temperature: 0.0, do_sample: false, repetition_penalty: 1.05}
+metric_list:
+  - {metric: refcoco_IoU, aggregation: !function grounding_utils.iou, higher_is_better: true}
+  - {metric: refcoco_ACC@0.1, aggregation: !function grounding_utils.acc01, higher_is_better: true}
+  - {metric: refcoco_ACC@0.3, aggregation: !function grounding_utils.acc03, higher_is_better: true}
+  - {metric: refcoco_ACC@0.5, aggregation: !function grounding_utils.acc05, higher_is_better: true}
+  - {metric: refcoco_ACC@0.7, aggregation: !function grounding_utils.acc07, higher_is_better: true}
+  - {metric: refcoco_ACC@0.9, aggregation: !function grounding_utils.acc09, higher_is_better: true}
+  - {metric: refcoco_Center_ACC, aggregation: !function grounding_utils.center_acc, higher_is_better: true}
+metadata: {version: 1.0}

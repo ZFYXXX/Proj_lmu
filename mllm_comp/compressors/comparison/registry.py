@@ -191,12 +191,20 @@ def register_comparison_contracts(registry):
     register_context_topk(registry)
     from .word_topk import register_contracts as register_word_topk
     register_word_topk(registry)
+    from .input_adaptive_topk import register_contracts as register_input_adaptive_topk
+    register_input_adaptive_topk(registry)
+    from .query_interaction_topk import register_contracts as register_query_interaction_topk
+    register_query_interaction_topk(registry)
     from .protected_topk import register_contracts as register_protected_topk
     register_protected_topk(registry)
     from .recovered_topk import register_contracts as register_recovered_topk
     register_recovered_topk(registry)
     from .qwen35_topk import register_contracts as register_qwen35_topk
     register_qwen35_topk(registry)
+    from .qwen35_reference import register_contracts as register_qwen35_reference
+    register_qwen35_reference(registry)
+    from .qwen35_image_context import register_contracts as register_qwen35_image_context
+    register_qwen35_image_context(registry)
     from .selector_condition import register_contracts as register_selector_condition
     register_selector_condition(registry)
     from .selector_mechanism import register_contracts as register_selector_mechanism

@@ -1,0 +1,25 @@
+task: projector_extra_mmstar
+dataset_path: parquet
+dataset_kwargs:
+  data_files:
+    test: /home/ZhouFengyu/fastv-repro/datasets/MMStar/mmstar.parquet
+test_split: test
+process_docs: !function extra_utils.process_docs
+output_type: generate_until
+doc_to_visual: !function extra_utils.visual
+doc_to_text: !function extra_utils.mmstar_doc_to_text
+doc_to_target: answer
+process_results: !function extra_utils.mmstar_results
+generation_kwargs: {max_new_tokens: 16, temperature: 0.0, do_sample: false, repetition_penalty: 1.05}
+lmms_eval_specific_kwargs:
+  default: {pre_prompt: "", post_prompt: "\nAnswer with the option's letter from the given choices directly"}
+metric_list:
+  - {metric: average, aggregation: !function extra_utils.mmstar_aggregate_results, higher_is_better: true}
+  - {metric: coarse perception, aggregation: !function extra_utils.mmstar_aggregate_results, higher_is_better: true}
+  - {metric: fine-grained perception, aggregation: !function extra_utils.mmstar_aggregate_results, higher_is_better: true}
+  - {metric: instance reasoning, aggregation: !function extra_utils.mmstar_aggregate_results, higher_is_better: true}
+  - {metric: logical reasoning, aggregation: !function extra_utils.mmstar_aggregate_results, higher_is_better: true}
+  - {metric: science & technology, aggregation: !function extra_utils.mmstar_aggregate_results, higher_is_better: true}
+  - {metric: math, aggregation: !function extra_utils.mmstar_aggregate_results, higher_is_better: true}
+  - {metric: mmstar_micro_accuracy, aggregation: mean, higher_is_better: true}
+metadata: {version: 1.0}

@@ -41,7 +41,9 @@ def main(args):
     protocol_path = args.protocol.resolve()
     protocol = json.loads(protocol_path.read_text())
     contextual = protocol.get('selector_type') == 'context_visual_topk'
-    wordwise = protocol.get('selector_type') == 'word_visual_topk'
+    input_adaptive = protocol.get('selector_type') == 'input_adaptive_topk'
+    query_interaction = protocol.get('selector_type') == 'query_interaction_topk'
+    wordwise = protocol.get('selector_type') == 'word_visual_topk' or input_adaptive or query_interaction
     save_fn = load_fn = None
     binding = QwenLearnedTopKComparison
     if contextual:
@@ -58,6 +60,21 @@ def main(args):
         )
         from mllm_comp.compressors.comparison.word_topk import QwenWordTopKComparison
         binding = QwenWordTopKComparison
+    if input_adaptive:
+        from mllm_comp.compressors.image.input_adaptive_topk import (
+            InputAdaptiveTopK as WordVisualTopK, InputAdaptiveTopKSpec as WordVisualTopKSpec,
+            save_selector as save_fn, load_selector as load_fn,
+        )
+        from mllm_comp.compressors.comparison.input_adaptive_topk import QwenInputAdaptiveTopKComparison
+        binding = QwenInputAdaptiveTopKComparison
+    if query_interaction:
+        from mllm_comp.compressors.image.query_interaction_topk import (
+            QueryInteractionTopK as WordVisualTopK, QueryInteractionSpec as WordVisualTopKSpec,
+            save_selector as save_fn, load_selector as load_fn,
+        )
+        from mllm_comp.compressors.comparison.query_interaction_topk import QwenQueryInteractionTopK
+        from mllm_comp.analysis.common.task_loss_supervision import load_target, teacher_ranking_loss
+        binding = QwenQueryInteractionTopK
     mask_mode = protocol['training'].get('training_mask_mode', 'soft')
     if mask_mode not in TRAINING_MODES:
         raise ValueError('Unknown frozen training mask mode')
@@ -127,6 +144,12 @@ def main(args):
                 if set(evidence_rows)-{e['sample_id'] for e in examples}:raise ValueError('Unknown supervised training sample')
                 manifest.update(visual_prior_frozen=True,visual_prior_sha256=frozen_prior_digest,
                     verified_evidence_training_images=len(evidence_rows),evidence_loss_active=bool(evidence_rows))
+                task_index = None
+                if query_interaction and protocol.get('task_teacher_index'):
+                    task_index = json.loads(Path(protocol['task_teacher_index']).read_text())
+                    if set(task_index['rows']) != {e['sample_id'] for e in examples}:
+                        raise ValueError('Task teacher must cover the exact frozen training manifest')
+                    manifest['task_teacher_images'] = len(task_index['rows'])
             else:
                 selector = ContextVisualTopK(ContextVisualTopKSpec(llm.config.hidden_size,
                     context_mode=protocol['training']['context_mode']), visual=visual).to(device)
@@ -161,6 +184,8 @@ def main(args):
                     identity_cfg['context_mode'] = selector.spec.context_mode
                 if wordwise:
                     identity_cfg.update(match_width=selector.spec.match_width,template_token_ids=selector.spec.template_token_ids)
+                if query_interaction:
+                    identity_cfg.update(interaction=selector.spec.interaction, heads=selector.spec.heads)
                 identity_session = binding(bundle['model'], identity_cfg).install()
                 try:
                     actual = bundle['model'](**first['prompt_inputs'], use_cache=False).logits
@@ -173,6 +198,8 @@ def main(args):
                     smoke_cfg['context_mode'] = selector.spec.context_mode
                 if wordwise:
                     smoke_cfg.update(match_width=selector.spec.match_width,template_token_ids=selector.spec.template_token_ids)
+                if query_interaction:
+                    smoke_cfg.update(interaction=selector.spec.interaction, heads=selector.spec.heads)
                 session = binding(bundle['model'], smoke_cfg).install()
                 try:
                     bundle['model'].generate(**first['prompt_inputs'], max_new_tokens=2, min_new_tokens=2,
@@ -230,6 +257,11 @@ def main(args):
                         loss=loss+protocol['training']['evidence_weight']*supervised
                         metrics.update(evidence_loss=float(supervised.detach()),evidence_supervised=float(masks is not None),
                             removed_format_tokens=audit['removed_format_tokens'],**selection['word_diagnostics'])
+                        if query_interaction and task_index is not None:
+                            target = load_target(task_index, examples[index], state, audit, device=device)
+                            task_loss = teacher_ranking_loss(selection['scores'], target)
+                            loss = loss + protocol['training']['task_teacher_weight'] * task_loss
+                            metrics['task_teacher_loss'] = float(task_loss.detach())
                 metrics.update(selection_diagnostics(selection))
                 (loss / len(indices)).backward()
                 for key, value in metrics.items():
@@ -251,8 +283,13 @@ def main(args):
                 for name,param in selector.named_parameters():
                     if param.requires_grad:
                         value=float(param.grad.norm())
-                        if not np.isfinite(value) or value<=0:raise ValueError(f'Word matching branch has invalid gradient: {name}')
+                        # The gate's zero-initialized final layer intentionally
+                        # blocks its first layer gradient on the very first step.
+                        initial_gate = input_adaptive and step == 0 and name.startswith('input_gate.0.')
+                        if not np.isfinite(value) or (value<=0 and not initial_gate and not query_interaction):raise ValueError(f'Word matching branch has invalid gradient: {name}')
                         branch_gradients[name]=value
+                if query_interaction and branch_gradients.get('question_projection.weight', 0.) <= 0:
+                    raise ValueError('Contextual question projection has zero gradient')
                 if parameter_digest(selector.visual)!=frozen_prior_digest:raise ValueError('Frozen visual prior changed')
             norm = torch.nn.utils.clip_grad_norm_(trainable, 1.)
             if not torch.isfinite(norm) or norm <= 0:

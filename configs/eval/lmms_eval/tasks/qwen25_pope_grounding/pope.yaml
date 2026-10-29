@@ -1,0 +1,26 @@
+task: qwen25_pope_grounding_pope
+dataset_path: parquet
+dataset_kwargs:
+  data_files:
+    test:
+      - /home/YinPeiran/datasets/lmms_eval_datasets/POPE/Full/adversarial-00000-of-00001.parquet
+      - /home/YinPeiran/datasets/lmms_eval_datasets/POPE/Full/popular-00000-of-00001.parquet
+      - /home/YinPeiran/datasets/lmms_eval_datasets/POPE/Full/random-00000-of-00001.parquet
+test_split: test
+process_docs: !function pope_utils.process_docs
+output_type: generate_until
+doc_to_visual: !function pope_utils.visual
+doc_to_text: !function pope_utils.pope_doc_to_text
+doc_to_target: answer
+process_results: !function pope_utils.pope_results
+generation_kwargs: {max_new_tokens: 16, temperature: 0.0, do_sample: false, repetition_penalty: 1.05}
+lmms_eval_specific_kwargs:
+  default: {pre_prompt: "", post_prompt: "\nAnswer the question using a single word or phrase."}
+metric_list:
+  - {metric: pope_accuracy, aggregation: mean, higher_is_better: true}
+  - {metric: pope_precision, aggregation: !function pope_utils.pope_precision, higher_is_better: true}
+  - {metric: pope_recall, aggregation: !function pope_utils.pope_recall, higher_is_better: true}
+  - {metric: pope_f1_score, aggregation: !function pope_utils.pope_f1, higher_is_better: true}
+  - {metric: pope_yes_ratio, aggregation: !function pope_utils.pope_yes_ratio, higher_is_better: false}
+  - {metric: pope_invalid_ratio, aggregation: !function pope_utils.pope_invalid_ratio, higher_is_better: false}
+metadata: {version: 1.0}
