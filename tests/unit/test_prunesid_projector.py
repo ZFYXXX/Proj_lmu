@@ -90,6 +90,23 @@ def test_identity_budget_preserves_dense_logits(method):
         activation.uninstall()
 
 
+def test_text_only_prunesid_matches_dense():
+    model = native_image.qwen_model("qwen25_vl").eval()
+    ids = torch.tensor([[1, 2, 3, 4]])
+    with torch.no_grad():
+        expected = model(input_ids=ids, use_cache=False).logits
+        expected_tokens = model.generate(input_ids=ids, max_new_tokens=3, min_new_tokens=3, do_sample=False)
+    activation = QwenProjectorComparison(model, "prunesid", {"tokens_per_crop": 2}, "qwen25_vl").install()
+    try:
+        with torch.no_grad():
+            actual = model(input_ids=ids, use_cache=False).logits
+            actual_tokens = model.generate(input_ids=ids, max_new_tokens=3, min_new_tokens=3, do_sample=False)
+        torch.testing.assert_close(actual, expected)
+        assert torch.equal(actual_tokens, expected_tokens)
+    finally:
+        activation.uninstall()
+
+
 def test_official_group_order_reaches_embeddings_positions_labels_and_layout():
     from contextvars import ContextVar
     from mllm_comp.fixed_mask.runtime import make_layout

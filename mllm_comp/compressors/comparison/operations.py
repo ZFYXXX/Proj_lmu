@@ -188,14 +188,14 @@ class OperationComparison:
                         spans[-1][1] += 1
                     else:
                         spans.append([value, value + 1])
-                if len(spans) > 1:
+                if len(spans) > 1 and not self.is_projector:
                     raise ValueError("This operation comparison binding requires one image span")
                 runtime = {"has_image": bool(spans), "batch_size": 1,
                     "expanded_prefill_seq_len": length, "expanded_visual_spans": spans,
                     "visual_start": spans[0][0] if spans else 0,
                     "visual_end": spans[0][1] if spans else 0,
-                    "visual_tokens": len(indices), "orig_seq_len": length - len(indices) + int(bool(spans)),
-                    "placeholder_positions": [spans[0][0]] if spans else [],
+                    "visual_tokens": len(indices), "orig_seq_len": length - len(indices) + len(spans),
+                    "placeholder_positions": [span[0] for span in spans],
                     "prefill_length": length}
                 if self.method == "skip_vision":
                     runtime["skip_vision_layouts"] = self.skip_layouts

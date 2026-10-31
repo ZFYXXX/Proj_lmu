@@ -239,6 +239,16 @@ deploy.exclude
 
 # Owner workspace: never version runtime data, nested repositories or backups.
 .codex-backup/
+C:Users*/
+cache/
+*.ckpt
+*.pt
+*.pth
+*.safetensors
+*.out
+*.err
+slurm-*.log
+.codex-backup/
 C:*/
 third_party/*/
 *.safetensors

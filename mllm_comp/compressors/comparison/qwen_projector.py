@@ -82,8 +82,8 @@ class QwenProjectorComparison(OperationComparison):
     def prepare_source_inputs(self, call):
         import torch
         grid = call.get("image_grid_thw")
-        if grid is None or len(grid) != 1 or int(grid[0, 0]) != 1:
-            raise ValueError("Qwen projector comparisons require one image grid")
+        if grid is not None and any(int(row[0]) != 1 for row in grid):
+            raise ValueError("Qwen projector comparisons require image grids with T=1")
         state = {"grid": grid, "attention": {}}
         if self.method in {"cdpruner", "eadp"}:
             from .llava import instruction_ids
@@ -155,6 +155,14 @@ class QwenProjectorComparison(OperationComparison):
         from mllm_comp.backbones.image_training import compact_ignored_labels
         layout = self.incoming.get()
         source = self.source.get()
+        if source["grid"] is None:
+            if bool(layout.vision.any()):
+                raise ValueError("Image placeholders without an image grid")
+            if hasattr(self, "last_selection"):
+                del self.last_selection
+            return hidden
+        if len(source["grid"]) > 1:
+            return self.prepare_multi_image_embeddings(call, hidden)
         visual_ids = layout.vision[0].nonzero(as_tuple=True)[0]
         features = hidden[0].index_select(0, visual_ids)
         merge = self.model.model.visual.spatial_merge_size
@@ -189,6 +197,71 @@ class QwenProjectorComparison(OperationComparison):
                 alpha=self.config["alpha"], patches_per_side=width, grid_height=height)
         local = selected[0].to(hidden.device)
         return self.compact_selection(call, hidden, local, stats)
+
+    def prepare_multi_image_embeddings(self, call, hidden):
+        import torch
+        from mllm_comp.compressors.image.per_image_budget import image_spans_and_budgets
+        from mllm_comp.backbones.image_training import compact_ignored_labels
+
+        if self.method not in {"prunesid", "eadp", "cdpruner", "dppruner"}:
+            raise ValueError(f"{self.method} multi-image selection is not yet supported")
+        source = self.source.get()
+        layout = self.incoming.get()
+        grids = source["grid"]
+        merge = self.model.model.visual.spatial_merge_size
+        spans = image_spans_and_budgets(layout.vision[0].tolist(), grids.tolist(),
+                                        merge_size=merge, target_tokens=self.config["tokens_per_crop"])
+        pieces, all_local, records = [], [], []
+        cursor = visual_offset = 0
+        for (start, end, _), grid in zip(spans, grids):
+            features = hidden[:, start:end]
+            height, width = (int(v) // merge for v in grid[1:])
+            budget = self.token_budget(end - start)
+            config = {**self.config, "tokens_per_crop": budget}
+            if self.method in {"cdpruner", "dppruner"}:
+                from .cdpruner import select_cdpruner_tokens
+                _, selected, stats = select_cdpruner_tokens(features, source.get("text"), cfg=config)
+            elif self.method == "eadp":
+                from .eadp import select_eadp_indices
+                selected, stats = select_eadp_indices(features, source["text"], patches_per_side=width,
+                                                       grid_height=height, cfg=config)
+            else:
+                from .prunesid import select_prunesid_indices
+                selected, stats = select_prunesid_indices(features, cfg=config)
+            local = selected[0].to(hidden.device)
+            if len(local) != budget or len(local.unique()) != budget or bool(((local < 0) | (local >= end - start)).any()):
+                raise ValueError("Invalid per-image projector selection")
+            if self.method != "prunesid":
+                local = local.sort().values
+            pieces.extend((torch.arange(cursor, start, device=hidden.device), local + start))
+            all_local.append(local + visual_offset)
+            records.append({"source_count": end - start, "result_count": budget,
+                            "native_grid": [height, width], "selected_indices": local.tolist(), **stats})
+            cursor, visual_offset = end, visual_offset + end - start
+        pieces.append(torch.arange(cursor, hidden.shape[1], device=hidden.device))
+        indices = torch.cat(pieces)
+        visual_indices = torch.cat(all_local)
+        labels = self.labels.get()
+        if labels is not None:
+            self.labels.set(compact_ignored_labels(labels, indices, source_length=hidden.shape[1], operation=self.method))
+        positions = call["position_ids"].index_select(-1, indices)
+        rotary = positions[1:] if positions.shape[0] == 4 else positions
+        physical = torch.arange(len(indices), device=positions.device).view(1, 1, -1)
+        call["position_ids"] = torch.cat((physical, rotary), dim=0)
+        call["inputs_embeds"] = hidden.index_select(1, indices)
+        call["input_ids"] = None
+        updated = layout.select(indices)
+        self.incoming.set(updated)
+        call["attention_mask"] = updated.valid
+        if "visual_pos_masks" in call:
+            call["visual_pos_masks"] = updated.vision
+        if call.get("deepstack_visual_embeds") is not None:
+            call["deepstack_visual_embeds"] = [branch.index_select(0, visual_indices.to(branch.device)) for branch in call["deepstack_visual_embeds"]]
+        self.model.model.rope_deltas = self.model.model.rope_deltas + hidden.shape[1] - len(indices)
+        self.last_selection = {"source_count": visual_offset, "result_count": len(visual_indices),
+                               "images": records, "expected_first_decode_position": int(rotary.max()) + 1,
+                               "first_decode_position": None, "decode_position_verified": None}
+        return call["inputs_embeds"]
 
     def compact_selection(self, call, hidden, local, stats):
         import torch
