@@ -5,12 +5,12 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --gres=gpu:4
-#SBATCH --cpus-per-task=16
-#SBATCH --time=08:00:00
+#SBATCH --cpus-per-task=32
+#SBATCH --time=1-00:00:00
 #SBATCH --signal=B:TERM@120
-#SBATCH --output=%x_%j.out
-#SBATCH --error=%x_%j.err
-#SBATCH --mail-type=NONE
+#SBATCH --output=logs/slurm/%x_%j_output.log
+#SBATCH --error=logs/slurm/%x_%j_error.log
+#SBATCH --mail-type="NONE"
 
 set -euo pipefail
 cd "${SLURM_SUBMIT_DIR:?Submit from the project root}"
