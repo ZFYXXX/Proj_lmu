@@ -47,6 +47,7 @@ def specifications():
         ("chartqa", TASKS / "qwen25_7b_projector_ratio/chartqa.yaml", "ChartQA/data/test-*.parquet"),
         ("gqa", TASKS / "qwen25_vl_projector_quality/gqa.yaml", "GQA/testdev_balanced_instructions/testdev-*.parquet"),
         ("vqav2_val", UPSTREAM / "vqav2/vqav2_val.yaml", "VQAv2/data/validation-*.parquet"),
+        ("vqav2_testdev", UPSTREAM / "vqav2/vqav2_test.yaml", "VQAv2/data/testdev-*.parquet"),
         ("okvqa", TASKS / "qwen25_okvqa_checked/okvqa.yaml", "OK-VQA/data/val2014-*.parquet"),
         ("scienceqa_img", TASKS / "qwen25_vl_scienceqa_full/scienceqa_img_full.yaml", "ScienceQA/ScienceQA-IMG/test-*.parquet"),
         ("ai2d", TASKS / "context_visual_topk/ai2d.yaml", "ai2d/data/test-*.parquet"),
@@ -218,6 +219,10 @@ def prepare(args):
             task = {"include": str(template), "task": task_name, "dataset_path": "parquet", "dataset_name": None,
                     "dataset_kwargs": {"data_files": {"smoke": inputs}, "cache_dir": str(args.shared_cache or out / "cache/datasets")},
                     "test_split": "smoke", "training_split": None, "validation_split": None, "fewshot_split": None}
+            if name == "vqav2_testdev":
+                # The local test-dev split contains no public answer labels.
+                # Use the native test submission processor, with no gold target.
+                task["doc_to_target"] = ""
             if args.chunk_size is not None:
                 os.environ.update(MLLM_CHUNK_TEMPLATE=str(template), MLLM_CHUNK_START=str(args.chunk_start),
                                   MLLM_CHUNK_SIZE=str(args.chunk_size), MLLM_CHUNK_INFO=str(out / "data/chunk_info.json"))
@@ -258,6 +263,8 @@ def prepare(args):
                      "image_sizes": [list(image.size) for image in visual], "template": str(template)}
             if args.chunk_size is not None:
                 entry["chunk"] = json.loads((out / "data/chunk_info.json").read_text())
+            if name == "vqav2_testdev":
+                entry.update(source_split="testdev", scoring_status="pending_official_server")
             if name == "hallusionbench" and args.hallusion_scoring == "smoke":
                 entry["scoring_note"] = "Generation smoke only; official aAcc/qAcc/fAcc needs external judge, not exercised."
             manifest["tasks"][name] = entry
@@ -339,7 +346,7 @@ def main():
     parser.add_argument("--method-checkpoint")
     parser.add_argument("--hallusion-image", type=Path)
     parser.add_argument("--tasks", nargs="+", choices=[row[0] for row in specifications()],
-                        default=["gqa", "vqav2_val", "scienceqa_img", "mmmu", "hallusionbench",
+                        default=["gqa", "vqav2_testdev", "scienceqa_img", "mmmu", "hallusionbench",
                                  "refcoco_bbox_rec_testA", "refcoco_bbox_rec_testB", "refcocog_bbox_rec_test"])
     parser.add_argument("--run", action="store_true")
     args = parser.parse_args()
@@ -368,15 +375,17 @@ def main():
         scored = {}
         for path in (args.output / "results").rglob("*_results.json"):
             scored.update(json.loads(path.read_text()).get("results", {}))
-        for record in manifest["tasks"].values():
+        for name, record in manifest["tasks"].items():
             task = record.get("task")
             if task in scored:
                 metrics = scored[task]
                 if any(isinstance(v, (int, float)) and not math.isfinite(v) for v in metrics.values()):
                     record.update(status="eval_failed", error="Nonfinite metric")
                 else:
-                    record.update(status="generation_and_scoring_passed", metrics=metrics)
-        complete = code == 0 and all(r["status"] == "generation_and_scoring_passed" for r in manifest["tasks"].values())
+                    status = "generation_and_submission_passed" if name == "vqav2_testdev" else "generation_and_scoring_passed"
+                    record.update(status=status, metrics=metrics)
+        complete = code == 0 and all(r["status"] in {"generation_and_scoring_passed", "generation_and_submission_passed"}
+                                     for r in manifest["tasks"].values())
         manifest.update(status="complete" if complete else "incomplete", eval_exit_code=code)
         save(args.output / "manifest.json", manifest)
         sys.exit(0 if complete else 1)

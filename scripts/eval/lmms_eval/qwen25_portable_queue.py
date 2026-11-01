@@ -1,4 +1,4 @@
-"""Serial Qwen2.5 evaluation using full local datasets and resumable methods.
+"""Resumable Qwen2.5 evaluation with a shared queue of request chunks.
 
 Pass --limit for a small end-to-end check of the very same full-source path.
 Without --limit every selected source shard is evaluated.
@@ -6,11 +6,14 @@ Without --limit every selected source shard is evaluated.
 from __future__ import annotations
 
 import argparse
+import fcntl
 import hashlib
 import json
 import os
 from pathlib import Path
 import re
+import shutil
+import socket
 import subprocess
 import sys
 import time
@@ -25,8 +28,8 @@ METHODS = ("dense", "old_mlp", "visual_selector", "image_context_selector", "que
 TRAINED = {"old_mlp", "visual_selector", "image_context_selector", "question_context_selector", "protected_selector"}
 DEFAULT_METHODS = ("dense", "eadp", "prunesid", "mmtok", "old_mlp", "visual_selector",
                    "image_context_selector", "question_context_selector", "protected_selector")
-DEFAULT_TASKS = ("gqa", "vqav2_val", "scienceqa_img", "mmmu", "hallusionbench", "textvqa",
-                 "refcoco_bbox_rec_testA", "refcoco_bbox_rec_testB", "refcocog_bbox_rec_test")
+DEFAULT_TASKS = ("gqa", "scienceqa_img", "mmmu", "hallusionbench", "textvqa",
+                 "refcoco_bbox_rec_testA", "refcoco_bbox_rec_testB", "refcocog_bbox_rec_test", "vqav2_testdev")
 PRIMARY = {"chartqa": "relaxed_overall", "ocrbench": "ocrbench_accuracy", "ai2d": "leading_option_accuracy",
            "mmstar": "average", "pope": "pope_accuracy", "gqa": "exact_match", "vqav2_val": "exact_match",
            "okvqa": "exact_match", "scienceqa_img": "exact_match", "mmmu": "mmmu_acc",
@@ -34,7 +37,7 @@ PRIMARY = {"chartqa": "relaxed_overall", "ocrbench": "ocrbench_accuracy", "ai2d"
 
 
 def dump(path, value):
-    temp = path.with_suffix(path.suffix + ".tmp")
+    temp = path.with_name(f"{path.name}.{os.getpid()}.{time.time_ns()}.tmp")
     temp.write_text(json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False) + "\n")
     os.replace(temp, path)
 
@@ -65,6 +68,8 @@ def resolve_identity(reference, model, output):
 
 
 def score_name(task):
+    if task == "vqav2_testdev":
+        return "submission"
     if task == "hallusionbench":
         return "generation_nonempty_smoke"
     return "refcoco_ACC@0.5" if task.startswith("refcoco") else PRIMARY[task]
@@ -77,7 +82,8 @@ def collect(attempt, tasks, limit):
     scores = {}
     for task in tasks:
         record = manifest["tasks"][task]
-        if record.get("status") != "generation_and_scoring_passed":
+        expected_status = "generation_and_submission_passed" if task == "vqav2_testdev" else "generation_and_scoring_passed"
+        if record.get("status") != expected_status:
             raise ValueError(f"Task incomplete: {task}")
         expected = record["eval_rows"] if limit is None else min(record["eval_rows"], limit)
         files = list((attempt / "results").rglob(f"*_samples_{record['task']}.jsonl"))
@@ -97,14 +103,37 @@ def collect(attempt, tasks, limit):
                                              not str(r["hallusion_record"].get("model_prediction", "")).strip()
                                              for r in ordered):
             raise ValueError("HallusionBench has missing records or empty predictions")
+        if task == "vqav2_testdev":
+            vqav2_submissions(ordered)
         if [row["doc_id"] for row in ordered] != list(range(expected)):
             raise ValueError(f"Non-contiguous local document IDs for {task}")
-        scores[task] = {"score": record["metrics"][metric], "metric": metric, "samples": expected,
+        scores[task] = {"score": None if task == "vqav2_testdev" else record["metrics"][metric],
+                        "metric": metric, "samples": expected,
                         "samples_path": str(files[0]), "source_stats": record["source_stats"],
                         "source_rows": record["source_rows"], "eval_rows": record["eval_rows"],
                         "chunk": record.get("chunk"),
                         "doc_hashes_sha256": hashlib.sha256(json.dumps([r.get('doc_hash') for r in ordered]).encode()).hexdigest()}
     return scores
+
+
+def vqav2_submissions(rows):
+    """Validate the native submission payload; never fabricate a test-dev score."""
+    submissions, seen = [], set()
+    for row in rows:
+        item = row.get("submission")
+        if not isinstance(item, dict) or set(item) != {"question_id", "answer"}:
+            raise ValueError("VQAv2 test-dev sample lacks a native submission record")
+        question_id = item["question_id"]
+        if not isinstance(question_id, int) or isinstance(question_id, bool) or question_id in seen:
+            raise ValueError(f"Duplicate or invalid VQAv2 test-dev question ID: {question_id}")
+        if not isinstance(item["answer"], str) or not item["answer"].strip():
+            raise ValueError(f"Empty VQAv2 test-dev prediction: {question_id}")
+        doc_id = row.get("doc", {}).get("question_id")
+        if doc_id is not None and doc_id != question_id:
+            raise ValueError("VQAv2 test-dev submission question ID differs from its sample")
+        seen.add(question_id)
+        submissions.append({"question_id": question_id, "answer": item["answer"]})
+    return submissions
 
 
 def report(output, methods, tasks):
@@ -120,6 +149,8 @@ def report(output, methods, tasks):
              "| Method | " + " | ".join(tasks) + " |", "|---|" + "---:|" * len(tasks)]
     if cells.get("dense", {}).get("mmmu", {}).get("subset") == "single_image_only":
         lines.insert(4, "MMMU is the single-image subset only; it is not the official full-validation score.")
+    if "vqav2_testdev" in tasks:
+        lines.insert(4, "VQAv2 test-dev has no public gold labels; scores are pending official evaluation. Per-method submission JSON files are retained.")
     normalized = {}
     for method in methods:
         normalized[method] = {}
@@ -130,8 +161,104 @@ def report(output, methods, tasks):
             normalized[method][task] = value
             values.append(f"{value:.2f}%" if value is not None else "—")
         lines.append("| " + method + " | " + " | ".join(values) + " |")
-    (output / "report.md").write_text("\n".join(lines) + "\n")
+    temporary = output / f"report.md.{os.getpid()}.{time.time_ns()}.tmp"
+    temporary.write_text("\n".join(lines) + "\n")
+    os.replace(temporary, output / "report.md")
     dump(output / "summary.json", {"raw_scores": cells, "normalized_percent": normalized})
+
+
+def cell_lock(cell: Path, worker_index: int):
+    """Claim work non-blockingly; the OS releases the lock when a worker exits."""
+    lock = (cell / ".claim.lock").open("a+")
+    try:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        lock.close()
+        return None
+    lock.seek(0)
+    lock.truncate()
+    json.dump({"pid": os.getpid(), "host": socket.gethostname(), "worker_index": worker_index,
+               "slurm_job_id": os.environ.get("SLURM_JOB_ID"), "claimed_at": time.time()}, lock)
+    lock.flush()
+    return lock
+
+
+def claim_next_work(output, methods, tasks, chunk_size, limit, worker_index):
+    """Share chunks, including long test-dev runs, rather than pinning datasets to GPUs."""
+    for task in tasks:
+        for method in methods:
+            cell = output / "cells" / method / task
+            cell.mkdir(parents=True, exist_ok=True)
+            if (cell / "complete.json").is_file():
+                continue
+            if (cell / "failed.json").is_file():
+                raise RuntimeError(f"Failed cell requires inspection: {method}/{task}")
+            dense = output / "cells" / "dense" / task
+            reference_path = dense / "chunk_000000000" / "complete.json"
+            if reference_path.is_file():
+                total = json.loads(reference_path.read_text())["chunk"]["total"]
+                stop = min(total, limit) if limit is not None else total
+                starts = range(0, stop, chunk_size)
+            elif method == "dense":
+                starts = [0]  # The first processed chunk discovers the native task length.
+            else:
+                continue
+            all_chunks_done = True
+            for start in starts:
+                chunk = cell / f"chunk_{start:09d}"
+                if (chunk / "complete.json").is_file():
+                    continue
+                all_chunks_done = False
+                if method != "dense" and not (dense / chunk.name / "complete.json").is_file():
+                    continue
+                chunk.mkdir(exist_ok=True)
+                lock = cell_lock(chunk, worker_index)
+                if lock is not None:
+                    # Recheck after obtaining the lock: another worker may have
+                    # finished between the initial marker check and this claim.
+                    if (chunk / "complete.json").exists():
+                        lock.close()
+                        continue
+                    return method, task, cell, lock, start
+            if all_chunks_done and reference_path.is_file():
+                lock = cell_lock(cell, worker_index)
+                if lock is not None:
+                    return method, task, cell, lock, None  # Final aggregation, no GPU work.
+    return None
+
+
+def seed_completed_cells(source: Path, output: Path, methods, tasks) -> None:
+    """Import only completion records from a previous run; prediction files stay put."""
+    current = json.loads((output / "plan.json").read_text())
+    checked = set()
+    for method in methods:
+        for task in tasks:
+            target = output / "cells" / method / task
+            if (target / "complete.json").exists():
+                continue
+            candidates = sorted(source.glob(f"worker_*/cells/{method}/{task}"))
+            if not candidates:
+                continue
+            target.mkdir(parents=True, exist_ok=True)
+            for source_cell in candidates:
+                source_plan = source_cell.parents[2] / "plan.json"
+                if source_plan not in checked:
+                    previous = json.loads(source_plan.read_text())
+                    for field in ("data_root", "model_identity_sha256", "limit", "chunk_size",
+                                  "mmmu_single_image_only", "first_shard_only", "checkpoint_hashes"):
+                        if previous.get(field) != current.get(field):
+                            raise ValueError(f"Cannot reuse prior run with different {field}: {source_plan}")
+                    checked.add(source_plan)
+                marker = source_cell / "complete.json"
+                if marker.is_file() and not (target / "complete.json").exists():
+                    shutil.copy2(marker, target / "complete.json")
+                for chunk_marker in source_cell.glob("chunk_*/complete.json"):
+                    target_chunk = target / chunk_marker.parent.name
+                    target_chunk.mkdir(exist_ok=True)
+                    if not (target_chunk / "complete.json").exists():
+                        shutil.copy2(chunk_marker, target_chunk / "complete.json")
+            if (target / "complete.json").exists():
+                print(f"SEEDED completed {method}/{task} from {source}", flush=True)
 
 
 def main():
@@ -155,6 +282,12 @@ def main():
                         help="CUDA device ID (defaults to the first device assigned to the job)")
     parser.add_argument("--hallusion-image", type=Path)
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--shared-workers", type=int, default=1,
+                        help="Number of workers dynamically claiming request chunks in this shared output")
+    parser.add_argument("--worker-index", type=int, default=0,
+                        help="Worker identifier for shared queue logs")
+    parser.add_argument("--seed-from", type=Path,
+                        help="Import only completed/chunk completion markers from an earlier worker_*/ run")
     args = parser.parse_args()
     if args.limit is not None and args.limit < 1:
         parser.error("--limit must be positive")
@@ -164,6 +297,8 @@ def main():
         parser.error("--first-shard-only requires --limit")
     if len(args.methods) != len(set(args.methods)) or len(args.tasks) != len(set(args.tasks)):
         parser.error("Methods and tasks must not contain duplicates")
+    if args.shared_workers < 1 or not 0 <= args.worker_index < args.shared_workers:
+        parser.error("worker-index must be in [0, shared-workers)")
     if "dense" not in args.methods:
         parser.error("Include dense as the reference method")
     args.methods = ["dense"] + [m for m in args.methods if m != "dense"]
@@ -218,12 +353,36 @@ def main():
     if plan_path.exists() and json.loads(plan_path.read_text()) != plan:
         raise ValueError("Run plan changed; choose a new output rather than resuming")
     dump(plan_path, plan)
+    if args.seed_from:
+        seed_done = args.output / "seed_complete.json"
+        if args.worker_index == 0:
+            if not seed_done.exists():
+                seed_completed_cells(args.seed_from.resolve(), args.output, args.methods, args.tasks)
+                dump(seed_done, {"source": str(args.seed_from.resolve()), "status": "complete"})
+        else:
+            deadline = time.monotonic() + 600
+            while not seed_done.exists():
+                if time.monotonic() >= deadline:
+                    raise TimeoutError("Worker 0 did not finish importing prior completion markers")
+                time.sleep(0.5)
     dump(args.output / "status.json", {"status": "running", "mode": "limited" if args.limit else "full"})
     os.environ.setdefault("OPENAI_API_KEY", "unused-local-smoke-no-judge")
     from lmms_eval.api.registry import get_aggregation
     from lmms_eval.utils import load_yaml_config
-    for method in args.methods:
-        for task in args.tasks:
+    while True:
+        claimed = claim_next_work(args.output, args.methods, args.tasks, args.chunk_size,
+                                  args.limit, args.worker_index)
+        if claimed is None:
+            all_done = all((args.output / "cells" / method / task / "complete.json").is_file()
+                           for method in args.methods for task in args.tasks)
+            if all_done:
+                break
+            if args.shared_workers == 1:
+                raise RuntimeError("Incomplete cells remain but none could be claimed")
+            time.sleep(3)
+            continue
+        method, task, cell, lock, start = claimed
+        try:
             cell = args.output / "cells" / method / task
             cell.mkdir(parents=True, exist_ok=True)
             marker = cell / "complete.json"
@@ -231,8 +390,7 @@ def main():
                 print(f"SKIP completed {method}/{task}", flush=True)
                 continue
             chunk_scores = []
-            start = 0
-            while True:
+            while start is not None:
                 for relative, expected_hash in plan["source_hashes"].items():
                     if sha(ROOT / relative) != expected_hash:
                         raise RuntimeError(f"Source changed during execution: {relative}; restart with a new output")
@@ -274,18 +432,27 @@ def main():
                         dump(chunk_marker, result)
                         print(f"PASS {method}/{task}/{start}", flush=True)
                     except Exception as exc:
-                        dump(args.output / "status.json", {"status": "failed", "method": method, "task": task,
-                                                            "chunk_start": start, "error": str(exc), "attempt": str(attempt)})
+                        failure = {"status": "failed", "method": method, "task": task,
+                                   "chunk_start": start, "error": str(exc), "attempt": str(attempt),
+                                   "worker_index": args.worker_index}
+                        dump(cell / "failed.json", failure)
+                        dump(args.output / f"worker_status_{args.worker_index}.json", failure)
                         raise
                 chunk_scores.append(result)
-                start = result["chunk"]["stop"]
-                end = result["chunk"]["total"]
-                if args.limit is not None:
-                    end = min(end, args.limit)
-                if start >= end:
-                    break
+                break
+            if start is not None:
+                continue
+            first = json.loads((cell / "chunk_000000000" / "complete.json").read_text())
+            total = first["chunk"]["total"]
+            stop = min(total, args.limit) if args.limit is not None else total
+            chunk_scores = [json.loads((cell / f"chunk_{offset:09d}" / "complete.json").read_text())
+                            for offset in range(0, stop, args.chunk_size)]
+            for offset, part in zip(range(0, stop, args.chunk_size), chunk_scores):
+                if (part["chunk"]["start"] != offset or part["chunk"]["stop"] != min(stop, offset + args.chunk_size)
+                        or part["chunk"]["total"] != total or part["samples"] != part["chunk"]["stop"] - offset):
+                    raise ValueError(f"Non-contiguous or inconsistent chunk coverage for {method}/{task}")
             metric_name = score_name(task)
-            if task == "hallusionbench":
+            if task in {"hallusionbench", "vqav2_testdev"}:
                 aggregate = None
             elif len(chunk_scores) == 1:
                 aggregate = chunk_scores[0]["score"]
@@ -310,10 +477,38 @@ def main():
                       "excluded": chunk_scores[0]["chunk"].get("excluded", 0)}
             if task == "hallusionbench":
                 result.update(metric="aAcc", scoring_status="pending_official_judge")
+            if task == "vqav2_testdev":
+                def submission_rows():
+                    for part in chunk_scores:
+                        with Path(part["samples_path"]).open() as stream:
+                            for line in stream:
+                                if line.strip():
+                                    yield json.loads(line)
+                submissions = vqav2_submissions(submission_rows())
+                if len(submissions) != result["samples"]:
+                    raise ValueError("VQAv2 test-dev merged submission count differs from processed requests")
+                submission_path = cell / "vqav2_testdev_submission.json"
+                dump(submission_path, submissions)
+                result.update(scoring_status="pending_official_server", submission_path=str(submission_path),
+                              source_split="testdev")
             dump(marker, {"method": method, "task": task, "score": result})
             report(args.output, args.methods, args.tasks)
             print(f"PASS {method}/{task}: {result['samples']} requests", flush=True)
-    dump(args.output / "status.json", {"status": "complete", "mode": "limited" if args.limit else "full"})
+        except Exception as exc:
+            if not (cell / "failed.json").exists():
+                failure = {"status": "failed", "method": method, "task": task, "chunk_start": start,
+                           "error": str(exc), "worker_index": args.worker_index}
+                dump(cell / "failed.json", failure)
+                dump(args.output / f"worker_status_{args.worker_index}.json", failure)
+            raise
+        finally:
+            lock.close()
+    dump(args.output / f"worker_status_{args.worker_index}.json", {"status": "complete"})
+    all_done = all((args.output / "cells" / method / task / "complete.json").is_file()
+                   for method in args.methods for task in args.tasks)
+    if all_done:
+        report(args.output, args.methods, args.tasks)
+        dump(args.output / "status.json", {"status": "complete", "mode": "limited" if args.limit else "full"})
     print(f"Completed; report: {args.output / 'report.md'}", flush=True)
 
 
