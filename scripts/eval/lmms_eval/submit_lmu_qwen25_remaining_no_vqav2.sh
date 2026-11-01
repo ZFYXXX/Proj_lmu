@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO="${REPO:-/home/hk-project-p0022189/tum_yvc3016/haowu/Fengyu/Proj_lmu}"
+REPO="${REPO:-/hkfs/work/workspace/scratch/tum_yvc3016-comp/workspace/Fengyu/Proj_lmu}"
 ENV="${ENV:-/home/hk-project-p0022189/tum_yvc3016/miniconda3/envs/zfy-mllm-comp}"
 WS="${WS:-/hkfs/work/workspace/scratch/tum_yvc3016-comp/workspace}"
 DATA_ROOT="${DATA_ROOT:-/hkfs/work/workspace/scratch/tum_yvc3016-comp/mllm_dataset/lmms_lab_dataset}"
