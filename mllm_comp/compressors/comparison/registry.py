@@ -184,6 +184,8 @@ def register_comparison_contracts(registry):
                 phase=phase), binding=name) for phase in phases)
     from .anchor_adapter import register_contracts as register_anchor_adapter
     register_anchor_adapter(registry)
+    from .importance_anchor_adapter import register_contracts as register_importance_anchor
+    register_importance_anchor(registry)
     register_prunesid_contracts(registry)
     from .learned_topk import register_contracts as register_learned_topk
     register_learned_topk(registry)

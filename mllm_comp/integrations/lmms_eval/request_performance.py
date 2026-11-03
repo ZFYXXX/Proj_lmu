@@ -29,7 +29,14 @@ def _request_performance(runtime, processed, sample_id):
     import torch
     from mllm_comp.analysis.common.learned_topk_experiment import owned_output
     from mllm_comp.analysis.common.learned_topk_experiment import cooperative_pause, shared_policy
-    path = owned_output(filename)
+    output_root = os.environ.get('MLLM_EVAL_OUTPUT_ROOT')
+    if output_root:
+        from pathlib import Path
+        path = Path(filename).resolve()
+        if not path.is_relative_to(Path(output_root).resolve()) or path == Path(output_root).resolve():
+            raise ValueError('Performance log must be inside the active evaluation output')
+    else:
+        path = owned_output(filename)
     device = indexed_device(runtime.device)
     cuda = device.type == 'cuda'
     policy = shared_policy()

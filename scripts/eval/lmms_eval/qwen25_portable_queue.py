@@ -6,6 +6,7 @@ Without --limit every selected source shard is evaluated.
 from __future__ import annotations
 
 import argparse
+import csv
 import fcntl
 import hashlib
 import json
@@ -22,14 +23,21 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT))
 from mllm_comp.analysis.common.anchor7b_runtime import identify_checkpoint, validate_identity
 from scripts.eval.lmms_eval.p6000_dataset_smoke import specifications
+from scripts.eval.lmms_eval.portable_results import sample_signature
 
 METHODS = ("dense", "old_mlp", "visual_selector", "image_context_selector", "question_context_selector",
-           "protected_selector", "eadp", "prunesid", "mmtok")
-TRAINED = {"old_mlp", "visual_selector", "image_context_selector", "question_context_selector", "protected_selector"}
+           "protected_selector", "eadp", "prunesid", "mmtok", "importance_fps", "importance_fps_pool")
+TRAINED = {"old_mlp", "visual_selector", "image_context_selector", "question_context_selector", "protected_selector",
+           "importance_fps", "importance_fps_pool"}
 DEFAULT_METHODS = ("dense", "eadp", "prunesid", "mmtok", "old_mlp", "visual_selector",
-                   "image_context_selector", "question_context_selector", "protected_selector")
-DEFAULT_TASKS = ("gqa", "scienceqa_img", "mmmu", "hallusionbench", "textvqa",
-                 "refcoco_bbox_rec_testA", "refcoco_bbox_rec_testB", "refcocog_bbox_rec_test", "vqav2_testdev")
+                   "image_context_selector", "question_context_selector", "protected_selector", "importance_fps", "importance_fps_pool")
+DEFAULT_TASKS = ("gqa", "okvqa", "scienceqa_img", "ai2d", "mmstar", "mmmu", "pope", "hallusionbench",
+                 "textvqa", "docvqa", "ocrbench", "chartqa", "refcoco_bbox_rec_testA", "refcoco_bbox_rec_testB",
+                 "refcoco+_bbox_rec_testA", "refcoco+_bbox_rec_testB", "refcocog_bbox_rec_test")
+CATEGORIES = {"General": ("gqa", "okvqa"), "Reasoning": ("scienceqa_img", "ai2d", "mmstar", "mmmu"),
+              "Hallusion": ("pope", "hallusionbench"), "OCR": ("textvqa", "docvqa", "ocrbench", "chartqa"),
+              "Grounding": ("refcoco_bbox_rec_testA", "refcoco_bbox_rec_testB", "refcoco+_bbox_rec_testA",
+                            "refcoco+_bbox_rec_testB", "refcocog_bbox_rec_test")}
 PRIMARY = {"chartqa": "relaxed_overall", "ocrbench": "ocrbench_accuracy", "ai2d": "leading_option_accuracy",
            "mmstar": "average", "pope": "pope_accuracy", "gqa": "exact_match", "vqav2_val": "exact_match",
            "okvqa": "exact_match", "scienceqa_img": "exact_match", "mmmu": "mmmu_acc",
@@ -113,6 +121,7 @@ def collect(attempt, tasks, limit):
                         "source_rows": record["source_rows"], "eval_rows": record["eval_rows"],
                         "chunk": record.get("chunk"),
                         "doc_hashes_sha256": hashlib.sha256(json.dumps([r.get('doc_hash') for r in ordered]).encode()).hexdigest()}
+        scores[task]["sample_signatures_sha256"] = hashlib.sha256(json.dumps([sample_signature(r) for r in ordered]).encode()).hexdigest()
     return scores
 
 
@@ -144,27 +153,64 @@ def report(output, methods, tasks):
             marker = output / "cells" / method / task / "complete.json"
             if marker.exists():
                 cells[method][task] = json.loads(marker.read_text())["score"]
-    lines = ["# Qwen2.5 evaluation", "", "Normalized score = method score / same-task dense score × 100.",
-             "A missing or zero baseline is shown as —. Limited checks are not benchmark results.", "",
-             "| Method | " + " | ".join(tasks) + " |", "|---|" + "---:|" * len(tasks)]
+    lines = ["# Qwen2.5 evaluation", "", "Raw task scores and dense-relative scores are both retained.",
+             "Normalized score = method score / same-task dense score × 100.",
+             "Raw OCRBench is /1000; other raw task scores are percentages (DocVQA: ANLS × 100).",
+             "Missing or pending scores are —, not zero. Limited checks are not benchmark estimates.",
+             "VQAv2 is excluded from the default suite. Category means equally weight the listed tasks; incomplete categories have no mean."]
     if cells.get("dense", {}).get("mmmu", {}).get("subset") == "single_image_only":
         lines.insert(4, "MMMU is the single-image subset only; it is not the official full-validation score.")
     if "vqav2_testdev" in tasks:
         lines.insert(4, "VQAv2 test-dev has no public gold labels; scores are pending official evaluation. Per-method submission JSON files are retained.")
-    normalized = {}
+    normalized, raw_display, rows = {}, {}, []
     for method in methods:
         normalized[method] = {}
-        values = []
+        raw_display[method] = {}
         for task in tasks:
             row, base = cells.get(method, {}).get(task), cells.get("dense", {}).get(task)
             value = 100 * row["score"] / base["score"] if row and base and row["score"] is not None and base["score"] else None
             normalized[method][task] = value
-            values.append(f"{value:.2f}%" if value is not None else "—")
-        lines.append("| " + method + " | " + " | ".join(values) + " |")
+            raw = row.get("score") if row else None
+            display = None if raw is None else raw * (1000 if task == "ocrbench" else 100)
+            raw_display[method][task] = display
+            rows.append({"method": method, "task": task, "metric": row.get("metric") if row else None,
+                "samples": row.get("samples") if row else None, "raw_score": raw, "raw_display": display,
+                "raw_unit": "/1000" if task == "ocrbench" else "percent",
+                "normalized_percent": value, "status": row.get("scoring_status", "complete") if row else "pending",
+                "reused_from": row.get("reused_from") if row else None})
+    for heading, values, relative in (("Raw task scores", raw_display, False), ("Dense-relative scores (%)", normalized, True)):
+        lines.extend(["", f"## {heading}", "", "| Method | " + " | ".join(tasks) + " |", "|---|" + "---:|" * len(tasks)])
+        for method in methods:
+            fields = []
+            for task in tasks:
+                value = values[method][task]
+                fields.append("—" if value is None else (f"{value:.0f}" if task == "ocrbench" and not relative else f"{value:.2f}%"))
+            lines.append("| " + method + " | " + " | ".join(fields) + " |")
+    categories = {}
+    for method in methods:
+        categories[method] = {}
+        for category, members in CATEGORIES.items():
+            selected = [task for task in members if task in tasks]
+            values = [normalized[method][task] for task in selected]
+            categories[method][category] = {"tasks": selected, "completed": sum(v is not None for v in values),
+                "expected": len(selected), "normalized_mean": sum(values) / len(values)
+                    if values and all(v is not None for v in values) else None}
+    lines.extend(["", "## Category means (dense-relative %)", "", "| Method | " + " | ".join(CATEGORIES) + " |",
+                  "|---|" + "---:|" * len(CATEGORIES)])
+    for method in methods:
+        values = [categories[method][category]["normalized_mean"] for category in CATEGORIES]
+        lines.append("| " + method + " | " + " | ".join("—" if v is None else f"{v:.2f}%" for v in values) + " |")
     temporary = output / f"report.md.{os.getpid()}.{time.time_ns()}.tmp"
     temporary.write_text("\n".join(lines) + "\n")
     os.replace(temporary, output / "report.md")
-    dump(output / "summary.json", {"raw_scores": cells, "normalized_percent": normalized})
+    dump(output / "summary.json", {"raw_scores": cells, "raw_display": raw_display,
+        "normalized_percent": normalized, "category_means": categories, "category_tasks": CATEGORIES})
+    temporary = output / f"scores.csv.{os.getpid()}.{time.time_ns()}.tmp"
+    with temporary.open("w", newline="") as stream:
+        writer = csv.DictWriter(stream, fieldnames=list(rows[0]) if rows else ["method", "task"])
+        writer.writeheader()
+        writer.writerows(rows)
+    os.replace(temporary, output / "scores.csv")
 
 
 def cell_lock(cell: Path, worker_index: int):
@@ -183,10 +229,11 @@ def cell_lock(cell: Path, worker_index: int):
     return lock
 
 
-def claim_next_work(output, methods, tasks, chunk_size, limit, worker_index):
+def claim_next_work(output, methods, tasks, chunk_size, limit, worker_index, preferred_method=None, reference_only=False):
     """Share chunks, including long test-dev runs, rather than pinning datasets to GPUs."""
-    for task in tasks:
-        for method in methods:
+    ordered_methods = ([preferred_method] if preferred_method in methods else []) + [m for m in methods if m != preferred_method]
+    for method in ordered_methods:
+        for task in tasks:
             cell = output / "cells" / method / task
             cell.mkdir(parents=True, exist_ok=True)
             if (cell / "complete.json").is_file():
@@ -195,12 +242,26 @@ def claim_next_work(output, methods, tasks, chunk_size, limit, worker_index):
                 raise RuntimeError(f"Failed cell requires inspection: {method}/{task}")
             dense = output / "cells" / "dense" / task
             reference_path = dense / "chunk_000000000" / "complete.json"
-            if reference_path.is_file():
+            if (dense / "complete.json").is_file():
+                reference = json.loads((dense / "complete.json").read_text())["score"]
+                total = reference.get("processed_total", reference["samples"])
+                stop = min(total, limit) if limit is not None else total
+                starts = range(0, stop, chunk_size)
+            elif reference_path.is_file():
                 total = json.loads(reference_path.read_text())["chunk"]["total"]
                 stop = min(total, limit) if limit is not None else total
                 starts = range(0, stop, chunk_size)
             elif method == "dense":
                 starts = [0]  # The first processed chunk discovers the native task length.
+            elif reference_only:
+                prior = next((output / "cells" / m / task / "chunk_000000000" / "complete.json"
+                              for m in methods if (output / "cells" / m / task / "chunk_000000000" / "complete.json").is_file()), None)
+                if prior is not None:
+                    total = json.loads(prior.read_text())["chunk"]["total"]
+                    stop = min(total, limit) if limit is not None else total
+                    starts = range(0, stop, chunk_size)
+                else:
+                    starts = [0]
             else:
                 continue
             all_chunks_done = True
@@ -209,7 +270,7 @@ def claim_next_work(output, methods, tasks, chunk_size, limit, worker_index):
                 if (chunk / "complete.json").is_file():
                     continue
                 all_chunks_done = False
-                if method != "dense" and not (dense / chunk.name / "complete.json").is_file():
+                if method != "dense" and not reference_only and not (dense / "complete.json").is_file() and not (dense / chunk.name / "complete.json").is_file():
                     continue
                 chunk.mkdir(exist_ok=True)
                 lock = cell_lock(chunk, worker_index)
@@ -220,7 +281,7 @@ def claim_next_work(output, methods, tasks, chunk_size, limit, worker_index):
                         lock.close()
                         continue
                     return method, task, cell, lock, start
-            if all_chunks_done and reference_path.is_file():
+            if all_chunks_done and (cell / "chunk_000000000" / "complete.json").is_file():
                 lock = cell_lock(cell, worker_index)
                 if lock is not None:
                     return method, task, cell, lock, None  # Final aggregation, no GPU work.
@@ -237,6 +298,8 @@ def seed_completed_cells(source: Path, output: Path, methods, tasks) -> None:
             if (target / "complete.json").exists():
                 continue
             candidates = sorted(source.glob(f"worker_*/cells/{method}/{task}"))
+            if (source / "cells" / method / task).is_dir():
+                candidates.insert(0, source / "cells" / method / task)
             if not candidates:
                 continue
             target.mkdir(parents=True, exist_ok=True)
@@ -244,21 +307,82 @@ def seed_completed_cells(source: Path, output: Path, methods, tasks) -> None:
                 source_plan = source_cell.parents[2] / "plan.json"
                 if source_plan not in checked:
                     previous = json.loads(source_plan.read_text())
-                    for field in ("data_root", "model_identity_sha256", "limit", "chunk_size",
-                                  "mmmu_single_image_only", "first_shard_only", "checkpoint_hashes"):
+                    for field in ("data_root", "model_identity_sha256", "limit",
+                                  "mmmu_single_image_only", "first_shard_only"):
                         if previous.get(field) != current.get(field):
                             raise ValueError(f"Cannot reuse prior run with different {field}: {source_plan}")
                     checked.add(source_plan)
+                previous = json.loads(source_plan.read_text())
+                if method in TRAINED and previous.get("checkpoint_hashes", {}).get(method) != current["checkpoint_hashes"].get(method):
+                    raise ValueError(f"Checkpoint changed for reused {method}: {source_plan}")
+                if method in {"importance_fps", "importance_fps_pool"} and previous.get("scorer_hashes") != current.get("scorer_hashes"):
+                    raise ValueError("Scorer changed for reused importance-FPS results")
                 marker = source_cell / "complete.json"
                 if marker.is_file() and not (target / "complete.json").exists():
-                    shutil.copy2(marker, target / "complete.json")
-                for chunk_marker in source_cell.glob("chunk_*/complete.json"):
+                    payload = json.loads(marker.read_text())
+                    payload["score"]["reused_from"] = str(source_cell.resolve())
+                    dump(target / "complete.json", payload)
+                # Full-cell reuse is independent of chunk size. Partial chunks
+                # can only be resumed under their original boundaries.
+                for chunk_marker in source_cell.glob("chunk_*/complete.json") if previous["chunk_size"] == current["chunk_size"] else ():
                     target_chunk = target / chunk_marker.parent.name
                     target_chunk.mkdir(exist_ok=True)
                     if not (target_chunk / "complete.json").exists():
                         shutil.copy2(chunk_marker, target_chunk / "complete.json")
             if (target / "complete.json").exists():
                 print(f"SEEDED completed {method}/{task} from {source}", flush=True)
+
+
+def baseline_hashes(cell):
+    visited = set()
+    while (cell / "complete.json").is_file():
+        if cell.resolve() in visited:
+            raise ValueError("Cycle in reused result provenance")
+        visited.add(cell.resolve())
+        marker = cell / "complete.json"
+        record = json.loads(marker.read_text())["score"]
+        if record.get("evidence_path"):
+            return json.loads(Path(record["evidence_path"]).read_text())["sample_signatures"]
+        if not record.get("reused_from"):
+            break
+        cell = Path(record["reused_from"])
+    hashes = {}
+    for path in sorted(cell.glob("chunk_*/complete.json")):
+        chunk = json.loads(path.read_text())
+        start = chunk["chunk"]["start"]
+        with Path(chunk["samples_path"]).open() as stream:
+            for row in map(json.loads, stream):
+                hashes[str(start + row["doc_id"])] = sample_signature(row)
+    return hashes
+
+
+def validate_dense_chunk(output, task, result, reference_only=False):
+    cell = output / "cells" / "dense" / task
+    start, stop = result["chunk"]["start"], result["chunk"]["stop"]
+    path = cell / f"chunk_{start:09d}" / "complete.json"
+    if path.is_file():
+        baseline = json.loads(path.read_text())
+        if baseline["chunk"] == result["chunk"] and "sample_signatures_sha256" in baseline:
+            for field in ("source_stats", "source_rows", "eval_rows", "samples", "chunk", "doc_hashes_sha256", "sample_signatures_sha256"):
+                if result[field] != baseline[field]:
+                    raise ValueError(f"Dataset differs from dense for {task}/{start}: {field}")
+            return
+    hashes = baseline_hashes(cell)
+    if reference_only and not all(str(index) in hashes for index in range(start, stop)):
+        for candidate in sorted((output / "cells").glob(f"*/{task}")):
+            if candidate.parent.name == "dense":
+                continue
+            alternative = baseline_hashes(candidate)
+            if all(str(index) in alternative for index in range(start, stop)):
+                hashes = alternative
+                break
+        else:
+            result["reference_validation"] = "pending_matching_reference"
+            return
+    expected = [hashes[str(index)] for index in range(start, stop)]
+    digest = hashlib.sha256(json.dumps(expected).encode()).hexdigest()
+    if any(value is None for value in expected) or digest != result["sample_signatures_sha256"]:
+        raise ValueError(f"Dataset differs from reused dense for {task}/{start}")
 
 
 def main():
@@ -269,10 +393,14 @@ def main():
     parser.add_argument("--cache-dir", type=Path, help="Shared writable dataset cache; defaults under output")
     parser.add_argument("--reference-identity", type=Path)
     parser.add_argument("--checkpoint", action="append", default=[], metavar="METHOD=DIR")
+    parser.add_argument("--scorer-checkpoint", type=Path, help="Frozen image-context scorer used by both R1 and T2")
+    parser.add_argument("--resident-model", action="store_true", help="Reuse a platform model across chunks using the native evaluator")
+    parser.add_argument("--reference-only", action="store_true", help="Reuse dense results for reporting; never schedule dense generation")
+    parser.add_argument("--result-bundle", type=Path, help="Portable full P6000 results with dataset and protocol checksums")
     parser.add_argument("--methods", nargs="+", choices=METHODS, default=list(DEFAULT_METHODS))
     parser.add_argument("--tasks", nargs="+", choices=[row[0] for row in specifications()], default=list(DEFAULT_TASKS))
     parser.add_argument("--limit", type=int, help="Samples per full-source task; omit for full evaluation")
-    parser.add_argument("--chunk-size", type=int, default=512, help="Maximum processed requests per resumable chunk")
+    parser.add_argument("--chunk-size", type=int, default=1024, help="Requests per checkpoint; resident models are not reloaded at boundaries")
     parser.add_argument("--mmmu-single-image-only", dest="mmmu_single_image_only", action="store_true", default=True,
                         help="Evaluate MMMU single-image subset only (default)")
     parser.add_argument("--mmmu-full", dest="mmmu_single_image_only", action="store_false",
@@ -286,7 +414,7 @@ def main():
                         help="Number of workers dynamically claiming request chunks in this shared output")
     parser.add_argument("--worker-index", type=int, default=0,
                         help="Worker identifier for shared queue logs")
-    parser.add_argument("--seed-from", type=Path,
+    parser.add_argument("--seed-from", type=Path, action="append", default=[],
                         help="Import only completed/chunk completion markers from an earlier worker_*/ run")
     args = parser.parse_args()
     if args.limit is not None and args.limit < 1:
@@ -299,7 +427,7 @@ def main():
         parser.error("Methods and tasks must not contain duplicates")
     if args.shared_workers < 1 or not 0 <= args.worker_index < args.shared_workers:
         parser.error("worker-index must be in [0, shared-workers)")
-    if "dense" not in args.methods:
+    if "dense" not in args.methods and not args.reference_only:
         parser.error("Include dense as the reference method")
     args.methods = ["dense"] + [m for m in args.methods if m != "dense"]
     if "mmmu" in args.tasks and args.limit is None and not args.mmmu_single_image_only and set(args.methods) - {"dense", "prunesid"}:
@@ -324,6 +452,8 @@ def main():
     missing = (set(args.methods) & TRAINED) - checkpoints.keys()
     if missing or (set(args.methods) & TRAINED and not args.reference_identity):
         parser.error(f"Trained methods require --reference-identity and --checkpoint METHOD=DIR; missing {sorted(missing)}")
+    if set(args.methods) & {"importance_fps", "importance_fps_pool"} and not args.scorer_checkpoint:
+        parser.error("R1/T2 require --scorer-checkpoint (existing image-context selector)")
     if not args.data_root.is_dir() or not (args.model / "config.json").is_file():
         parser.error("Dataset root or local model not found")
     args.output = args.output.resolve()
@@ -340,6 +470,8 @@ def main():
             parser.error(f"No checkpoint config/weights in {directory}")
         hashes[method] = {p.name: sha(p) for p in files}
     identity = resolve_identity(args.reference_identity.resolve(), args.model, args.output) if args.reference_identity else None
+    scorer_hashes = ({p.name: sha(p) for p in args.scorer_checkpoint.iterdir()
+                      if p.is_file() and p.suffix in {".json", ".safetensors"}} if args.scorer_checkpoint else {})
     plan = {"data_root": str(args.data_root.resolve()), "model": str(args.model.resolve()),
             "model_identity_sha256": json.loads(identity.read_text())["identity_sha256"] if identity else None,
             "methods": args.methods, "tasks": args.tasks, "limit": args.limit, "chunk_size": args.chunk_size,
@@ -347,18 +479,29 @@ def main():
             "first_shard_only": args.first_shard_only,
             "cache_dir": str(args.cache_dir.resolve()) if args.cache_dir else str(args.output / "cache"),
             "checkpoints": {k: str(v) for k, v in checkpoints.items()}, "checkpoint_hashes": hashes,
-            "source_hashes": {str(p.relative_to(ROOT)): sha(p) for p in (Path(__file__).resolve(), ROOT / "scripts/eval/lmms_eval/p6000_dataset_smoke.py")},
+            "scorer_hashes": scorer_hashes, "scorer_checkpoint": str(args.scorer_checkpoint.resolve()) if args.scorer_checkpoint else None,
+            "resident_model": args.resident_model, "reference_only": args.reference_only,
+            "result_bundle_sha256": sha(args.result_bundle) if args.result_bundle else None,
+            "source_hashes": {name: sha(ROOT / name) for name in (
+                "scripts/eval/lmms_eval/qwen25_portable_queue.py", "scripts/eval/lmms_eval/p6000_dataset_smoke.py",
+                "scripts/eval/lmms_eval/resident_lmms.py", "scripts/eval/lmms_eval/portable_results.py",
+                "mllm_comp/compressors/comparison/importance_anchor_adapter.py",
+                "mllm_comp/compressors/image/spatial_anchor_ablation.py")},
             "hallusion_image": str(args.hallusion_image.resolve()) if args.hallusion_image else None}
     plan_path = args.output / "plan.json"
     if plan_path.exists() and json.loads(plan_path.read_text()) != plan:
         raise ValueError("Run plan changed; choose a new output rather than resuming")
     dump(plan_path, plan)
-    if args.seed_from:
+    if args.seed_from or args.result_bundle:
         seed_done = args.output / "seed_complete.json"
         if args.worker_index == 0:
             if not seed_done.exists():
-                seed_completed_cells(args.seed_from.resolve(), args.output, args.methods, args.tasks)
-                dump(seed_done, {"source": str(args.seed_from.resolve()), "status": "complete"})
+                for source in args.seed_from:
+                    seed_completed_cells(source.resolve(), args.output, args.methods, args.tasks)
+                if args.result_bundle:
+                    from scripts.eval.lmms_eval.portable_results import import_bundle
+                    import_bundle(args.result_bundle, args.output, args.methods, args.tasks)
+                dump(seed_done, {"sources": [str(s.resolve()) for s in args.seed_from], "status": "complete"})
         else:
             deadline = time.monotonic() + 600
             while not seed_done.exists():
@@ -369,12 +512,21 @@ def main():
     os.environ.setdefault("OPENAI_API_KEY", "unused-local-smoke-no-judge")
     from lmms_eval.api.registry import get_aggregation
     from lmms_eval.utils import load_yaml_config
+    scheduled_methods = [m for m in args.methods if not (args.reference_only and m == "dense")]
+    resident = None
+    preferred_method = None
+    if args.resident_model:
+        from scripts.eval.lmms_eval.resident_lmms import ResidentEvaluator
+        resident = ResidentEvaluator(args.output / f"resident_worker_{args.worker_index}.json")
+        import atexit
+        atexit.register(resident.close)
     while True:
-        claimed = claim_next_work(args.output, args.methods, args.tasks, args.chunk_size,
-                                  args.limit, args.worker_index)
+        claimed = claim_next_work(args.output, scheduled_methods, args.tasks, args.chunk_size,
+                                  args.limit, args.worker_index, preferred_method=preferred_method,
+                                  reference_only=args.reference_only)
         if claimed is None:
             all_done = all((args.output / "cells" / method / task / "complete.json").is_file()
-                           for method in args.methods for task in args.tasks)
+                           for method in scheduled_methods for task in args.tasks)
             if all_done:
                 break
             if args.shared_workers == 1:
@@ -382,6 +534,7 @@ def main():
             time.sleep(3)
             continue
         method, task, cell, lock, start = claimed
+        preferred_method = method
         try:
             cell = args.output / "cells" / method / task
             cell.mkdir(parents=True, exist_ok=True)
@@ -411,23 +564,37 @@ def main():
                     if args.first_shard_only: cmd += ["--first-shard-only", "--eval-limit", str(args.limit)]
                     if task == "mmmu" and args.mmmu_single_image_only: cmd += ["--mmmu-single-image-only"]
                     if method in TRAINED: cmd += ["--identity-path", str(identity), "--method-checkpoint", str(checkpoints[method])]
+                    if method in {"importance_fps", "importance_fps_pool"}: cmd += ["--scorer-checkpoint", str(args.scorer_checkpoint.resolve())]
                     if args.hallusion_image: cmd += ["--hallusion-image", str(args.hallusion_image.resolve())]
                     if task == "hallusionbench": cmd += ["--hallusion-scoring", "deferred"]
                     print(f"START {method}/{task}/{start}; log: {attempt / 'worker.log'}", flush=True)
-                    with (attempt / "worker.log").open("x") as log:
-                        completed = subprocess.run(cmd, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT)
                     try:
-                        if completed.returncode:
-                            raise RuntimeError(f"Evaluator exited {completed.returncode}; see {attempt / 'worker.log'}")
+                        if resident is None:
+                            with (attempt / "worker.log").open("x") as log:
+                                completed = subprocess.run(cmd, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT)
+                            if completed.returncode:
+                                raise RuntimeError(f"Evaluator exited {completed.returncode}; see {attempt / 'worker.log'}")
+                        else:
+                            import argparse as _argparse
+                            from scripts.eval.lmms_eval.p6000_dataset_smoke import prepare
+                            preparation = _argparse.Namespace(data_root=args.data_root, model=str(args.model), output=attempt,
+                                samples=2, input_mode="full", eval_limit=args.limit if args.first_shard_only else None,
+                                first_shard_only=args.first_shard_only, shared_cache=Path(plan["cache_dir"]),
+                                chunk_start=start, chunk_size=size, mmmu_single_image_only=args.mmmu_single_image_only,
+                                hallusion_scoring="deferred" if task == "hallusionbench" else "smoke",
+                                gpu=args.gpu, method=method, identity_path=str(identity) if identity else None,
+                                method_checkpoint=str(checkpoints[method]) if method in TRAINED else None,
+                                scorer_checkpoint=str(args.scorer_checkpoint) if args.scorer_checkpoint else None,
+                                hallusion_image=args.hallusion_image, tasks=[task])
+                            manifest = prepare(preparation)
+                            if manifest["status"] != "prepared":
+                                raise RuntimeError(f"Dataset preparation failed: {attempt / 'manifest.json'}")
+                            resident.evaluate(attempt, manifest, attempt / "worker.log")
                         result = collect(attempt, [task], None)[task]
                         if result["chunk"]["start"] != start:
                             raise ValueError(f"Incorrect chunk start for {method}/{task}")
                         if method != "dense":
-                            baseline_path = args.output / "cells" / "dense" / task / f"chunk_{start:09d}" / "complete.json"
-                            baseline = json.loads(baseline_path.read_text())
-                            for field in ("source_stats", "source_rows", "eval_rows", "samples", "chunk", "doc_hashes_sha256"):
-                                if result[field] != baseline[field]:
-                                    raise ValueError(f"Dataset differs from dense for {method}/{task}/{start}: {field}")
+                            validate_dense_chunk(args.output, task, result, reference_only=args.reference_only)
                         result["attempt"] = str(attempt)
                         dump(chunk_marker, result)
                         print(f"PASS {method}/{task}/{start}", flush=True)
@@ -475,6 +642,8 @@ def main():
                       "subset": "single_image_only" if task == "mmmu" and args.mmmu_single_image_only else "full",
                       "processed_total": chunk_scores[0]["chunk"]["total"],
                       "excluded": chunk_scores[0]["chunk"].get("excluded", 0)}
+            if args.limit is not None:
+                result["evaluation_scope"] = "limited_smoke"
             if task == "hallusionbench":
                 result.update(metric="aAcc", scoring_status="pending_official_judge")
             if task == "vqav2_testdev":
@@ -505,11 +674,13 @@ def main():
             lock.close()
     dump(args.output / f"worker_status_{args.worker_index}.json", {"status": "complete"})
     all_done = all((args.output / "cells" / method / task / "complete.json").is_file()
-                   for method in args.methods for task in args.tasks)
+                   for method in scheduled_methods for task in args.tasks)
     if all_done:
         report(args.output, args.methods, args.tasks)
         dump(args.output / "status.json", {"status": "complete", "mode": "limited" if args.limit else "full"})
     print(f"Completed; report: {args.output / 'report.md'}", flush=True)
+    if resident is not None:
+        resident.close()
 
 
 if __name__ == "__main__":

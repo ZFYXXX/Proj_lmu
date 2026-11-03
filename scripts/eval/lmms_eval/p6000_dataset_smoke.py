@@ -150,6 +150,54 @@ def slice_process_docs(dataset):
     return dataset.select(range(start, stop))
 
 
+def model_config(args):
+    base = yaml.safe_load((ROOT / "configs/eval/lmms_eval/qwen25_vl_14bench.yaml").read_text())
+    base["backbone"]["model_path"] = args.model
+    base["backbone"]["config"]["attn_implementation"] = "eager"
+    base["backbone"]["config"]["processor_load_kwargs"]["use_fast"] = False
+    if args.method != "dense":
+        algorithms = {"old_mlp": "feature_anchor_adapter", "visual_selector": "learned_visual_topk",
+                      "image_context_selector": "context_visual_topk", "question_context_selector": "context_visual_topk",
+                      "protected_selector": "protected_visual_topk", "eadp": "eadp", "prunesid": "prunesid", "mmtok": "mmtok",
+                      "importance_fps": "importance_anchor_adapter", "importance_fps_pool": "importance_anchor_adapter"}
+        algorithm = algorithms[args.method]
+        if args.method == "eadp":
+            options = {"alpha": 0.5, "beta": 2.0, "tokens_per_crop": 128}
+        elif args.method == "prunesid":
+            options = {"tokens_per_crop": 128}
+        elif args.method == "mmtok":
+            options = {"target_count": 128}
+        else:
+            if not args.identity_path or not args.method_checkpoint:
+                raise ValueError("A trained method requires --identity-path and --method-checkpoint")
+            options = {"identity_path": args.identity_path}
+            if args.method in {"importance_fps", "importance_fps_pool"}:
+                if not args.scorer_checkpoint:
+                    raise ValueError("Importance FPS requires the frozen image-context scorer checkpoint")
+                options.update(adapter_path=args.method_checkpoint, tokens_per_crop=128,
+                    scorer_path=args.scorer_checkpoint, importance_gamma=1., singleton_bypass=False,
+                    spatial_beta=0., pooling="importance" if args.method == "importance_fps_pool" else "mean")
+            elif args.method == "old_mlp":
+                options.update(adapter_path=args.method_checkpoint, tokens_per_crop=128)
+            else:
+                options.update(checkpoint_path=args.method_checkpoint, seed=42, target_count=128, width=256)
+                if args.method in {"image_context_selector", "question_context_selector"}:
+                    options["context_mode"] = "image" if args.method == "image_context_selector" else "question"
+                if args.method == "protected_selector":
+                    options.update(match_width=128, visual_only=False,
+                        protection={"maximum_anchor_ratio": 0.5, "minimum_anchor": 20,
+                                    "novelty_patience": 3, "novelty_threshold": 0.2, "relevance": "learned_word"})
+        base["pipeline"]["stages"] = [{"algorithm": algorithm, "plugin": algorithm,
+            "binding": f"{algorithm}.image.qwen25_vl", "variant": f"{algorithm}.image",
+            "config": options, "execution_phase": "generate", "method": "token_compression",
+            "modalities": ["image"], "target_modalities": ["image"], "name": args.method,
+            "object_family": "tensor_slot", "placement": "projector_level"}]
+        if args.method == "protected_selector":
+            base["pipeline"]["stages"][0]["conditioning_modalities"] = ["text"]
+        base["eval"].update(compression_mode="compressed", target="compressed")
+    return base
+
+
 def prepare(args):
     from huggingface_hub import hf_hub_download
     from lmms_eval.utils import load_yaml_config
@@ -185,7 +233,7 @@ def prepare(args):
                     if sources:
                         break
                 if not sources:
-                    sources = [ROOT.parents[1] / "datasets/MMStar/mmstar.parquet"]
+                    sources = [Path(os.environ.get("MLLM_MMSTAR_PARQUET", str(ROOT.parents[1] / "datasets/MMStar/mmstar.parquet")))]
             if not sources and name == "hallusionbench":
                 if args.input_mode == "full" and not args.hallusion_image:
                     raise FileNotFoundError("Provide a local HallusionBench image dataset for full evaluation")
@@ -274,43 +322,7 @@ def prepare(args):
             manifest["tasks"][name] = {"status": "data_failed", "error": traceback.format_exc()}
             print(f"DATA FAILED {name}\n{traceback.format_exc()}", flush=True)
         save(out / "manifest.json", manifest)
-    base = yaml.safe_load((ROOT / "configs/eval/lmms_eval/qwen25_vl_14bench.yaml").read_text())
-    base["backbone"]["model_path"] = args.model
-    base["backbone"]["config"]["attn_implementation"] = "eager"
-    base["backbone"]["config"]["processor_load_kwargs"]["use_fast"] = False
-    if args.method != "dense":
-        algorithms = {"old_mlp": "feature_anchor_adapter", "visual_selector": "learned_visual_topk",
-                      "image_context_selector": "context_visual_topk", "question_context_selector": "context_visual_topk",
-                      "protected_selector": "protected_visual_topk", "eadp": "eadp", "prunesid": "prunesid", "mmtok": "mmtok"}
-        algorithm = algorithms[args.method]
-        if args.method == "eadp":
-            options = {"alpha": 0.5, "beta": 2.0, "tokens_per_crop": 128}
-        elif args.method == "prunesid":
-            options = {"tokens_per_crop": 128}
-        elif args.method == "mmtok":
-            options = {"target_count": 128}
-        else:
-            if not args.identity_path or not args.method_checkpoint:
-                raise ValueError("A trained method requires --identity-path and --method-checkpoint")
-            options = {"identity_path": args.identity_path}
-            if args.method == "old_mlp":
-                options.update(adapter_path=args.method_checkpoint, tokens_per_crop=128)
-            else:
-                options.update(checkpoint_path=args.method_checkpoint, seed=42, target_count=128, width=256)
-                if args.method in {"image_context_selector", "question_context_selector"}:
-                    options["context_mode"] = "image" if args.method == "image_context_selector" else "question"
-                if args.method == "protected_selector":
-                    options.update(match_width=128, visual_only=False,
-                        protection={"maximum_anchor_ratio": 0.5, "minimum_anchor": 20,
-                                    "novelty_patience": 3, "novelty_threshold": 0.2, "relevance": "learned_word"})
-        base["pipeline"]["stages"] = [{"algorithm": algorithm, "plugin": algorithm,
-            "binding": f"{algorithm}.image.qwen25_vl", "variant": f"{algorithm}.image",
-            "config": options, "execution_phase": "generate", "method": "token_compression",
-            "modalities": ["image"], "target_modalities": ["image"], "name": args.method,
-            "object_family": "tensor_slot", "placement": "projector_level"}]
-        if args.method == "protected_selector":
-            base["pipeline"]["stages"][0]["conditioning_modalities"] = ["text"]
-        base["eval"].update(compression_mode="compressed", target="compressed")
+    base = model_config(args)
     base["eval"].update(checkpoint_path=args.model, tasks=names, sample_limit=args.eval_limit,
                          generation={"do_sample": False, "temperature": 0., "repetition_penalty": 1.05})
     base["eval"]["args"]["include_path"] = str(out / "tasks")
@@ -323,6 +335,26 @@ def prepare(args):
 
 def hb_smoke_result(doc, results):
     return {"generation_nonempty_smoke": float(bool(results and str(results[0]).strip()))}
+
+
+def finish_evaluation(output, manifest, code):
+    scored = {}
+    for path in (output / "results").rglob("*_results.json"):
+        scored.update(json.loads(path.read_text()).get("results", {}))
+    for name, record in manifest["tasks"].items():
+        task = record.get("task")
+        if task in scored:
+            metrics = scored[task]
+            if any(isinstance(v, (int, float)) and not math.isfinite(v) for v in metrics.values()):
+                record.update(status="eval_failed", error="Nonfinite metric")
+            else:
+                status = "generation_and_submission_passed" if name == "vqav2_testdev" else "generation_and_scoring_passed"
+                record.update(status=status, metrics=metrics)
+    complete = code == 0 and all(r["status"] in {"generation_and_scoring_passed", "generation_and_submission_passed"}
+                                 for r in manifest["tasks"].values())
+    manifest.update(status="complete" if complete else "incomplete", eval_exit_code=code)
+    save(output / "manifest.json", manifest)
+    return complete
 
 
 def main():
@@ -341,9 +373,11 @@ def main():
     parser.add_argument("--hallusion-scoring", choices=["smoke", "official", "deferred"], default="smoke")
     parser.add_argument("--gpu", default="0")
     parser.add_argument("--method", choices=["dense", "old_mlp", "visual_selector", "image_context_selector",
-                                              "question_context_selector", "protected_selector", "eadp", "prunesid", "mmtok"], default="dense")
+                                              "question_context_selector", "protected_selector", "eadp", "prunesid", "mmtok",
+                                              "importance_fps", "importance_fps_pool"], default="dense")
     parser.add_argument("--identity-path")
     parser.add_argument("--method-checkpoint")
+    parser.add_argument("--scorer-checkpoint")
     parser.add_argument("--hallusion-image", type=Path)
     parser.add_argument("--tasks", nargs="+", choices=[row[0] for row in specifications()],
                         default=["gqa", "vqav2_testdev", "scienceqa_img", "mmmu", "hallusionbench",
@@ -372,22 +406,7 @@ def main():
         command = [sys.executable, "-m", "mllm_comp.cli.main", "eval", "--config", str(args.output / "eval.yaml"),
                    "--output_dir", str(args.output / "results"), "--manifest", str(args.output / "results/manifest.json")]
         code = subprocess.call(command, cwd=ROOT, env=env)
-        scored = {}
-        for path in (args.output / "results").rglob("*_results.json"):
-            scored.update(json.loads(path.read_text()).get("results", {}))
-        for name, record in manifest["tasks"].items():
-            task = record.get("task")
-            if task in scored:
-                metrics = scored[task]
-                if any(isinstance(v, (int, float)) and not math.isfinite(v) for v in metrics.values()):
-                    record.update(status="eval_failed", error="Nonfinite metric")
-                else:
-                    status = "generation_and_submission_passed" if name == "vqav2_testdev" else "generation_and_scoring_passed"
-                    record.update(status=status, metrics=metrics)
-        complete = code == 0 and all(r["status"] in {"generation_and_scoring_passed", "generation_and_submission_passed"}
-                                     for r in manifest["tasks"].values())
-        manifest.update(status="complete" if complete else "incomplete", eval_exit_code=code)
-        save(args.output / "manifest.json", manifest)
+        complete = finish_evaluation(args.output, manifest, code)
         sys.exit(0 if complete else 1)
 
 
