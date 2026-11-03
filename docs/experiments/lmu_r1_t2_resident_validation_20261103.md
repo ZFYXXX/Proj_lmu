@@ -30,3 +30,25 @@ resident-runner, reporting, task-config and test changes. The main MLP worktree
 and its previously uncommitted experiments were preserved. Early failed smoke
 attempts were retained; logging and native result serialization issues were
 fixed before the passing checks above.
+
+## Sparse experiment configuration follow-up
+
+The v2 JSON selects 43 method/task cells: the original 34 R1/T2 cells plus
+nine missing OK-VQA/DocVQA comparison cells. Four CPU worker processes claimed
+exactly these 43 cells once each, without scheduling other combinations.
+Filters, empty selections, raw/relative output and TestA/TestB arithmetic
+means were checked. The seven existing resident-queue tests also passed.
+
+`outputs/eval/p6000_sparse_controls_smoke_20261103_v2/` completed all nine
+new comparison cells through the actual resident/native evaluation path,
+one request per cell on GPU0. Its plan and completion markers match exactly;
+no dense generation or failed cell was recorded. Six model loads and three
+cross-task model reuses were recorded, with 27.45 seconds of model-load time.
+The local environment was `fastv-repro/mllm-comp-310` (Torch 2.8.0+cu128,
+Transformers 4.57.3), and the heads were the same HF inference package as LMU.
+These one-request checks verify execution, not benchmark accuracy.
+
+The first attempt (`...sparse_controls_smoke_20261103_v1/`) used an old FastV
+Python environment and exited on a Transformers dependency mismatch before
+inference. It was retained; the existing evaluation environment was used for
+the successful rerun, without changing the LMU environment.

@@ -1,7 +1,7 @@
 # R1 / T2: portable Qwen2.5-VL-7B continuation
 
-This release schedules only `importance_fps` (R1) and `importance_fps_pool`
-(T2). Both reuse the existing frozen image-context scorer and aggregation MLP.
+This release schedules `importance_fps` (R1), `importance_fps_pool` (T2),
+and nine missing OK-VQA/DocVQA comparison cells. R1/T2 reuse the existing frozen image-context scorer and aggregation MLP.
 There is no new training or weight upload. Each image retains min(128,N)
 post-merger tokens with native dynamic resolution and centroid M-RoPE.
 
@@ -20,10 +20,26 @@ subset, with exclusions recorded; do not label it the full official validation
 score. HallusionBench retains predictions and judge payloads; official scoring
 is deferred. A generation completion is not a HallusionBench accuracy.
 
-There are 34 target method/task cells. R1/T2 on ChartQA, OCRBench and AI2D are
+There are 43 target method/task cells. R1/T2 on ChartQA, OCRBench and AI2D are
 already complete and included in the portable result bundle, so six cells can
-be reused after protocol/model/checkpoint/data checks. The remaining 28 cells
+be reused after protocol/model/checkpoint/data checks. The remaining 37 cells
 are scheduled unless another specified result source already contains them.
+
+Edit `configs/eval/lmms_eval/qwen25_r1t2_completion.json` to select experiments.
+Its `method_tasks` mapping lists each method's tasks, not a Cartesian product.
+DocVQA additionally requests PruneSID, visual selector, image-context selector,
+question-context selector and protected selector. OK-VQA additionally requests
+PruneSID, MMTok, question-context selector and protected selector.
+Existing method bindings and checkpoint loading are reused. Changing which
+supported methods/tasks run needs only this JSON; a new algorithm needs one
+framework binding before it can be selected here.
+
+`EXPERIMENT_CONFIG` selects another JSON file; optional `METHODS` and `TASKS`
+environment variables filter its cells (e.g. `TASKS=ai2d` selects just R1/T2).
+Resolved cells and the config hash are frozen in `plan.json`. Unrequested table
+cells are marked `not_requested` in CSV and excluded from completion counts.
+Ref/ref+ are arithmetic means of TestA/TestB accuracy, not extra splits;
+the report and summary include raw means and their ratio to the dense mean.
 
 ## Reuse and scores
 
@@ -91,23 +107,28 @@ cd Proj_lmu_r1t2
 Use this separate checkout to preserve local changes in the previous checkout.
 Edit only `scripts/eval/lmms_eval/lmu_qwen25_resident.env.sh` if paths differ.
 It holds the dataset/model/adapter/environment paths, previous result paths,
-run directory and task list. Both methods use the same two existing head
+run directory and experiment-config path. R1/T2 use the same two existing head
 checkpoints; the script selects the correct Python executable explicitly.
 
 After the CPU allocation ends, submit from the project root on the login node:
 
 ```bash
 cd /home/hk-project-p0022189/tum_yvc3016/haowu/Fengyu/Proj_lmu_r1t2
-bash scripts/eval/lmms_eval/submit_lmu_qwen25_resident.sh
+env -u METHODS -u TASKS -u RUN_DIR -u EXPERIMENT_CONFIG \
+  bash scripts/eval/lmms_eval/submit_lmu_qwen25_resident.sh
 ```
 
 This command submits the GPU allocation; no separate `salloc` is needed for
 the full evaluation. Repeating it after a time-limited job resumes completed
 chunks. Preserve the old LMU result directories until the continuation finishes.
+The v2 default output is `qwen25_resident_bench_20261103_v2`. Clearing the four
+old environment overrides avoids unintentionally retaining v1's R1/T2-only
+selection. Cancel the pending v1 job before replacing it and updating that
+checkout; do not change sources used by a running job.
 
 Inspect `logs/slurm/28-q25-resident_JOBID_output.log`, its error log, and
 `$RUN_DIR/logs/worker_*.log`. The shared `report.md` updates after completed
-method/task cells. `parallel_status.json` counts only R1/T2 target cells;
+method/task cells. `parallel_status.json` counts only the 43 requested target cells;
 pending dense references do not falsely mark their generation incomplete.
 
 ## P6000 validation

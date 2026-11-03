@@ -145,7 +145,7 @@ def vqav2_submissions(rows):
     return submissions
 
 
-def report(output, methods, tasks):
+def report(output, methods, tasks, requested_cells=None):
     cells = {}
     for method in methods:
         cells[method] = {}
@@ -176,7 +176,8 @@ def report(output, methods, tasks):
             rows.append({"method": method, "task": task, "metric": row.get("metric") if row else None,
                 "samples": row.get("samples") if row else None, "raw_score": raw, "raw_display": display,
                 "raw_unit": "/1000" if task == "ocrbench" else "percent",
-                "normalized_percent": value, "status": row.get("scoring_status", "complete") if row else "pending",
+                "normalized_percent": value, "status": row.get("scoring_status", "complete") if row else (
+                    "not_requested" if requested_cells is not None and method != "dense" and [method, task] not in requested_cells else "pending"),
                 "reused_from": row.get("reused_from") if row else None})
     for heading, values, relative in (("Raw task scores", raw_display, False), ("Dense-relative scores (%)", normalized, True)):
         lines.extend(["", f"## {heading}", "", "| Method | " + " | ".join(tasks) + " |", "|---|" + "---:|" * len(tasks)])
@@ -200,11 +201,29 @@ def report(output, methods, tasks):
     for method in methods:
         values = [categories[method][category]["normalized_mean"] for category in CATEGORIES]
         lines.append("| " + method + " | " + " | ".join("—" if v is None else f"{v:.2f}%" for v in values) + " |")
+    grounding_means = {}
+    for method in methods:
+        grounding_means[method] = {}
+        for group, prefix in (("ref", "refcoco"), ("ref+", "refcoco+")):
+            members = [f"{prefix}_bbox_rec_{split}" for split in ("testA", "testB")]
+            values = [raw_display[method].get(t) for t in members]
+            bases = [raw_display.get("dense", {}).get(t) for t in members]
+            mean = sum(values) / 2 if all(v is not None for v in values) else None
+            base = sum(bases) / 2 if all(v is not None for v in bases) else None
+            grounding_means[method][group] = {"tasks": members, "raw_percent": mean,
+                "normalized_percent": 100 * mean / base if mean is not None and base else None}
+    lines.extend(["", "## Grounding split means", "", "Ref and ref+ are the arithmetic mean of TestA/TestB accuracy; no extra split is evaluated.",
+                  "", "| Method | ref raw | ref relative | ref+ raw | ref+ relative |", "|---|---:|---:|---:|---:|"])
+    for method in methods:
+        values = [grounding_means[method][group][key] for group in ("ref", "ref+") for key in ("raw_percent", "normalized_percent")]
+        lines.append("| " + method + " | " + " | ".join("—" if v is None else f"{v:.2f}%" for v in values) + " |")
+    # Include the split means in the same report and machine-readable summary.
     temporary = output / f"report.md.{os.getpid()}.{time.time_ns()}.tmp"
     temporary.write_text("\n".join(lines) + "\n")
     os.replace(temporary, output / "report.md")
     dump(output / "summary.json", {"raw_scores": cells, "raw_display": raw_display,
-        "normalized_percent": normalized, "category_means": categories, "category_tasks": CATEGORIES})
+        "normalized_percent": normalized, "category_means": categories, "category_tasks": CATEGORIES,
+        "requested_cells": requested_cells, "grounding_means": grounding_means})
     temporary = output / f"scores.csv.{os.getpid()}.{time.time_ns()}.tmp"
     with temporary.open("w", newline="") as stream:
         writer = csv.DictWriter(stream, fieldnames=list(rows[0]) if rows else ["method", "task"])
@@ -229,11 +248,13 @@ def cell_lock(cell: Path, worker_index: int):
     return lock
 
 
-def claim_next_work(output, methods, tasks, chunk_size, limit, worker_index, preferred_method=None, reference_only=False):
+def claim_next_work(output, methods, tasks, chunk_size, limit, worker_index, preferred_method=None, reference_only=False, requested_cells=None):
     """Share chunks, including long test-dev runs, rather than pinning datasets to GPUs."""
     ordered_methods = ([preferred_method] if preferred_method in methods else []) + [m for m in methods if m != preferred_method]
     for method in ordered_methods:
         for task in tasks:
+            if requested_cells is not None and [method, task] not in requested_cells:
+                continue
             cell = output / "cells" / method / task
             cell.mkdir(parents=True, exist_ok=True)
             if (cell / "complete.json").is_file():
@@ -288,12 +309,14 @@ def claim_next_work(output, methods, tasks, chunk_size, limit, worker_index, pre
     return None
 
 
-def seed_completed_cells(source: Path, output: Path, methods, tasks) -> None:
+def seed_completed_cells(source: Path, output: Path, methods, tasks, requested_cells=None) -> None:
     """Import only completion records from a previous run; prediction files stay put."""
     current = json.loads((output / "plan.json").read_text())
     checked = set()
     for method in methods:
         for task in tasks:
+            if requested_cells is not None and method != "dense" and [method, task] not in requested_cells:
+                continue
             target = output / "cells" / method / task
             if (target / "complete.json").exists():
                 continue
@@ -385,6 +408,37 @@ def validate_dense_chunk(output, task, result, reference_only=False):
         raise ValueError(f"Dataset differs from reused dense for {task}/{start}")
 
 
+def select_experiment(path=None, methods=None, tasks=None):
+    """Resolve requested method/task cells; CLI filters only narrow a JSON plan."""
+    if any(values is not None and len(values) != len(set(values)) for values in (methods, tasks)):
+        raise ValueError("Methods and tasks must not contain duplicates")
+    if path is None:
+        selected_methods = list(DEFAULT_METHODS if methods is None else methods)
+        selected_tasks = list(DEFAULT_TASKS if tasks is None else tasks)
+        return selected_methods, selected_tasks, [[m, t] for m in selected_methods for t in selected_tasks]
+    config = json.loads(Path(path).read_text())
+    if not isinstance(config, dict):
+        raise ValueError("Experiment config must be a JSON object")
+    mapping = config.get("method_tasks")
+    if config.get("schema_version") != 1 or not isinstance(mapping, dict) or not mapping:
+        raise ValueError("Experiment needs schema_version=1 and a nonempty method_tasks mapping")
+    supported_tasks = {row[0] for row in specifications()}
+    for method, members in mapping.items():
+        if method not in METHODS or not isinstance(members, list) or not members or any(not isinstance(t, str) for t in members):
+            raise ValueError(f"Invalid method/tasks in experiment: {method}")
+        if len(members) != len(set(members)) or set(members) - supported_tasks:
+            raise ValueError(f"Unknown or duplicate tasks for {method}: {members}")
+    if methods is not None and set(methods) - mapping.keys():
+        raise ValueError("Requested method is absent from the experiment config")
+    if tasks is not None and set(tasks) - {t for members in mapping.values() for t in members}:
+        raise ValueError("Requested task is absent from the experiment config")
+    cells = [[m, t] for m, members in mapping.items() for t in members
+             if (methods is None or m in methods) and (tasks is None or t in tasks)]
+    if not cells:
+        raise ValueError("Experiment filters select no method/task cells")
+    return list(dict.fromkeys(m for m, _ in cells)), list(dict.fromkeys(t for _, t in cells)), cells
+
+
 def main():
     parser = argparse.ArgumentParser(__doc__)
     parser.add_argument("--data-root", type=Path, required=True)
@@ -397,8 +451,9 @@ def main():
     parser.add_argument("--resident-model", action="store_true", help="Reuse a platform model across chunks using the native evaluator")
     parser.add_argument("--reference-only", action="store_true", help="Reuse dense results for reporting; never schedule dense generation")
     parser.add_argument("--result-bundle", type=Path, help="Portable full P6000 results with dataset and protocol checksums")
-    parser.add_argument("--methods", nargs="+", choices=METHODS, default=list(DEFAULT_METHODS))
-    parser.add_argument("--tasks", nargs="+", choices=[row[0] for row in specifications()], default=list(DEFAULT_TASKS))
+    parser.add_argument("--experiment", type=Path, help="JSON method_tasks mapping; --methods/--tasks optionally filter it")
+    parser.add_argument("--methods", nargs="+", choices=METHODS)
+    parser.add_argument("--tasks", nargs="+", choices=[row[0] for row in specifications()])
     parser.add_argument("--limit", type=int, help="Samples per full-source task; omit for full evaluation")
     parser.add_argument("--chunk-size", type=int, default=1024, help="Requests per checkpoint; resident models are not reloaded at boundaries")
     parser.add_argument("--mmmu-single-image-only", dest="mmmu_single_image_only", action="store_true", default=True,
@@ -417,6 +472,10 @@ def main():
     parser.add_argument("--seed-from", type=Path, action="append", default=[],
                         help="Import only completed/chunk completion markers from an earlier worker_*/ run")
     args = parser.parse_args()
+    try:
+        args.methods, args.tasks, requested_cells = select_experiment(args.experiment, args.methods, args.tasks)
+    except (ValueError, OSError) as exc:
+        parser.error(str(exc))
     if args.limit is not None and args.limit < 1:
         parser.error("--limit must be positive")
     if args.chunk_size < 1:
@@ -430,6 +489,8 @@ def main():
     if "dense" not in args.methods and not args.reference_only:
         parser.error("Include dense as the reference method")
     args.methods = ["dense"] + [m for m in args.methods if m != "dense"]
+    if args.reference_only:
+        requested_cells = [cell for cell in requested_cells if cell[0] != "dense"]
     if "mmmu" in args.tasks and args.limit is None and not args.mmmu_single_image_only and set(args.methods) - {"dense", "prunesid"}:
         import pyarrow.parquet as pq
         files = sorted((args.data_root / "MMMU/data").glob("validation-*.parquet"))
@@ -481,6 +542,9 @@ def main():
             "checkpoints": {k: str(v) for k, v in checkpoints.items()}, "checkpoint_hashes": hashes,
             "scorer_hashes": scorer_hashes, "scorer_checkpoint": str(args.scorer_checkpoint.resolve()) if args.scorer_checkpoint else None,
             "resident_model": args.resident_model, "reference_only": args.reference_only,
+            "requested_cells": requested_cells,
+            "experiment": str(args.experiment.resolve()) if args.experiment else None,
+            "experiment_sha256": sha(args.experiment) if args.experiment else None,
             "result_bundle_sha256": sha(args.result_bundle) if args.result_bundle else None,
             "source_hashes": {name: sha(ROOT / name) for name in (
                 "scripts/eval/lmms_eval/qwen25_portable_queue.py", "scripts/eval/lmms_eval/p6000_dataset_smoke.py",
@@ -497,7 +561,7 @@ def main():
         if args.worker_index == 0:
             if not seed_done.exists():
                 for source in args.seed_from:
-                    seed_completed_cells(source.resolve(), args.output, args.methods, args.tasks)
+                    seed_completed_cells(source.resolve(), args.output, args.methods, args.tasks, requested_cells)
                 if args.result_bundle:
                     from scripts.eval.lmms_eval.portable_results import import_bundle
                     import_bundle(args.result_bundle, args.output, args.methods, args.tasks)
@@ -513,6 +577,7 @@ def main():
     from lmms_eval.api.registry import get_aggregation
     from lmms_eval.utils import load_yaml_config
     scheduled_methods = [m for m in args.methods if not (args.reference_only and m == "dense")]
+    scheduled_cells = [cell for cell in requested_cells if cell[0] in scheduled_methods]
     resident = None
     preferred_method = None
     if args.resident_model:
@@ -523,10 +588,10 @@ def main():
     while True:
         claimed = claim_next_work(args.output, scheduled_methods, args.tasks, args.chunk_size,
                                   args.limit, args.worker_index, preferred_method=preferred_method,
-                                  reference_only=args.reference_only)
+                                  reference_only=args.reference_only, requested_cells=scheduled_cells)
         if claimed is None:
             all_done = all((args.output / "cells" / method / task / "complete.json").is_file()
-                           for method in scheduled_methods for task in args.tasks)
+                           for method, task in scheduled_cells)
             if all_done:
                 break
             if args.shared_workers == 1:
@@ -544,6 +609,8 @@ def main():
                 continue
             chunk_scores = []
             while start is not None:
+                if args.experiment and sha(args.experiment) != plan["experiment_sha256"]:
+                    raise RuntimeError("Experiment config changed during execution; choose a new output")
                 for relative, expected_hash in plan["source_hashes"].items():
                     if sha(ROOT / relative) != expected_hash:
                         raise RuntimeError(f"Source changed during execution: {relative}; restart with a new output")
@@ -661,7 +728,7 @@ def main():
                 result.update(scoring_status="pending_official_server", submission_path=str(submission_path),
                               source_split="testdev")
             dump(marker, {"method": method, "task": task, "score": result})
-            report(args.output, args.methods, args.tasks)
+            report(args.output, args.methods, args.tasks, requested_cells)
             print(f"PASS {method}/{task}: {result['samples']} requests", flush=True)
         except Exception as exc:
             if not (cell / "failed.json").exists():
@@ -674,9 +741,9 @@ def main():
             lock.close()
     dump(args.output / f"worker_status_{args.worker_index}.json", {"status": "complete"})
     all_done = all((args.output / "cells" / method / task / "complete.json").is_file()
-                   for method in scheduled_methods for task in args.tasks)
+                   for method, task in scheduled_cells)
     if all_done:
-        report(args.output, args.methods, args.tasks)
+        report(args.output, args.methods, args.tasks, requested_cells)
         dump(args.output / "status.json", {"status": "complete", "mode": "limited" if args.limit else "full"})
     print(f"Completed; report: {args.output / 'report.md'}", flush=True)
     if resident is not None:

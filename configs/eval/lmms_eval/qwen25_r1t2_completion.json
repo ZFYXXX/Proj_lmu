@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "method_tasks": {
+    "importance_fps": ["gqa", "okvqa", "scienceqa_img", "ai2d", "mmstar", "mmmu", "pope", "hallusionbench", "textvqa", "docvqa", "ocrbench", "chartqa", "refcoco_bbox_rec_testA", "refcoco_bbox_rec_testB", "refcoco+_bbox_rec_testA", "refcoco+_bbox_rec_testB", "refcocog_bbox_rec_test"],
+    "importance_fps_pool": ["gqa", "okvqa", "scienceqa_img", "ai2d", "mmstar", "mmmu", "pope", "hallusionbench", "textvqa", "docvqa", "ocrbench", "chartqa", "refcoco_bbox_rec_testA", "refcoco_bbox_rec_testB", "refcoco+_bbox_rec_testA", "refcoco+_bbox_rec_testB", "refcocog_bbox_rec_test"],
+    "prunesid": ["docvqa", "okvqa"],
+    "mmtok": ["okvqa"],
+    "visual_selector": ["docvqa"],
+    "image_context_selector": ["docvqa"],
+    "question_context_selector": ["docvqa", "okvqa"],
+    "protected_selector": ["docvqa", "okvqa"]
+  }
+}

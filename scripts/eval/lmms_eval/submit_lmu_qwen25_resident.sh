@@ -9,12 +9,13 @@ if [[ -n "$jobs" ]]; then
     echo "$jobs" >&2
     exit 3
 fi
+resolve_resident_selection
+required_paths=("$EVAL_PYTHON" "$DATA_ROOT" "$MODEL_PATH" "$REFERENCE_IDENTITY" "$EXPERIMENT_CONFIG")
 for method in $METHODS; do
-    [[ "$method" == importance_fps || "$method" == importance_fps_pool ]] || {
-        echo "This job only schedules importance_fps (R1) and importance_fps_pool (T2)." >&2; exit 2;
-    }
+    if [[ -n "${METHOD_CHECKPOINTS[$method]:-}" ]]; then required_paths+=("${METHOD_CHECKPOINTS[$method]}"); fi
+    if [[ "$method" == importance_fps || "$method" == importance_fps_pool ]]; then required_paths+=("$IMAGE_SELECTOR"); fi
 done
-for path in "$EVAL_PYTHON" "$DATA_ROOT" "$MODEL_PATH" "$REFERENCE_IDENTITY" "$OLD_MLP" "$IMAGE_SELECTOR"; do
+for path in "${required_paths[@]}"; do
     [[ -e "$path" ]] || { echo "Missing required path: $path" >&2; exit 2; }
 done
 if [[ -n "$RESULT_BUNDLE" && ! -f "$RESULT_BUNDLE" ]]; then
@@ -34,5 +35,6 @@ bash -n scripts/eval/lmms_eval/lmu_qwen25_resident_queue.sbatch
 echo "Run directory: $RUN_DIR"
 echo "Methods: $METHODS"
 echo "Tasks: $TASKS"
+echo "Experiment: $EXPERIMENT_CONFIG ($REQUESTED_CELL_COUNT requested method/task cells)"
 echo "One node, four resident workers, shared work queue, raw and normalized scores."
 sbatch --export=ALL scripts/eval/lmms_eval/lmu_qwen25_resident_queue.sbatch
