@@ -1,0 +1,9 @@
+{
+  "base_identity_sha256": "2cba9e44a5758ba2e5f8fa881f7b82a89d9a0700512b4f4f36fe82693a5a6508",
+  "format": "qwen25_vl_anchor7b_v1",
+  "implementation_hash": "27f6f1dac76e79a117712065ed69651a033f006d9daacb0d3cfe1a069ac46f99",
+  "spec": {
+    "hidden_size": 3584,
+    "width": 256
+  }
+}
