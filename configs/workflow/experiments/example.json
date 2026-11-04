@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "run_id": "qwen25_example_v1",
+  "reference_only": false,
+  "chunk_size": 1024,
+  "method_tasks": {
+    "dense": ["ai2d"],
+    "old_mlp": ["ai2d"],
+    "importance_fps": ["ai2d"],
+    "importance_fps_pool": ["ai2d"]
+  }
+}

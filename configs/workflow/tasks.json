@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "tasks": {
+    "chartqa": {"category": "OCR", "metric": "relaxed_overall", "template": "qwen25_7b_projector_ratio/chartqa.yaml", "pattern": "ChartQA/data/test-*.parquet"},
+    "gqa": {"category": "General", "metric": "exact_match", "template": "qwen25_vl_projector_quality/gqa.yaml", "pattern": "GQA/testdev_balanced_instructions/testdev-*.parquet"},
+    "vqav2_val": {"category": "General", "metric": "exact_match", "default": false, "template": "@upstream/vqav2/vqav2_val.yaml", "pattern": "VQAv2/data/validation-*.parquet"},
+    "vqav2_testdev": {"category": "General", "metric": "submission", "default": false, "template": "@upstream/vqav2/vqav2_test.yaml", "pattern": "VQAv2/data/testdev-*.parquet"},
+    "okvqa": {"category": "General", "metric": "exact_match", "template": "qwen25_okvqa_checked/okvqa.yaml", "pattern": "OK-VQA/data/val2014-*.parquet"},
+    "scienceqa_img": {"category": "Reasoning", "metric": "exact_match", "template": "qwen25_vl_scienceqa_full/scienceqa_img_full.yaml", "pattern": "ScienceQA/ScienceQA-IMG/test-*.parquet"},
+    "ai2d": {"category": "Reasoning", "metric": "leading_option_accuracy", "template": "context_visual_topk/ai2d.yaml", "pattern": "ai2d/data/test-*.parquet"},
+    "mmstar": {"category": "Reasoning", "metric": "average", "template": "projector_extra/mmstar.yaml", "pattern": "MMStar/mmstar.parquet"},
+    "mmmu": {"category": "Reasoning", "metric": "mmmu_acc", "template": "@upstream/mmmu/mmmu_val.yaml", "pattern": "MMMU/data/validation-*.parquet", "scope": "single_image_only"},
+    "pope": {"category": "Hallusion", "metric": "pope_accuracy", "template": "projector_extra/pope.yaml", "pattern": "POPE/Full/*.parquet"},
+    "hallusionbench": {"category": "Hallusion", "metric": "aAcc", "template": "@upstream/hallusion_bench/hallusion_bench_image.yaml", "pattern": "HallusionBench/data/image-*.parquet", "scoring": "deferred"},
+    "textvqa": {"category": "OCR", "metric": "exact_match", "template": "qwen25_vl_projector_quality/textvqa_full.yaml", "pattern": "textvqa/data/validation-*.parquet"},
+    "docvqa": {"category": "OCR", "metric": "anls", "template": "qwen25_7b_projector_ratio/docvqa.yaml", "pattern": "DocVQA/DocVQA/validation-*.parquet"},
+    "ocrbench": {"category": "OCR", "metric": "ocrbench_accuracy", "template": "qwen25_7b_projector_ratio/ocrbench.yaml", "pattern": "OCRBench/data/test-*.parquet"},
+    "refcoco_bbox_rec_testA": {"category": "Grounding", "metric": "refcoco_ACC@0.5", "template": "qwen25_pope_grounding/refcoco_plus_testA.yaml", "pattern": "RefCOCO/data/testA-*.parquet"},
+    "refcoco_bbox_rec_testB": {"category": "Grounding", "metric": "refcoco_ACC@0.5", "template": "qwen25_pope_grounding/refcoco_plus_testA.yaml", "pattern": "RefCOCO/data/testB-*.parquet"},
+    "refcoco+_bbox_rec_testA": {"category": "Grounding", "metric": "refcoco_ACC@0.5", "template": "qwen25_pope_grounding/refcoco_plus_testA.yaml", "pattern": "RefCOCOplus/data/testA-*.parquet"},
+    "refcoco+_bbox_rec_testB": {"category": "Grounding", "metric": "refcoco_ACC@0.5", "template": "qwen25_pope_grounding/refcoco_plus_testA.yaml", "pattern": "RefCOCOplus/data/testB-*.parquet"},
+    "refcocog_bbox_rec_test": {"category": "Grounding", "metric": "refcoco_ACC@0.5", "template": "qwen25_pope_grounding/refcoco_plus_testA.yaml", "pattern": "RefCOCOg/data/test-*.parquet"}
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "python": "/home/ZhouFengyu/fastv-repro/mllm-comp-310/bin/python",
+  "data_root": "/home/YinPeiran/datasets/lmms_eval_datasets",
+  "model": "/home/WuHao/checkpoints/ckpts-vlm/Qwen2.5-VL-7B-Instruct",
+  "checkpoint_root": "/home/ZhouFengyu/fastv-repro/MLLM-Comp-Platform/MLLM-Comp-Platform-main/outputs/hf_upload/Proj",
+  "training_manifest": "/home/ZhouFengyu/fastv-repro/MLLM-Comp-Platform/MLLM-Comp-Platform-main/outputs/train/qwen25_vl/anchor_mlp_7b_k128_ddp_20261021_v1/training_samples.json",
+  "training_identity": "/home/ZhouFengyu/fastv-repro/MLLM-Comp-Platform/MLLM-Comp-Platform-main/outputs/train/qwen25_vl/anchor_mlp_7b_k128_ddp_20261021_v1/model_identity.json",
+  "output_root": "${REPO}/outputs/workflow",
+  "cache_dir": "${REPO}/outputs/workflow_cache",
+  "gpus": ["0", "1"],
+  "training_schedule": "/home/ZhouFengyu/fastv-repro/worktrees/mlp-next/configs/workflow/training/p6000_gpu0_shared.json",
+  "result_bundle": "${REPO}/artifacts/eval/qwen25_p6000_reuse_20261103.json.gz",
+  "environment": {
+    "MLLM_MMSTAR_PARQUET": "/home/ZhouFengyu/fastv-repro/datasets/MMStar/mmstar.parquet"
+  },
+  "exclusion_cache_dir": "/home/ZhouFengyu/fastv-repro/worktrees/mlp-next/outputs/training_data/balanced2560_20261104",
+  "next_metadata": "/home/ZhouFengyu/fastv-repro/worktrees/mlp-next/outputs/training_data/balanced2560_20261104/downloads/llava_next_raw_format/llava_next_raw_format_processed.json",
+  "ref_metadata": "/home/ZhouFengyu/fastv-repro/worktrees/mlp-next/outputs/training_data/balanced2560_20261104/downloads/refcoco/data/train-00000-of-00001-94431d5f4bd5b93f.parquet"
+}

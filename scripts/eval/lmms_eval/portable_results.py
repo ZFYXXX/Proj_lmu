@@ -34,7 +34,7 @@ def contract(config, template):
     stages = []
     for stage in config["pipeline"]["stages"]:
         options = dict(stage["config"])
-        for key in ("adapter_path", "checkpoint_path", "scorer_path"):
+        for key in ("adapter_path", "checkpoint_path", "scorer_path", "pool_scorer_path"):
             if key in options:
                 folder = Path(options[key])
                 options[key] = {p.name: sha(p) for p in sorted(folder.iterdir())
@@ -82,7 +82,7 @@ def import_bundle(bundle_path, output, methods, tasks):
         from scripts.eval.lmms_eval.p6000_dataset_smoke import model_config
         args = SimpleNamespace(model=plan["model"], method=method,
             identity_path=str(output / "model_identity.json"), method_checkpoint=plan["checkpoints"].get(method),
-            scorer_checkpoint=plan.get("scorer_checkpoint"))
+            scorer_checkpoint=plan.get("scorer_checkpoint"), method_catalog=plan.get("method_catalog"))
         current = contract(model_config(args), templates[task])
         if entry["contract"] != current:
             audit.append({"method": method, "task": task, "status": "not_reused", "reason": "protocol_mismatch"})

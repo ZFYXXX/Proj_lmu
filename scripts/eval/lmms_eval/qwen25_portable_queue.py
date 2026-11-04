@@ -24,24 +24,19 @@ sys.path.insert(0, str(ROOT))
 from mllm_comp.analysis.common.anchor7b_runtime import identify_checkpoint, validate_identity
 from scripts.eval.lmms_eval.p6000_dataset_smoke import specifications
 from scripts.eval.lmms_eval.portable_results import sample_signature
+from mllm_comp.workflow.catalog import DEFAULT_CATALOG, load_catalog, load_tasks
 
-METHODS = ("dense", "old_mlp", "visual_selector", "image_context_selector", "question_context_selector",
-           "protected_selector", "eadp", "prunesid", "mmtok", "importance_fps", "importance_fps_pool")
-TRAINED = {"old_mlp", "visual_selector", "image_context_selector", "question_context_selector", "protected_selector",
-           "importance_fps", "importance_fps_pool"}
+METHODS = tuple(load_catalog())
+TRAINED = {name for name, spec in load_catalog().items() if spec.get("checkpoint")}
 DEFAULT_METHODS = ("dense", "eadp", "prunesid", "mmtok", "old_mlp", "visual_selector",
                    "image_context_selector", "question_context_selector", "protected_selector", "importance_fps", "importance_fps_pool")
 DEFAULT_TASKS = ("gqa", "okvqa", "scienceqa_img", "ai2d", "mmstar", "mmmu", "pope", "hallusionbench",
                  "textvqa", "docvqa", "ocrbench", "chartqa", "refcoco_bbox_rec_testA", "refcoco_bbox_rec_testB",
                  "refcoco+_bbox_rec_testA", "refcoco+_bbox_rec_testB", "refcocog_bbox_rec_test")
-CATEGORIES = {"General": ("gqa", "okvqa"), "Reasoning": ("scienceqa_img", "ai2d", "mmstar", "mmmu"),
-              "Hallusion": ("pope", "hallusionbench"), "OCR": ("textvqa", "docvqa", "ocrbench", "chartqa"),
-              "Grounding": ("refcoco_bbox_rec_testA", "refcoco_bbox_rec_testB", "refcoco+_bbox_rec_testA",
-                            "refcoco+_bbox_rec_testB", "refcocog_bbox_rec_test")}
-PRIMARY = {"chartqa": "relaxed_overall", "ocrbench": "ocrbench_accuracy", "ai2d": "leading_option_accuracy",
-           "mmstar": "average", "pope": "pope_accuracy", "gqa": "exact_match", "vqav2_val": "exact_match",
-           "okvqa": "exact_match", "scienceqa_img": "exact_match", "mmmu": "mmmu_acc",
-           "textvqa": "exact_match", "docvqa": "anls", "hallusionbench": "aAcc"}
+CATEGORIES = {category: tuple(name for name, spec in load_tasks().items()
+                             if spec["category"] == category and spec.get("default", True))
+              for category in ("General", "Reasoning", "Hallusion", "OCR", "Grounding")}
+PRIMARY = {name: spec["metric"] for name, spec in load_tasks().items()}
 
 
 def dump(path, value):
@@ -73,6 +68,19 @@ def resolve_identity(reference, model, output):
         raise ValueError("Model identity differs from existing run")
     dump(path, identity)
     return path
+
+
+def pool_checkpoint_hashes(catalog, methods):
+    result = {}
+    for method in methods:
+        folder = catalog[method].get('options', {}).get('pool_scorer_path')
+        if folder:
+            path = Path(folder)
+            files = sorted(p for p in path.iterdir() if p.is_file() and p.suffix in {'.json', '.safetensors'})
+            if not any(p.suffix == '.safetensors' for p in files):
+                raise ValueError(f'Pool scorer weights missing: {path}')
+            result[method] = {p.name: sha(p) for p in files}
+    return result
 
 
 def score_name(task):
@@ -336,10 +344,16 @@ def seed_completed_cells(source: Path, output: Path, methods, tasks, requested_c
                             raise ValueError(f"Cannot reuse prior run with different {field}: {source_plan}")
                     checked.add(source_plan)
                 previous = json.loads(source_plan.read_text())
-                if method in TRAINED and previous.get("checkpoint_hashes", {}).get(method) != current["checkpoint_hashes"].get(method):
+                current_spec = current.get("method_definitions", {}).get(method)
+                prior_spec = previous.get("method_definitions", {}).get(method, load_catalog().get(method))
+                if current_spec is not None and current_spec != prior_spec:
+                    raise ValueError(f"Method definition changed for reused {method}: {source_plan}")
+                if method in current.get("checkpoint_hashes", {}) and previous.get("checkpoint_hashes", {}).get(method) != current["checkpoint_hashes"].get(method):
                     raise ValueError(f"Checkpoint changed for reused {method}: {source_plan}")
-                if method in {"importance_fps", "importance_fps_pool"} and previous.get("scorer_hashes") != current.get("scorer_hashes"):
+                if (current_spec or {}).get("scorer", method in {"importance_fps", "importance_fps_pool"}) and previous.get("scorer_hashes") != current.get("scorer_hashes"):
                     raise ValueError("Scorer changed for reused importance-FPS results")
+                if previous.get('pool_checkpoint_hashes', {}).get(method) != current.get('pool_checkpoint_hashes', {}).get(method):
+                    raise ValueError(f'Pool scorer changed for reused {method}')
                 marker = source_cell / "complete.json"
                 if marker.is_file() and not (target / "complete.json").exists():
                     payload = json.loads(marker.read_text())
@@ -408,7 +422,7 @@ def validate_dense_chunk(output, task, result, reference_only=False):
         raise ValueError(f"Dataset differs from reused dense for {task}/{start}")
 
 
-def select_experiment(path=None, methods=None, tasks=None):
+def select_experiment(path=None, methods=None, tasks=None, catalog_path=None):
     """Resolve requested method/task cells; CLI filters only narrow a JSON plan."""
     if any(values is not None and len(values) != len(set(values)) for values in (methods, tasks)):
         raise ValueError("Methods and tasks must not contain duplicates")
@@ -417,6 +431,7 @@ def select_experiment(path=None, methods=None, tasks=None):
         selected_tasks = list(DEFAULT_TASKS if tasks is None else tasks)
         return selected_methods, selected_tasks, [[m, t] for m in selected_methods for t in selected_tasks]
     config = json.loads(Path(path).read_text())
+    catalog = load_catalog(catalog_path)
     if not isinstance(config, dict):
         raise ValueError("Experiment config must be a JSON object")
     mapping = config.get("method_tasks")
@@ -424,7 +439,7 @@ def select_experiment(path=None, methods=None, tasks=None):
         raise ValueError("Experiment needs schema_version=1 and a nonempty method_tasks mapping")
     supported_tasks = {row[0] for row in specifications()}
     for method, members in mapping.items():
-        if method not in METHODS or not isinstance(members, list) or not members or any(not isinstance(t, str) for t in members):
+        if method not in catalog or not isinstance(members, list) or not members or any(not isinstance(t, str) for t in members):
             raise ValueError(f"Invalid method/tasks in experiment: {method}")
         if len(members) != len(set(members)) or set(members) - supported_tasks:
             raise ValueError(f"Unknown or duplicate tasks for {method}: {members}")
@@ -452,7 +467,8 @@ def main():
     parser.add_argument("--reference-only", action="store_true", help="Reuse dense results for reporting; never schedule dense generation")
     parser.add_argument("--result-bundle", type=Path, help="Portable full P6000 results with dataset and protocol checksums")
     parser.add_argument("--experiment", type=Path, help="JSON method_tasks mapping; --methods/--tasks optionally filter it")
-    parser.add_argument("--methods", nargs="+", choices=METHODS)
+    parser.add_argument("--method-catalog", type=Path, default=DEFAULT_CATALOG)
+    parser.add_argument("--methods", nargs="+")
     parser.add_argument("--tasks", nargs="+", choices=[row[0] for row in specifications()])
     parser.add_argument("--limit", type=int, help="Samples per full-source task; omit for full evaluation")
     parser.add_argument("--chunk-size", type=int, default=1024, help="Requests per checkpoint; resident models are not reloaded at boundaries")
@@ -473,7 +489,10 @@ def main():
                         help="Import only completed/chunk completion markers from an earlier worker_*/ run")
     args = parser.parse_args()
     try:
-        args.methods, args.tasks, requested_cells = select_experiment(args.experiment, args.methods, args.tasks)
+        catalog = load_catalog(args.method_catalog)
+        args.methods, args.tasks, requested_cells = select_experiment(args.experiment, args.methods, args.tasks, args.method_catalog)
+        if set(args.methods) - catalog.keys():
+            raise ValueError("Unknown method in selected catalog")
     except (ValueError, OSError) as exc:
         parser.error(str(exc))
     if args.limit is not None and args.limit < 1:
@@ -505,15 +524,17 @@ def main():
             parser.error(f"MMMU has {unsupported} zero/multi-image questions; not all requested compressed bindings "
                          "have validated support. Full MMMU compression remains blocked.")
     checkpoints = {}
+    trained_methods = {name for name, spec in catalog.items() if spec.get("checkpoint")}
+    scored_methods = {name for name, spec in catalog.items() if spec.get("scorer")}
     for item in args.checkpoint:
         method, sep, directory = item.partition("=")
-        if not sep or method not in TRAINED or method in checkpoints:
+        if not sep or method not in trained_methods or method in checkpoints:
             parser.error(f"Invalid checkpoint assignment: {item}")
         checkpoints[method] = Path(directory).resolve()
-    missing = (set(args.methods) & TRAINED) - checkpoints.keys()
-    if missing or (set(args.methods) & TRAINED and not args.reference_identity):
+    missing = (set(args.methods) & trained_methods) - checkpoints.keys()
+    if missing or (set(args.methods) & trained_methods and not args.reference_identity):
         parser.error(f"Trained methods require --reference-identity and --checkpoint METHOD=DIR; missing {sorted(missing)}")
-    if set(args.methods) & {"importance_fps", "importance_fps_pool"} and not args.scorer_checkpoint:
+    if set(args.methods) & scored_methods and not args.scorer_checkpoint:
         parser.error("R1/T2 require --scorer-checkpoint (existing image-context selector)")
     if not args.data_root.is_dir() or not (args.model / "config.json").is_file():
         parser.error("Dataset root or local model not found")
@@ -545,10 +566,15 @@ def main():
             "requested_cells": requested_cells,
             "experiment": str(args.experiment.resolve()) if args.experiment else None,
             "experiment_sha256": sha(args.experiment) if args.experiment else None,
+            "method_catalog": str(args.method_catalog.resolve()), "method_catalog_sha256": sha(args.method_catalog),
+            "method_definitions": {m: catalog[m] for m in args.methods},
+            "pool_checkpoint_hashes": pool_checkpoint_hashes(catalog, args.methods),
             "result_bundle_sha256": sha(args.result_bundle) if args.result_bundle else None,
             "source_hashes": {name: sha(ROOT / name) for name in (
                 "scripts/eval/lmms_eval/qwen25_portable_queue.py", "scripts/eval/lmms_eval/p6000_dataset_smoke.py",
                 "scripts/eval/lmms_eval/resident_lmms.py", "scripts/eval/lmms_eval/portable_results.py",
+                "mllm_comp/workflow/catalog.py",
+                "configs/workflow/tasks.json",
                 "mllm_comp/compressors/comparison/importance_anchor_adapter.py",
                 "mllm_comp/compressors/image/spatial_anchor_ablation.py")},
             "hallusion_image": str(args.hallusion_image.resolve()) if args.hallusion_image else None}
@@ -611,6 +637,10 @@ def main():
             while start is not None:
                 if args.experiment and sha(args.experiment) != plan["experiment_sha256"]:
                     raise RuntimeError("Experiment config changed during execution; choose a new output")
+                if sha(args.method_catalog) != plan["method_catalog_sha256"]:
+                    raise RuntimeError("Method catalog changed during execution; choose a new output")
+                if pool_checkpoint_hashes(catalog, args.methods) != plan['pool_checkpoint_hashes']:
+                    raise RuntimeError('Pool scorer changed during evaluation')
                 for relative, expected_hash in plan["source_hashes"].items():
                     if sha(ROOT / relative) != expected_hash:
                         raise RuntimeError(f"Source changed during execution: {relative}; restart with a new output")
@@ -630,8 +660,9 @@ def main():
                            "--method", method, "--tasks", task, "--chunk-start", str(start), "--chunk-size", str(size)]
                     if args.first_shard_only: cmd += ["--first-shard-only", "--eval-limit", str(args.limit)]
                     if task == "mmmu" and args.mmmu_single_image_only: cmd += ["--mmmu-single-image-only"]
-                    if method in TRAINED: cmd += ["--identity-path", str(identity), "--method-checkpoint", str(checkpoints[method])]
-                    if method in {"importance_fps", "importance_fps_pool"}: cmd += ["--scorer-checkpoint", str(args.scorer_checkpoint.resolve())]
+                    cmd += ["--method-catalog", str(args.method_catalog.resolve())]
+                    if method in trained_methods: cmd += ["--identity-path", str(identity), "--method-checkpoint", str(checkpoints[method])]
+                    if method in scored_methods: cmd += ["--scorer-checkpoint", str(args.scorer_checkpoint.resolve())]
                     if args.hallusion_image: cmd += ["--hallusion-image", str(args.hallusion_image.resolve())]
                     if task == "hallusionbench": cmd += ["--hallusion-scoring", "deferred"]
                     print(f"START {method}/{task}/{start}; log: {attempt / 'worker.log'}", flush=True)
@@ -650,7 +681,8 @@ def main():
                                 chunk_start=start, chunk_size=size, mmmu_single_image_only=args.mmmu_single_image_only,
                                 hallusion_scoring="deferred" if task == "hallusionbench" else "smoke",
                                 gpu=args.gpu, method=method, identity_path=str(identity) if identity else None,
-                                method_checkpoint=str(checkpoints[method]) if method in TRAINED else None,
+                                method_checkpoint=str(checkpoints[method]) if method in trained_methods else None,
+                                method_catalog=str(args.method_catalog.resolve()),
                                 scorer_checkpoint=str(args.scorer_checkpoint) if args.scorer_checkpoint else None,
                                 hallusion_image=args.hallusion_image, tasks=[task])
                             manifest = prepare(preparation)

@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "run_id": "anchor_adaptation_20261103_v1",
+  "training_manifest_sha256": "03b4c5fa4cab900ae51f7f22f46323953f136b6410752df996f8cb430e133a82",
+  "seed": 42,
+  "steps": 320,
+  "global_batch": 8,
+  "learning_rate": 0.0001,
+  "weight_decay": 0.01,
+  "warmup_steps": 16,
+  "clip_grad_norm": 1.0,
+  "teacher_kl_weight": 0.5,
+  "save_every": 16,
+  "smoke_steps": 2,
+  "gpus": ["0", "1"],
+  "arms": {
+    "T0_continue": {"method": "old_mlp", "pooling": "mean", "train_pool": false},
+    "Train_R1": {"method": "importance_fps", "pooling": "mean", "train_pool": false},
+    "Train_T2": {"method": "importance_fps_pool", "pooling": "importance", "train_pool": false},
+    "Train_T2_pool": {"method": "importance_fps_pool", "pooling": "importance", "train_pool": true}
+  },
+  "evaluation_tasks": ["chartqa", "ocrbench", "ai2d"],
+  "checkpoint_choice": "fixed_step320",
+  "initialization": "same_old_step320_mlp_warm_start_reset_optimizer",
+  "pool_training": "independent image-context scorer copy; fixed original scorer chooses anchors; gradients through within-cluster weights only"
+}

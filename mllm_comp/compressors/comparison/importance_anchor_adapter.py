@@ -53,6 +53,7 @@ class QwenImportanceAnchorAdapter(QwenAnchorAdapterComparison):
         self.gamma = float(config.pop('importance_gamma', 0.))
         self.singleton_bypass = config.pop('singleton_bypass', False)
         self.scorer_path = config.pop('scorer_path', None)
+        self.pool_scorer_path = config.pop('pool_scorer_path', None)
         self.spatial_beta = float(config.pop('spatial_beta', 0.))
         self.pooling = config.pop('pooling', 'mean')
         if self.gamma not in {0., 1.} or not isinstance(self.singleton_bypass, bool):
@@ -73,6 +74,16 @@ class QwenImportanceAnchorAdapter(QwenAnchorAdapterComparison):
             if spec.context_mode != 'image' or spec.hidden_size != self.decoder.config.hidden_size or spec.target_count != 128:
                 raise ValueError('Expected the existing image-context K128 selector for this backbone')
             self.selector = selector_module.eval().requires_grad_(False)
+        self.pool_selector = None
+        if self.pool_scorer_path:
+            if self.pooling != 'importance':
+                raise ValueError('A separate pool scorer requires importance pooling')
+            from mllm_comp.compressors.image.context_visual_topk import load_selector
+            identity = json.loads(Path(identity_path).read_text())
+            self.pool_selector = load_selector(self.pool_scorer_path, base_identity=identity['identity_sha256'],
+                device=self.decoder.embed_tokens.weight.device).eval().requires_grad_(False)
+            if self.pool_selector.spec != self.selector.spec:
+                raise ValueError('Anchor and pool scorer specifications must match')
 
     def prepare_qwen_embeddings(self, call, hidden):
         visual = self.incoming.get().vision[0].nonzero(as_tuple=True)[0]
@@ -92,6 +103,10 @@ class QwenImportanceAnchorAdapter(QwenAnchorAdapterComparison):
                                     beta=self.spatial_beta, importance=importance)
         pool_stats = []
         if self.pooling == 'importance':
+            if self.pool_selector is not None:
+                with torch.no_grad():
+                    probabilities = self.pool_selector(features, soft=True)['soft_weights'].detach().float()
+                score_trace['pool_selector_probabilities'] = probabilities.tolist()
             base['tokens'], pool_stats = importance_pool(features, base['members'], probabilities)
         with torch.autocast(device_type=hidden.device.type, dtype=torch.bfloat16, enabled=hidden.is_cuda):
             values = adapt_clusters(self.adapter, base, self.singleton_bypass)
@@ -102,6 +117,7 @@ class QwenImportanceAnchorAdapter(QwenAnchorAdapterComparison):
         compact = self.compact_selection(call, hidden, torch.tensor(base['indices'], device=hidden.device),
             {'trained': True, 'new_training': False, 'reads_question': False,
              'adapter_path': self.adapter_path, 'scorer_path': self.scorer_path if self.selector is not None else None,
+             'pool_scorer_path': self.pool_scorer_path,
              'importance_gamma': self.gamma, 'singleton_bypass': self.singleton_bypass,
              'singleton_count': len(singletons), 'bypassed_cluster_indices': singletons if self.singleton_bypass else [],
              'cluster_members': base['members'], 'fps_anchor_indices': base['anchors'],

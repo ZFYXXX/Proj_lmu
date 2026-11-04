@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "run_id": "qwen25_r1_balanced_full_bench_v1",
+  "reference_only": true,
+  "chunk_size": 512,
+  "method_tasks": {
+    "importance_fps": [
+      "gqa",
+      "okvqa",
+      "scienceqa_img",
+      "ai2d",
+      "mmstar",
+      "mmmu",
+      "pope",
+      "hallusionbench",
+      "textvqa",
+      "docvqa",
+      "ocrbench",
+      "refcoco_bbox_rec_testA",
+      "refcoco_bbox_rec_testB",
+      "refcoco+_bbox_rec_testA",
+      "refcoco+_bbox_rec_testB",
+      "refcocog_bbox_rec_test"
+    ]
+  }
+}

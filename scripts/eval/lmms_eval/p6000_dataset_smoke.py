@@ -42,33 +42,9 @@ def save(path, value):
 
 
 def specifications():
-    # Each entry retains the existing task's prompt, target and native scorer.
-    rows = [
-        ("chartqa", TASKS / "qwen25_7b_projector_ratio/chartqa.yaml", "ChartQA/data/test-*.parquet"),
-        ("gqa", TASKS / "qwen25_vl_projector_quality/gqa.yaml", "GQA/testdev_balanced_instructions/testdev-*.parquet"),
-        ("vqav2_val", UPSTREAM / "vqav2/vqav2_val.yaml", "VQAv2/data/validation-*.parquet"),
-        ("vqav2_testdev", UPSTREAM / "vqav2/vqav2_test.yaml", "VQAv2/data/testdev-*.parquet"),
-        ("okvqa", TASKS / "qwen25_okvqa_checked/okvqa.yaml", "OK-VQA/data/val2014-*.parquet"),
-        ("scienceqa_img", TASKS / "qwen25_vl_scienceqa_full/scienceqa_img_full.yaml", "ScienceQA/ScienceQA-IMG/test-*.parquet"),
-        ("ai2d", TASKS / "context_visual_topk/ai2d.yaml", "ai2d/data/test-*.parquet"),
-        ("mmstar", TASKS / "projector_extra/mmstar.yaml", "MMStar/mmstar.parquet"),
-        ("mmmu", UPSTREAM / "mmmu/mmmu_val.yaml", "MMMU/data/validation-*.parquet"),
-        ("pope", TASKS / "projector_extra/pope.yaml", "POPE/Full/*.parquet"),
-        ("hallusionbench", UPSTREAM / "hallusion_bench/hallusion_bench_image.yaml", "HallusionBench/data/image-*.parquet"),
-        ("textvqa", TASKS / "qwen25_vl_projector_quality/textvqa_full.yaml", "textvqa/data/validation-*.parquet"),
-        ("docvqa", TASKS / "qwen25_7b_projector_ratio/docvqa.yaml", "DocVQA/DocVQA/validation-*.parquet"),
-        ("ocrbench", TASKS / "qwen25_7b_projector_ratio/ocrbench.yaml", "OCRBench/data/test-*.parquet"),
-    ]
-    for dataset, prefix, splits in [
-        ("RefCOCO", "refcoco", ["testA", "testB"]),
-        ("RefCOCOplus", "refcoco+", ["testA", "testB"]),
-        ("RefCOCOg", "refcocog", ["test"]),
-    ]:
-        for split in splits:
-            rows.append((f"{prefix}_bbox_rec_{split}",
-                         TASKS / "qwen25_pope_grounding/refcoco_plus_testA.yaml",
-                         f"{dataset}/data/{split}-*.parquet"))
-    return rows
+    from mllm_comp.workflow.catalog import load_tasks
+    return [(name, UPSTREAM / spec["template"][10:] if spec["template"].startswith("@upstream/")
+             else TASKS / spec["template"], spec["pattern"]) for name, spec in load_tasks().items()]
 
 
 def check_shards(paths):
@@ -151,49 +127,23 @@ def slice_process_docs(dataset):
 
 
 def model_config(args):
+    from mllm_comp.workflow.catalog import method_options
     base = yaml.safe_load((ROOT / "configs/eval/lmms_eval/qwen25_vl_14bench.yaml").read_text())
     base["backbone"]["model_path"] = args.model
     base["backbone"]["config"]["attn_implementation"] = "eager"
     base["backbone"]["config"]["processor_load_kwargs"]["use_fast"] = False
     if args.method != "dense":
-        algorithms = {"old_mlp": "feature_anchor_adapter", "visual_selector": "learned_visual_topk",
-                      "image_context_selector": "context_visual_topk", "question_context_selector": "context_visual_topk",
-                      "protected_selector": "protected_visual_topk", "eadp": "eadp", "prunesid": "prunesid", "mmtok": "mmtok",
-                      "importance_fps": "importance_anchor_adapter", "importance_fps_pool": "importance_anchor_adapter"}
-        algorithm = algorithms[args.method]
-        if args.method == "eadp":
-            options = {"alpha": 0.5, "beta": 2.0, "tokens_per_crop": 128}
-        elif args.method == "prunesid":
-            options = {"tokens_per_crop": 128}
-        elif args.method == "mmtok":
-            options = {"target_count": 128}
-        else:
-            if not args.identity_path or not args.method_checkpoint:
-                raise ValueError("A trained method requires --identity-path and --method-checkpoint")
-            options = {"identity_path": args.identity_path}
-            if args.method in {"importance_fps", "importance_fps_pool"}:
-                if not args.scorer_checkpoint:
-                    raise ValueError("Importance FPS requires the frozen image-context scorer checkpoint")
-                options.update(adapter_path=args.method_checkpoint, tokens_per_crop=128,
-                    scorer_path=args.scorer_checkpoint, importance_gamma=1., singleton_bypass=False,
-                    spatial_beta=0., pooling="importance" if args.method == "importance_fps_pool" else "mean")
-            elif args.method == "old_mlp":
-                options.update(adapter_path=args.method_checkpoint, tokens_per_crop=128)
-            else:
-                options.update(checkpoint_path=args.method_checkpoint, seed=42, target_count=128, width=256)
-                if args.method in {"image_context_selector", "question_context_selector"}:
-                    options["context_mode"] = "image" if args.method == "image_context_selector" else "question"
-                if args.method == "protected_selector":
-                    options.update(match_width=128, visual_only=False,
-                        protection={"maximum_anchor_ratio": 0.5, "minimum_anchor": 20,
-                                    "novelty_patience": 3, "novelty_threshold": 0.2, "relevance": "learned_word"})
+        spec, options = method_options(args.method, method_checkpoint=args.method_checkpoint,
+            scorer_checkpoint=getattr(args, "scorer_checkpoint", None), identity_path=args.identity_path,
+            catalog_path=getattr(args, "method_catalog", None))
+        algorithm = spec["algorithm"]
         base["pipeline"]["stages"] = [{"algorithm": algorithm, "plugin": algorithm,
             "binding": f"{algorithm}.image.qwen25_vl", "variant": f"{algorithm}.image",
             "config": options, "execution_phase": "generate", "method": "token_compression",
             "modalities": ["image"], "target_modalities": ["image"], "name": args.method,
             "object_family": "tensor_slot", "placement": "projector_level"}]
-        if args.method == "protected_selector":
-            base["pipeline"]["stages"][0]["conditioning_modalities"] = ["text"]
+        if spec.get("conditioning_modalities"):
+            base["pipeline"]["stages"][0]["conditioning_modalities"] = spec["conditioning_modalities"]
         base["eval"].update(compression_mode="compressed", target="compressed")
     return base
 
@@ -372,9 +322,8 @@ def main():
     parser.add_argument("--mmmu-single-image-only", action="store_true")
     parser.add_argument("--hallusion-scoring", choices=["smoke", "official", "deferred"], default="smoke")
     parser.add_argument("--gpu", default="0")
-    parser.add_argument("--method", choices=["dense", "old_mlp", "visual_selector", "image_context_selector",
-                                              "question_context_selector", "protected_selector", "eadp", "prunesid", "mmtok",
-                                              "importance_fps", "importance_fps_pool"], default="dense")
+    parser.add_argument("--method", default="dense")
+    parser.add_argument("--method-catalog", type=Path)
     parser.add_argument("--identity-path")
     parser.add_argument("--method-checkpoint")
     parser.add_argument("--scorer-checkpoint")

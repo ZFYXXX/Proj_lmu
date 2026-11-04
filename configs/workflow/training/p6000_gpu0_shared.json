@@ -1,0 +1,6 @@
+{
+  "gpus": ["0", "1"],
+  "share_gpus": ["0"],
+  "share_min_free_gib": 50,
+  "policy": "GPU0 may share with existing compute above the free-memory threshold; GPU1 requires no existing compute process. One owned training/eval worker per GPU."
+}
