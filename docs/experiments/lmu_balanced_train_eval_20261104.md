@@ -18,9 +18,7 @@ mkdir -p "$(dirname "$OUT")"
   --source "$SRC" --output "$OUT" --archive "$ARCHIVE"
 ```
 
-Upload the archive through the user's chosen transfer method (not GitHub); extract it on LMU to:
-`/hkfs/work/workspace/scratch/tum_yvc3016-comp/workspace/inputs/qwen25_balanced2560_20261104`.
-The batch job verifies the bundle checksums and relocates its paths before training.
+The frozen archive is transferred through the private dataset repository `ZFFFY/Proj-training` (not GitHub). If the bundle is absent, the batch job downloads it into workspace storage after receiving a compute-node allocation. It checks the pinned archive SHA256, extracts to `/hkfs/work/workspace/scratch/tum_yvc3016-comp/workspace/inputs/qwen25_balanced2560_20261104`, verifies the bundle files, and relocates its paths before training. An existing partial extraction is preserved for inspection.
 
 ## Run on LMU
 
@@ -28,8 +26,14 @@ The repository code is synced by the user. In the project root on LMU, make the 
 
 ```bash
 mkdir -p logs/slurm
+read -rsp "HF token: " PROJ_TRANSFER_TOKEN
+echo
+export PROJ_TRANSFER_TOKEN
 sbatch scripts/train/qwen25_vl/lmu_balanced_train_eval.sbatch
+unset PROJ_TRANSFER_TOKEN
 ```
+
+Use a token with read access to `ZFFFY/Proj-training`. No token is stored in source or command history. Skip the prompt/export if the complete training bundle already exists on LMU. This job-specific variable is removed after the download stage, before training/evaluation subprocesses start.
 
 The published LMU branch includes the required 2.4 MB baseline reuse file `artifacts/eval/qwen25_p6000_reuse_20261103.json.gz`. It carries dense references for several suite tasks that are not in the old LMU run folders. Training images remain a separate workspace data transfer.
 

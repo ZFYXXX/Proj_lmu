@@ -37,6 +37,41 @@ export OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 TOKENIZERS_PARALLELISM=false
 export PYTHONPATH="$REPO${PYTHONPATH:+:$PYTHONPATH}"
 mkdir -p logs/slurm "$RUN_ROOT" "$CACHE_DIR"
 
+# Fetch the fixed private transfer bundle only inside this allocated job.
+if [[ ! -f "$BUNDLE_PATH/balanced_manifest.json" ]]; then
+    [[ -n "${PROJ_TRANSFER_TOKEN:-}" ]] || { echo "Missing training bundle; export PROJ_TRANSFER_TOKEN before sbatch" >&2; exit 2; }
+    HF_HUB_OFFLINE=0 "$PY" - "$BUNDLE_PATH" <<'PY'
+import hashlib,os,sys,tarfile,tempfile
+from pathlib import Path
+from huggingface_hub import hf_hub_download
+target=Path(sys.argv[1]).resolve()
+if target.exists():
+    raise SystemExit(f'Incomplete training bundle already exists: {target}; inspect it before retrying.')
+target.parent.mkdir(parents=True,exist_ok=True)
+archive=Path(hf_hub_download('ZFFFY/Proj-training','qwen25_balanced2560_20261104.tar.gz',
+    repo_type='dataset',revision='9fd5bad414a0c96320db928db1c710e4fe4b2264',token=os.environ['PROJ_TRANSFER_TOKEN'],
+    local_dir=str(target.parent/'.hf_training_transfer')))
+digest=hashlib.sha256()
+with archive.open('rb') as stream:
+    for block in iter(lambda:stream.read(1024*1024),b''): digest.update(block)
+if digest.hexdigest()!='40ee09ed6b6b6fed657d1789d41812d69c77895cf21d7da777e5d8be15941689':
+    raise SystemExit('Downloaded training archive checksum mismatch')
+with tempfile.TemporaryDirectory(prefix='.balanced_bundle_',dir=target.parent) as directory:
+    stage=Path(directory).resolve()
+    with tarfile.open(archive,'r:gz') as tar:
+        for member in tar.getmembers():
+            if not (member.isfile() or member.isdir()) or not (stage/member.name).resolve().is_relative_to(stage):
+                raise SystemExit('Unsupported training archive member')
+        tar.extractall(stage)
+    extracted=stage/'qwen25_balanced2560_20261104'
+    for name in ('balanced_manifest.json','balanced_qa.parquet','images','bundle_manifest.json'):
+        if not (extracted/name).exists(): raise SystemExit(f'Incomplete archive: {name}')
+    extracted.rename(target)
+print(f'Downloaded and verified fixed training bundle: {target}')
+PY
+fi
+unset PROJ_TRANSFER_TOKEN
+
 for path in "$PY" "$DATA_ROOT" "$MODEL_PATH/config.json" \
     "$CKPT_ROOT/model_identity.json" "$CKPT_ROOT/checkpoints/old_mlp" \
     "$CKPT_ROOT/checkpoints/image_context_selector" "$BUNDLE_PATH/balanced_manifest.json" \
