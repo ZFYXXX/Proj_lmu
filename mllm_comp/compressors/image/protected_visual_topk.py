@@ -101,7 +101,7 @@ class ProtectedWordSelector(torch.nn.Module):
         self.base.freeze_prior()
 
     @torch.no_grad()
-    def forward(self, features, *, question, soft=False, visual_only=False):
+    def forward(self, features, *, question, soft=False, visual_only=False, target_count=None):
         if soft or visual_only:
             raise ValueError("Protected selection is hard diagnostic inference only")
         output = self.base(features, question=question)
@@ -112,10 +112,10 @@ class ProtectedWordSelector(torch.nn.Module):
                              F.normalize(question.float(), dim=-1).T).max(-1).values
         else:
             relevance = output["scores"] - prior
-        indices, anchor = protected_context_indices(
-            features, relevance, prior, self.spec.target_count, self.policy)
+        k = self.spec.target_count if target_count is None else target_count
+        indices, anchor = protected_context_indices(features, relevance, prior, k, self.policy)
         output.update(tokens=features.index_select(0, indices), indices=indices,
-                      scores=relevance, result_count=len(indices),
+                      scores=relevance, result_count=len(indices), target_count=min(k, len(features)),
                       hard_mask=torch.zeros_like(relevance).scatter(0, indices, 1))
         output["word_diagnostics"].update(
             selection_policy="protected_context", policy_relevance=self.policy.relevance,

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "python": "/home/ZhouFengyu/fastv-repro/mllm-comp-310/bin/python",
+  "data_root": "/home/YinPeiran/datasets/lmms_eval_datasets",
+  "model": "/home/WuHao/checkpoints/ckpts-vlm/Qwen2.5-VL-7B-Instruct",
+  "checkpoint_root": "/home/ZhouFengyu/fastv-repro/MLLM-Comp-Platform/MLLM-Comp-Platform-main/outputs/hf_upload/Proj",
+  "checkpoints": {"r1_balanced2560_step320": "${REPO}/artifacts/checkpoints/r1_balanced2560_step320"},
+  "output_root": "${REPO}/outputs/workflow",
+  "cache_dir": "${REPO}/outputs/workflow_cache",
+  "hallusion_image": "/home/ZhouFengyu/fastv-repro/MLLM-Comp-Platform/MLLM-Comp-Platform-main/outputs/eval/p6000_dataset_smoke_20261030_v2/cache/hub/datasets--lmms-lab--HallusionBench/blobs/fd46946fa6b3f15ab8c8e2e0dacf54bc801db7915f17a47cec5ca872f30de2a9",
+  "gpus": ["0"],
+  "result_bundle": "${REPO}/artifacts/eval/qwen25_p6000_reuse_20261103.json.gz",
+  "environment": {"MLLM_MMSTAR_PARQUET": "/home/ZhouFengyu/fastv-repro/datasets/MMStar/mmstar.parquet"}
+}

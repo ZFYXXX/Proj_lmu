@@ -224,6 +224,7 @@ _ALGORITHM_EXECUTOR_CONFIG_KEYS: Mapping[str, frozenset[str]] = MappingProxyType
         "mmtok": frozenset(
             {
                 "retain_ratio",
+                "budget_rounding",
                 "target_count",
                 "alpha",
                 "text_temperature",

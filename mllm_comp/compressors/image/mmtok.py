@@ -25,6 +25,7 @@ MMTOK_CONFIG_KEYS = frozenset(
         "text_temperature",
         "vision_temperature",
         "min_visual_tokens",
+        "budget_rounding",
     }
 )
 
@@ -74,8 +75,11 @@ class MMTokSpec:
     text_temperature: float = 0.02
     vision_temperature: float = 0.2
     min_visual_tokens: int = 1
+    budget_rounding: str = "floor"
 
     def __post_init__(self) -> None:
+        if self.budget_rounding not in {"floor", "round"}:
+            raise ValueError("budget_rounding must be floor or round")
         for name in (
             "retain_ratio",
             "alpha",
@@ -120,7 +124,8 @@ class MMTokSpec:
         if requested is not None:
             _require_positive_int("target_count", requested)
         else:
-            requested = int(float(self.retain_ratio) * source_count)
+            raw = float(self.retain_ratio) * source_count
+            requested = round(raw) if self.budget_rounding == "round" else int(raw)
         return min(source_count, max(self.min_visual_tokens, requested))
 
 
@@ -254,6 +259,8 @@ def mmtok_image_tokens(
             "coverage_compute_dtype": "float32",
             "normalization_policy": "official_input_dtype_then_float32",
             "retain_ratio": float(active.retain_ratio),
+            "budget_rounding": active.budget_rounding,
+            "actual_retention_ratio": resolved_target / source_count,
             "requested_target_count": (
                 active.target_count if target_count is None else target_count
             ),

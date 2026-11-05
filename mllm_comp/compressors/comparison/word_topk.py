@@ -58,7 +58,7 @@ class QwenWordTopKComparison(QwenLearnedTopKComparison):
             "checkpoint_path":self.selector_config.get("checkpoint_path"),"reads_question":True,
             "context_mode":"question","word_matching":True,"visual_only_control":self.visual_only,
             "semantic_evidence_verified":False}
-        output=self.selector(features,question=source["question"],soft=self.soft_training,visual_only=self.visual_only)
+        output=self.select_word_tokens(features, source["question"])
         stats.update(output["word_diagnostics"])
         if self.audit_rows:
             key=request_key(CURRENT_SAMPLE_ID.get())
@@ -75,7 +75,7 @@ class QwenWordTopKComparison(QwenLearnedTopKComparison):
                         self.model.config.image_token_id,self.model.config.vision_start_token_id,self.model.config.vision_end_token_id} for i in ids):
                         raise ValueError("Invalid word-audit token IDs")
                     q=self.model.get_input_embeddings()(torch.tensor(ids,device=features.device,dtype=torch.long)).detach()
-                    other=self.selector(features,question=q,visual_only=self.visual_only)
+                    other=self.select_word_tokens(features, q)
                     a,b=output["indices"],other["indices"]
                     delta=other["scores"]-output["scores"]
                     audits[name]={"question_changed_after_cleaning":ids_sha(ids)!=stats["question_ids_sha256"],
@@ -94,6 +94,11 @@ class QwenWordTopKComparison(QwenLearnedTopKComparison):
                 "training_mode":"soft_full_sequence",**stats}
             return hidden
         return self.compact_word_selection(call,hidden,visual_ids,output,stats)
+
+    def select_word_tokens(self, features, question):
+        if self.retention_ratio is not None:
+            raise ValueError("This word selector has no ratio selection policy; use the protected binding")
+        return self.selector(features, question=question, soft=self.soft_training, visual_only=self.visual_only)
 
     def compact_word_selection(self,call,hidden,visual_ids,output,stats):
         """Extension point for representation recovery; default remains a gather."""

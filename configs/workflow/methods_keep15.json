@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "methods": {
+    "dense": {"description": "Uncompressed Qwen2.5-VL"},
+    "eadp_r15": {
+      "description": "EADP, keep 15% per image",
+      "algorithm": "eadp",
+      "options": {"alpha": 0.5, "beta": 2.0, "retention_ratio": 0.15}
+    },
+    "prunesid_r15": {
+      "description": "PruneSID, keep 15% per image",
+      "algorithm": "prunesid",
+      "options": {"retention_ratio": 0.15}
+    },
+    "mmtok_r15": {
+      "description": "MMTok, keep 15% per image with the same rounded budget as the other arms",
+      "algorithm": "mmtok",
+      "options": {"retain_ratio": 0.15, "budget_rounding": "round"}
+    },
+    "old_mlp_r15": {
+      "description": "Feature anchors + mean + original trained aggregation MLP, keep 15%",
+      "algorithm": "feature_anchor_adapter", "checkpoint": "old_mlp",
+      "options": {"identity_path": "${identity_path}", "adapter_path": "${method_checkpoint}", "retention_ratio": 0.15}
+    },
+    "protected_selector_r15": {
+      "description": "Existing learned relevance + protection, keep 15%; immutable K128 checkpoint",
+      "algorithm": "protected_visual_topk", "checkpoint": "protected_selector", "conditioning_modalities": ["text"],
+      "options": {"identity_path": "${identity_path}", "checkpoint_path": "${method_checkpoint}", "seed": 42, "width": 256, "match_width": 128, "visual_only": false, "retention_ratio": 0.15,
+        "protection": {"maximum_anchor_ratio": 0.5, "minimum_anchor": 20, "novelty_patience": 3, "novelty_threshold": 0.2, "relevance": "learned_word"}}
+    },
+    "importance_fps_r15": {
+      "description": "Importance FPS + ordinary mean + original MLP, keep 15%",
+      "algorithm": "importance_anchor_adapter", "checkpoint": "old_mlp", "scorer": "image_context_selector",
+      "options": {"identity_path": "${identity_path}", "adapter_path": "${method_checkpoint}", "retention_ratio": 0.15, "scorer_path": "${scorer_checkpoint}", "importance_gamma": 1.0, "singleton_bypass": false, "spatial_beta": 0.0, "pooling": "mean"}
+    },
+    "importance_fps_balanced_r15": {
+      "description": "Importance FPS + ordinary mean + balanced2560 step320 MLP, keep 15%; same frozen scorer as R1",
+      "algorithm": "importance_anchor_adapter", "checkpoint": "r1_balanced2560_step320", "scorer": "image_context_selector",
+      "options": {"identity_path": "${identity_path}", "adapter_path": "${method_checkpoint}", "retention_ratio": 0.15, "scorer_path": "${scorer_checkpoint}", "importance_gamma": 1.0, "singleton_bypass": false, "spatial_beta": 0.0, "pooling": "mean"}
+    }
+  }
+}

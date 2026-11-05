@@ -39,6 +39,9 @@ P6000 负责本地整理、开发和测试；LMU 的拉取、资源申请和任�
 已经完成且协议一致的结果由队列复用；更换 run ID 不代表必须重跑全部参照。
 
 R1/T2 补充自然图像任务的八个单元已写入 `r1_t2_general.json`。
+逐图保留 15% 的 8 组/16 任务清单及 P6000/LMU 使用方式见
+[15% 预算实验](docs/experiments/keep15_20261105.md)。它使用独立 method catalog，
+不修改本页旧 K128 示例或历史权重。
 已有的 43 单元补全清单也可以直接传入：
 `--experiment configs/eval/lmms_eval/qwen25_r1t2_completion.json`。
 

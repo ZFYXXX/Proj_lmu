@@ -351,9 +351,24 @@ def inspect_run(output):
             "report": str(output / "report.md"), "status_file": str(output / "workflow_status.json")}
 
 
+def wait_execute(output):
+    """Local smoke queue: wait for a completely idle selected GPU, never share."""
+    if os.environ.get('SLURM_JOB_ID'):
+        raise ValueError('Local GPU waiting is not an LMU submission mechanism')
+    from .anchor_training import idle_devices
+    output = Path(output).resolve()
+    saved = read(output / 'workflow.json')
+    devices = saved['config']['profile'].get('gpus', ['0'])
+    while len(idle_devices(devices)) != len(devices):
+        write(output / 'workflow_status.json', {'status': 'waiting_for_idle_gpu', 'gpus': devices,
+              'checked_utc': datetime.now(timezone.utc).isoformat()})
+        time.sleep(30)
+    return execute(output)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(__doc__)
-    parser.add_argument("action", choices=("list", "plan", "check", "smoke", "run", "prepare", "status", "report", "execute", "train", "train-plan"))
+    parser.add_argument("action", choices=("list", "plan", "check", "smoke", "run", "prepare", "status", "report", "execute", "wait-execute", "train", "train-plan"))
     parser.add_argument("--profile", type=Path, default=ROOT / "configs/workflow/profiles/p6000.json")
     parser.add_argument("--experiment", type=Path, default=ROOT / "configs/workflow/experiments/r1_t2_general.json")
     parser.add_argument("--method-catalog", type=Path)
@@ -364,8 +379,8 @@ def main(argv=None):
     parser.add_argument("--limit", type=int, default=2, help="Smoke samples per task; full run has no limit")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--training-config", type=Path, default=ROOT / "configs/workflow/training/anchor_adaptation.json")
-    parser.add_argument("--launch", action="store_true", help="Launch a persistent local training supervisor")
-    parser.add_argument("--wait-for-gpu", action="store_true", help="Queue training until a selected local GPU is free")
+    parser.add_argument("--launch", action="store_true", help="Launch a persistent local training or waiting smoke process")
+    parser.add_argument("--wait-for-gpu", action="store_true", help="Wait for an idle local GPU before training or smoke")
     args = parser.parse_args(argv)
     try:
         if args.action in {"train", "train-plan"}:
@@ -374,11 +389,13 @@ def main(argv=None):
         if args.action == "list":
             print(json.dumps({"methods": load_catalog(args.method_catalog), "tasks": load_tasks()}, ensure_ascii=False, indent=2))
             return 0
-        if args.action in {"execute", "status", "report"}:
+        if args.action in {"execute", "wait-execute", "status", "report"}:
             if not args.run_dir:
                 raise ValueError("This action requires --run-dir")
             if args.action == "execute":
                 return execute(args.run_dir)
+            if args.action == "wait-execute":
+                return wait_execute(args.run_dir)
             if args.action == "status":
                 print(json.dumps(inspect_run(args.run_dir), ensure_ascii=False, indent=2))
             else:
@@ -414,11 +431,25 @@ def main(argv=None):
                                                  "signature": saved["signature"], "submitted": False})
             print(f"Prepared job script: {job}\nSubmit manually on LMU: {shlex.join(['sbatch', str(job)])}")
             return 0
+        if args.wait_for_gpu:
+            if args.action != 'smoke' or os.environ.get('SLURM_JOB_ID'):
+                raise ValueError('--wait-for-gpu is supported for local smoke only')
+            command = [saved['python'], str(Path(saved['source_root']) / 'scripts/workflow.py'),
+                       'wait-execute', '--run-dir', str(output)]
+            if args.launch:
+                with (output / 'logs/supervisor.log').open('a') as stream:
+                    process = subprocess.Popen(command, cwd=saved['source_root'], stdout=stream,
+                        stderr=subprocess.STDOUT, start_new_session=True)
+                write(output / 'smoke_supervisor.json', {'pid': process.pid, 'run_dir': str(output),
+                      'status': 'queued', 'created_utc': datetime.now(timezone.utc).isoformat()})
+                print(f'Queued smoke supervisor PID {process.pid}; run: {output}')
+                return 0
+            return subprocess.call(command)
         # Explicit interpreter avoids activating/changing the user's shared env.
         return subprocess.call([saved["python"], str(Path(saved["source_root"]) / "scripts/workflow.py"),
                                 "execute", "--run-dir", str(output)])
     except (ValueError, OSError, KeyError, subprocess.CalledProcessError) as exc:
-        if args.action == "execute" and args.run_dir and args.run_dir.is_dir():
+        if args.action in {"execute", "wait-execute"} and args.run_dir and args.run_dir.is_dir():
             write(args.run_dir / "workflow_status.json", {"status": "failed", "error": str(exc)})
         print(f"workflow: {exc}", file=sys.stderr)
         return 2
