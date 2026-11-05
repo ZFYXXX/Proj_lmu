@@ -247,6 +247,22 @@ def slurm_script(saved, output):
             "execute", "--run-dir", str(output)]), ""])
 
 
+def execution_devices(profile, *, limited):
+    if os.environ.get('SLURM_JOB_ID'):
+        visible = os.environ.get('CUDA_VISIBLE_DEVICES', '')
+        if not visible:
+            raise ValueError('Slurm must expose allocated devices through CUDA_VISIBLE_DEVICES')
+        devices = [item.strip() for item in visible.split(',')]
+        expected = 1 if limited else 4
+        if len(devices) != expected:
+            raise ValueError(f'LMU {"smoke" if limited else "full evaluation"} requires {expected} allocated CUDA devices')
+    else:
+        devices = profile.get('gpus', ['0'])
+    if not devices or any(not item for item in devices) or len(set(devices)) != len(devices):
+        raise ValueError('Expected distinct CUDA devices')
+    return devices
+
+
 def execute(output):
     output = Path(output).resolve()
     saved = read(output / "workflow.json")
@@ -263,12 +279,7 @@ def execute(output):
         if digest(path) != expected:
             raise ValueError(f"Checkpoint or result bundle changed: {path}")
     profile = config["profile"]
-    devices = (os.environ["CUDA_VISIBLE_DEVICES"].split(",") if os.environ.get("SLURM_JOB_ID")
-               and os.environ.get("CUDA_VISIBLE_DEVICES") else profile.get("gpus", ["0"]))
-    if not devices or len(set(devices)) != len(devices):
-        raise ValueError("Expected distinct CUDA devices")
-    if os.environ.get("SLURM_JOB_ID") and len(devices) != 4:
-        raise ValueError("LMU execution requires four allocated CUDA devices")
+    devices = execution_devices(profile, limited=saved['limit'] is not None)
     if not os.environ.get("SLURM_JOB_ID"):
         selected = subprocess.check_output(["nvidia-smi", "--id=" + ",".join(devices),
             "--query-gpu=uuid", "--format=csv,noheader"], text=True).splitlines()

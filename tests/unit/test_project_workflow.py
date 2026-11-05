@@ -124,7 +124,8 @@ def test_prepare_only_writes_a_job_for_manual_submission(tmp_path, monkeypatch):
     assert not (output / "submission.json").exists()
 
 
-def test_actual_supervisor_launches_four_workers_and_preserves_gpu_mapping(tmp_path, monkeypatch):
+@pytest.mark.parametrize('devices,limit', [(['GPU-a', 'GPU-b', 'GPU-c', 'GPU-d'], None), (['GPU-one'], 1)])
+def test_actual_supervisor_preserves_allocated_worker_count_and_gpu_mapping(tmp_path, monkeypatch, devices, limit):
     root, queue, config = small_snapshot(tmp_path, monkeypatch,
         {"dense": ["ai2d", "mmstar", "pope", "chartqa"]})
     queue.write_text('''import json, os, pathlib, sys
@@ -139,16 +140,16 @@ for position,(method,task) in enumerate(cells):
         (cell/"complete.json").write_text(json.dumps({"gpu":os.environ["CUDA_VISIBLE_DEVICES"]}))
 ''')
     output = tmp_path / "results"
-    runner.freeze(config, output, limit=1)
+    runner.freeze(config, output, limit=limit)
     monkeypatch.setenv("SLURM_JOB_ID", "cpu-test")
-    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "GPU-a,GPU-b,GPU-c,GPU-d")
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", ','.join(devices))
     monkeypatch.setattr(runner.shutil, "which", lambda name: None)
     assert runner.execute(output) == 0
     state = runner.read(output / "workflow_status.json")
     assert state["completed"] == state["expected"] == 4 and state["status"] == "complete"
-    assert state["worker_exit_codes"] == [0, 0, 0, 0]
+    assert state["worker_exit_codes"] == [0] * len(devices)
     assigned = {runner.read(path)["gpu"] for path in output.glob("cells/*/*/complete.json")}
-    assert assigned == {"GPU-a", "GPU-b", "GPU-c", "GPU-d"}
+    assert assigned == set(devices)
 
 
 def test_old_queue_outputs_can_be_inspected_without_workflow_metadata(tmp_path):

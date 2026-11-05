@@ -187,13 +187,30 @@ def test_keep15_lmu_still_has_four_shared_workers_and_no_k128_seeding():
     assert '--mmmu-single-image-only' in command
 
 
-def test_lmu_smoke_entry_is_limited_debug_only_and_requests_four_gpus():
+def test_lmu_smoke_entry_is_limited_debug_only_and_requests_one_gpu():
     import subprocess
     path = ROOT / 'scripts/eval/lmms_eval/lmu_qwen25_keep15_smoke.sbatch'
     subprocess.run(['bash', '-n', str(path)], check=True)
     script = path.read_text()
-    for expected in ('--job-name=28-', '--partition=dev_accelerated', '--gres=gpu:4',
+    for expected in ('--job-name=28-', '--partition=dev_accelerated', '--gres=gpu:1',
+                     '--cpus-per-task=4',
                      '--time=00:50:00', '--mail-type="NONE"', 'scripts/workflow.py smoke',
                      '--limit 2', 'qwen25_keep15_lmu_smoke_${SLURM_JOB_ID}'):
         assert expected in script
     assert 'sbatch ' not in script and 'salloc ' not in script
+
+
+def test_lmu_single_gpu_smoke_and_four_gpu_full_are_distinct(monkeypatch):
+    monkeypatch.setenv('SLURM_JOB_ID', 'smoke-fixture')
+    monkeypatch.setenv('CUDA_VISIBLE_DEVICES', 'GPU-allocated-one')
+    profile = {'gpus': ['0', '1', '2', '3']}
+    assert runner.execution_devices(profile, limited=True) == ['GPU-allocated-one']
+    with pytest.raises(ValueError, match='requires 4'):
+        runner.execution_devices(profile, limited=False)
+    monkeypatch.setenv('CUDA_VISIBLE_DEVICES', 'GPU-a,GPU-b,GPU-c,GPU-d')
+    assert len(runner.execution_devices(profile, limited=False)) == 4
+    with pytest.raises(ValueError, match='requires 1'):
+        runner.execution_devices(profile, limited=True)
+    monkeypatch.delenv('CUDA_VISIBLE_DEVICES')
+    with pytest.raises(ValueError, match='Slurm must expose'):
+        runner.execution_devices(profile, limited=True)
