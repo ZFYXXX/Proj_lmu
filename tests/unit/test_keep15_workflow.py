@@ -214,3 +214,37 @@ def test_lmu_single_gpu_smoke_and_four_gpu_full_are_distinct(monkeypatch):
     monkeypatch.delenv('CUDA_VISIBLE_DEVICES')
     with pytest.raises(ValueError, match='Slurm must expose'):
         runner.execution_devices(profile, limited=True)
+
+
+@pytest.mark.parametrize('smoke_fails', [False, True])
+def test_one_allocation_smoke_gates_four_gpu_full(tmp_path, smoke_fails):
+    import os
+    import subprocess
+    import sys
+    job = ROOT / 'scripts/eval/lmms_eval/lmu_qwen25_keep15_full.sbatch'
+    subprocess.run(['bash', '-n', str(job)], check=True)
+    # Fake interpreter records command/device mapping; no model or GPU is used.
+    fake = tmp_path / 'python'
+    fake.write_text(f'#!{sys.executable}\n' + '''import json, os, pathlib, sys
+with open(os.environ['CALL_LOG'], 'a') as stream:
+    stream.write(json.dumps({'args': sys.argv[1:], 'gpus': os.environ['CUDA_VISIBLE_DEVICES']}) + '\\n')
+if sys.argv[2] == 'smoke' and os.environ['SMOKE_FAIL'] == '1':
+    sys.exit(7)
+''')
+    fake.chmod(0o755)
+    log = tmp_path / 'calls.jsonl'
+    env = {**os.environ, 'SLURM_JOB_ID': 'fixture', 'SLURM_SUBMIT_DIR': str(tmp_path),
+           'CUDA_VISIBLE_DEVICES': 'GPU-a,GPU-b,GPU-c,GPU-d', 'KEEP15_REPO': str(tmp_path),
+           'KEEP15_PYTHON': str(fake), 'KEEP15_OUTPUT': str(tmp_path / 'full'),
+           'CALL_LOG': str(log), 'SMOKE_FAIL': str(int(smoke_fails))}
+    result = subprocess.run(['bash', str(job)], env=env, capture_output=True, text=True)
+    calls = [json.loads(line) for line in log.read_text().splitlines()]
+    assert calls[0]['args'][1] == 'prepare' and calls[1]['args'][1] == 'smoke'
+    assert calls[1]['gpus'] == 'GPU-a'
+    assert calls[1]['args'][calls[1]['args'].index('--limit') + 1] == '1'
+    if smoke_fails:
+        assert result.returncode == 7 and len(calls) == 2
+    else:
+        assert result.returncode == 0 and calls[2]['args'][1] == 'execute'
+        assert calls[2]['gpus'] == 'GPU-a,GPU-b,GPU-c,GPU-d'
+        assert calls[2]['args'][0].endswith('/full/source/scripts/workflow.py')
