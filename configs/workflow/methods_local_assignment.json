@@ -12,6 +12,16 @@
       "algorithm": "importance_anchor_adapter", "checkpoint": "r1_balanced2560_step320", "scorer": "image_context_selector",
       "options": {"identity_path": "${identity_path}", "adapter_path": "${method_checkpoint}", "retention_ratio": 0.15, "scorer_path": "${scorer_checkpoint}", "importance_gamma": 1.0, "singleton_bypass": false, "spatial_beta": 0.0, "pooling": "mean", "assignment_neighbors": 4, "assignment_max_regret": 0.1}
     },
+    "importance_fps_balanced_grid4_local4_r15": {
+      "description": "B: hard local4 assignment plus a 2x2 spatial anchor floor inside the same 15% budget; no regret fallback",
+      "algorithm": "importance_anchor_adapter", "checkpoint": "r1_balanced2560_step320", "scorer": "image_context_selector",
+      "options": {"identity_path": "${identity_path}", "adapter_path": "${method_checkpoint}", "retention_ratio": 0.15, "scorer_path": "${scorer_checkpoint}", "importance_gamma": 1.0, "singleton_bypass": false, "spatial_beta": 0.0, "pooling": "mean", "assignment_neighbors": 4, "grid_anchor_floor": true}
+    },
+    "importance_fps_balanced_grid4_gap01_r15": {
+      "description": "AB: 2x2 spatial anchor floor and local4 cosine-regret fallback at 0.10, inside the same 15% budget",
+      "algorithm": "importance_anchor_adapter", "checkpoint": "r1_balanced2560_step320", "scorer": "image_context_selector",
+      "options": {"identity_path": "${identity_path}", "adapter_path": "${method_checkpoint}", "retention_ratio": 0.15, "scorer_path": "${scorer_checkpoint}", "importance_gamma": 1.0, "singleton_bypass": false, "spatial_beta": 0.0, "pooling": "mean", "assignment_neighbors": 4, "assignment_max_regret": 0.1, "grid_anchor_floor": true}
+    },
     "importance_fps_balanced_local4_r15": {
       "description": "Same frozen R1 anchors and weights; assign only among four spatially nearest anchors; keep 15%",
       "algorithm": "importance_anchor_adapter", "checkpoint": "r1_balanced2560_step320", "scorer": "image_context_selector",

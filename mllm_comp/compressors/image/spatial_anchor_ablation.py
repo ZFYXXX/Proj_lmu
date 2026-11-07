@@ -7,13 +7,15 @@ import torch
 
 
 def spatial_anchor_merge(features, height, width, count=128, beta=0., importance=None, *,
-                         assignment_neighbors=0, assignment_max_regret=None):
+                         assignment_neighbors=0, assignment_max_regret=None, grid_anchor_floor=False):
     if features.ndim != 2 or height * width != len(features) or not len(features):
         raise ValueError("Expected one nonempty rectangular feature grid")
     if not math.isfinite(beta) or beta < 0 or count < 1 or not torch.isfinite(features).all():
         raise ValueError("Invalid spatial partition input")
     if isinstance(assignment_neighbors, bool) or not isinstance(assignment_neighbors, int) or assignment_neighbors < 0:
         raise ValueError('assignment_neighbors must be a nonnegative integer; zero disables locality')
+    if not isinstance(grid_anchor_floor, bool):
+        raise ValueError('grid_anchor_floor must be a boolean')
     if assignment_max_regret is not None:
         if (isinstance(assignment_max_regret, bool) or not isinstance(assignment_max_regret, (int, float))
                 or not math.isfinite(assignment_max_regret) or not 0 <= assignment_max_regret <= 2):
@@ -31,11 +33,38 @@ def spatial_anchor_merge(features, height, width, count=128, beta=0., importance
     pixels = torch.stack((ids // width, ids % width), -1).float()
     coords = pixels / pixels.new_tensor([max(1, height - 1), max(1, width - 1)])
     anchors = [0 if importance is None else int(importance.argmax())]
+    grid_trace = {}
+    if grid_anchor_floor:
+        # Keep the original first anchor, then seed uncovered nonempty 2x2
+        # regions at their spatial centers, using the SAME total anchor budget.
+        regions = ((ids // width) * 2 // height) * 2 + ((ids % width) * 2 // width)
+        cell_ids = regions.unique(sorted=True).tolist()
+        candidates = []
+        for cell in cell_ids:
+            members = (regions == cell).nonzero(as_tuple=True)[0]
+            center = pixels[members].mean(0)
+            cost = (pixels[members] - center).square().sum(-1)
+            candidates.append(int(members[cost == cost.min()].min()))
+        while len(anchors) < min(count, len(cell_ids)):
+            covered = {int(regions[a]) for a in anchors}
+            remaining = [a for a in candidates if int(regions[a]) not in covered]
+            # If K cannot cover all cells, choose farthest uncovered cells
+            # deterministically rather than silently exceeding the budget.
+            next_id = max(remaining, key=lambda a: (
+                min(float((pixels[a] - pixels[b]).square().sum()) for b in anchors), -a))
+            anchors.append(next_id)
+        grid_trace = {'grid_anchor_floor': True, 'grid_seed_indices': anchors.copy(),
+            'grid_seed_region_ids': [int(regions[a]) for a in anchors],
+            'grid_nonempty_regions': len(cell_ids), 'grid_coverage_feasible': count >= len(cell_ids)}
     selected = torch.zeros(len(features), dtype=torch.bool, device=features.device)
-    selected[anchors[0]] = True
+    selected[anchors] = True
     # beta=0 uses the historical arithmetic, including its floating-point ties.
     similarity = values @ values[anchors[0]]
     distance = 1 - similarity + beta * (coords - coords[anchors[0]]).square().sum(-1)
+    for seed in anchors[1:]:
+        next_similarity = values @ values[seed]
+        similarity = torch.maximum(similarity, next_similarity)
+        distance = torch.minimum(distance, 1 - next_similarity + beta * (coords - coords[seed]).square().sum(-1))
     while len(anchors) < count:
         if importance is not None:
             next_id = int((distance.clamp_min(0) * importance).masked_fill(selected, -float('inf')).argmax())
@@ -92,6 +121,8 @@ def spatial_anchor_merge(features, height, width, count=128, beta=0., importance
             'unrestricted_anchor_grid_distance_mean': float(spatial[ids, unrestricted].sqrt().mean()),
             'fps_selection_order': anchors.copy()})
     assignment[anchor_ids] = torch.arange(count, device=features.device)
+    if grid_anchor_floor:
+        grid_trace['grid_covered_regions'] = len({int(regions[a]) for a in anchors})
     records = []
     for cluster, anchor in enumerate(anchors):
         members = (assignment == cluster).nonzero(as_tuple=True)[0]
@@ -116,7 +147,7 @@ def spatial_anchor_merge(features, height, width, count=128, beta=0., importance
             "indices": [r[0] for r in records], "members": groups,
             "anchors": [r[2] for r in records], "cluster_statistics": [r[4] for r in records],
             "partition_hash": hashlib.sha256(json.dumps(groups, separators=(',', ':')).encode()).hexdigest(),
-            **locality}
+            **locality, **grid_trace}
 
 
 def merge_positions(source, members, anchors, policy):

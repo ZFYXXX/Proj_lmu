@@ -53,14 +53,15 @@ def test_invalid_neighbors_fail(bad):
         spatial_anchor_merge(torch.randn(12, 4), 3, 4, assignment_neighbors=bad)
 
 
-def test_native_local_assignment_generation_keeps_budget_and_positions():
+@pytest.mark.parametrize('grid', [False, True])
+def test_native_local_assignment_generation_keeps_budget_and_positions(grid):
     from tests.unit.test_projector_comparison_evaluation import tiny_state
     from mllm_comp.analysis.common.compression_training_check import AnchorAdapterSpec, create_anchor_adapter
     from mllm_comp.compressors.image.context_visual_topk import ContextVisualTopK, ContextVisualTopKSpec
     from mllm_comp.compressors.comparison.importance_anchor_adapter import QwenImportanceAnchorAdapter
     bundle,state,_,_ = tiny_state()
     session = QwenImportanceAnchorAdapter(bundle['model'],
-        {'retention_ratio': .5, 'importance_gamma': 1., 'assignment_neighbors': 1},
+        {'retention_ratio': .5, 'importance_gamma': 1., 'assignment_neighbors': 1, 'grid_anchor_floor': grid},
         adapter_module=create_anchor_adapter(AnchorAdapterSpec(24, 4)),
         selector_module=ContextVisualTopK(ContextVisualTopKSpec(24, width=4, context_mode='image'))).install()
     try:
@@ -117,14 +118,16 @@ def test_regret_requires_local_cosine_assignment():
                              assignment_neighbors=1, assignment_max_regret=.1)
 
 
-def test_native_regret_generation_keeps_decode_positions():
+@pytest.mark.parametrize('grid', [False, True])
+def test_native_regret_generation_keeps_decode_positions(grid):
     from tests.unit.test_projector_comparison_evaluation import tiny_state
     from mllm_comp.analysis.common.compression_training_check import AnchorAdapterSpec, create_anchor_adapter
     from mllm_comp.compressors.image.context_visual_topk import ContextVisualTopK, ContextVisualTopKSpec
     from mllm_comp.compressors.comparison.importance_anchor_adapter import QwenImportanceAnchorAdapter
     bundle, state, _, _ = tiny_state()
     session = QwenImportanceAnchorAdapter(bundle['model'],
-        {'retention_ratio': .5, 'importance_gamma': 1., 'assignment_neighbors': 1, 'assignment_max_regret': .1},
+        {'retention_ratio': .5, 'importance_gamma': 1., 'assignment_neighbors': 1, 'assignment_max_regret': .1,
+         'grid_anchor_floor': grid},
         adapter_module=create_anchor_adapter(AnchorAdapterSpec(24, 4)),
         selector_module=ContextVisualTopK(ContextVisualTopKSpec(24, width=4, context_mode='image'))).install()
     try:
@@ -136,3 +139,39 @@ def test_native_regret_generation_keeps_decode_positions():
         assert trace['assignment_max_regret'] == .1
     finally:
         session.uninstall()
+
+
+@pytest.mark.parametrize('shape,count', [((12, 20), 36), ((1, 9), 1), ((2, 2), 2), ((1, 1), 1)])
+def test_grid_floor_is_deterministic_inside_exact_budget(shape, count):
+    h, w = shape
+    torch.manual_seed(42)
+    x = torch.randn(h*w, 8)
+    importance = torch.rand(h*w)
+    kwargs = dict(importance=importance, assignment_neighbors=4, grid_anchor_floor=True)
+    result = spatial_anchor_merge(x, h, w, count, **kwargs)
+    assert result['partition_hash'] == spatial_anchor_merge(x, h, w, count, **kwargs)['partition_hash']
+    assert len(result['tokens']) == len(set(result['anchors'])) == min(count, len(x))
+    assert sorted(i for group in result['members'] for i in group) == list(range(h*w))
+    assert result['grid_seed_indices'][0] == int(importance.argmax())
+    assert len(set(result['grid_seed_region_ids'])) == min(count, result['grid_nonempty_regions'])
+    if result['grid_coverage_feasible']:
+        assert result['grid_covered_regions'] == result['grid_nonempty_regions']
+    for a, group in zip(result['anchors'], result['members']):
+        assert a in group
+
+
+def test_grid_and_fallback_share_anchors_but_not_necessarily_assignment():
+    torch.manual_seed(42)
+    x = torch.randn(240, 12)
+    grid = spatial_anchor_merge(x, 12, 20, 36, assignment_neighbors=4, grid_anchor_floor=True)
+    both = spatial_anchor_merge(x, 12, 20, 36, assignment_neighbors=4,
+                                grid_anchor_floor=True, assignment_max_regret=.1)
+    assert grid['fps_selection_order'] == both['fps_selection_order']
+    assert grid['grid_seed_indices'] == both['grid_seed_indices']
+    assert both['global_fallback_count'] > 0
+
+
+@pytest.mark.parametrize('bad', [1, 'yes', None])
+def test_grid_flag_requires_boolean(bad):
+    with pytest.raises(ValueError, match='grid_anchor_floor'):
+        spatial_anchor_merge(torch.randn(12, 4), 3, 4, grid_anchor_floor=bad)

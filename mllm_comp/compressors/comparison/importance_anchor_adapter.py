@@ -58,6 +58,9 @@ class QwenImportanceAnchorAdapter(QwenAnchorAdapterComparison):
         self.pooling = config.pop('pooling', 'mean')
         self.assignment_neighbors = config.pop('assignment_neighbors', 0)
         self.assignment_max_regret = config.pop('assignment_max_regret', None)
+        self.grid_anchor_floor = config.pop('grid_anchor_floor', False)
+        if not isinstance(self.grid_anchor_floor, bool):
+            raise ValueError('grid_anchor_floor must be a boolean')
         if isinstance(self.assignment_neighbors, bool) or not isinstance(self.assignment_neighbors, int) or self.assignment_neighbors < 0:
             raise ValueError('assignment_neighbors must be a nonnegative integer')
         if self.assignment_max_regret is not None:
@@ -111,7 +114,8 @@ class QwenImportanceAnchorAdapter(QwenAnchorAdapterComparison):
         base = spatial_anchor_merge(features, height, width, self.token_budget(len(features)),
                                     beta=self.spatial_beta, importance=importance,
                                     assignment_neighbors=self.assignment_neighbors,
-                                    assignment_max_regret=self.assignment_max_regret)
+                                    assignment_max_regret=self.assignment_max_regret,
+                                    grid_anchor_floor=self.grid_anchor_floor)
         pool_stats = []
         if self.pooling == 'importance':
             if self.pool_selector is not None:
@@ -138,7 +142,9 @@ class QwenImportanceAnchorAdapter(QwenAnchorAdapterComparison):
                 'unrestricted_anchor_grid_distance_mean', 'fps_selection_order',
                 'assignment_max_regret', 'global_fallback_count', 'global_fallback_fraction',
                 'global_fallback_indices', 'assignment_cosine_regret_mean',
-                'assignment_cosine_regret_max') if key in base},
+                'assignment_cosine_regret_max', 'grid_anchor_floor', 'grid_seed_indices',
+                'grid_seed_region_ids', 'grid_nonempty_regions', 'grid_coverage_feasible',
+                'grid_covered_regions') if key in base},
              'position_policy': 'centroid', 'spatial_beta': self.spatial_beta,
              'pooling': self.pooling, 'pooling_statistics': pool_stats, **score_trace})
         destinations = self.incoming.get().vision[0].nonzero(as_tuple=True)[0]
@@ -162,6 +168,7 @@ class QwenImportanceAnchorAdapter(QwenAnchorAdapterComparison):
                 'spatial_beta': self.spatial_beta, 'pooling': self.pooling,
                 'assignment_neighbors': self.assignment_neighbors,
                 'assignment_max_regret': self.assignment_max_regret,
+                'grid_anchor_floor': self.grid_anchor_floor,
                 'position_policy': 'centroid', 'new_training': False}
 
 
