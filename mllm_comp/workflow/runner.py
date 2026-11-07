@@ -212,6 +212,9 @@ def queue_command(saved, output, index, workers):
         command += ["--hallusion-image", profile["hallusion_image"]]
     if config["reference_only"]:
         command += ["--reference-only"]
+    preferred = profile.get('worker_task_preferences', {}).get(str(index), [])
+    if preferred:
+        command += ['--preferred-tasks', *preferred]
     if saved["limit"] is not None:
         command += ["--limit", str(saved["limit"])]
     else:
@@ -281,12 +284,7 @@ def execute(output):
     profile = config["profile"]
     devices = execution_devices(profile, limited=saved['limit'] is not None)
     if not os.environ.get("SLURM_JOB_ID"):
-        selected = subprocess.check_output(["nvidia-smi", "--id=" + ",".join(devices),
-            "--query-gpu=uuid", "--format=csv,noheader"], text=True).splitlines()
-        processes = subprocess.check_output(["nvidia-smi", "--query-compute-apps=gpu_uuid,pid",
-                                             "--format=csv,noheader"], text=True).splitlines()
-        if any(row.split(",")[0].strip() in selected for row in processes):
-            raise ValueError("Selected local GPU has active compute processes; choose a free GPU in the profile")
+        check_local_gpu_access(profile, devices)
     environment = {**os.environ, **profile.get("environment", {}), "PYTHONPATH": str(source),
                    "HF_HUB_OFFLINE": "1", "HF_DATASETS_OFFLINE": "1", "WANDB_MODE": "offline",
                    "OMP_NUM_THREADS": "2", "MKL_NUM_THREADS": "2", "TOKENIZERS_PARALLELISM": "false"}
@@ -310,7 +308,10 @@ def execute(output):
         for index, device in enumerate(devices):
             stream = (output / f"logs/worker_{index}.log").open("a")
             streams.append(stream)
-            workers.append(subprocess.Popen(queue_command(saved, output, index, len(devices)), cwd=source,
+            command = queue_command(saved, output, index, len(devices))
+            if profile.get('allow_gpu_sharing') is True and not os.environ.get('SLURM_JOB_ID'):
+                command = ['nice', '-n', '15', *command]
+            workers.append(subprocess.Popen(command, cwd=source,
                 env={**environment, "CUDA_VISIBLE_DEVICES": device}, stdout=stream, stderr=subprocess.STDOUT,
                 start_new_session=True))
         while any(worker.poll() is None for worker in workers):
@@ -340,6 +341,29 @@ def execute(output):
     write(output / "workflow_status.json", state)
     print(json.dumps(state, ensure_ascii=False, indent=2))
     return 128 + interrupted[0] if interrupted else int(state["status"] != "complete")
+
+
+def check_local_gpu_access(profile, devices):
+    """Sharing is opt-in for a user-authorized profile; exclusivity stays default."""
+    selected = subprocess.check_output(['nvidia-smi', '--id=' + ','.join(devices),
+        '--query-gpu=uuid', '--format=csv,noheader'], text=True).splitlines()
+    processes = subprocess.check_output(['nvidia-smi', '--query-compute-apps=gpu_uuid,pid',
+        '--format=csv,noheader'], text=True).splitlines()
+    if profile.get('allow_gpu_sharing') is not True:
+        if any(row.split(',')[0].strip() in selected for row in processes):
+            raise ValueError('Selected local GPU has active compute processes; choose a free GPU in the profile')
+        return
+    environment = profile.get('environment', {})
+    fraction = float(environment.get('MLLM_TOPK_MEMORY_FRACTION', '.4'))
+    duty = float(environment.get('MLLM_TOPK_DUTY_CYCLE', '.5'))
+    if (environment.get('MLLM_TOPK_SHARED_GPU') != '1' or
+            environment.get('MLLM_TOPK_NORMAL_GPU', '0') != '0' or
+            not 0 < fraction <= .4 or not 0 < duty <= .5):
+        raise ValueError('Authorized sharing requires a capped allocator and cooperative duty cycle')
+    rows = subprocess.check_output(['nvidia-smi', '--id=' + ','.join(devices),
+        '--query-gpu=memory.free', '--format=csv,noheader,nounits'], text=True).splitlines()
+    if len(rows) != len(devices) or any(int(row.strip()) < 49152 for row in rows):
+        raise ValueError('Shared evaluation requires at least 48 GiB free on each selected GPU at launch')
 
 
 def inspect_run(output):

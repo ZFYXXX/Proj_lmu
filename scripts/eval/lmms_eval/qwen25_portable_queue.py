@@ -31,7 +31,7 @@ TRAINED = {name for name, spec in load_catalog().items() if spec.get("checkpoint
 DEFAULT_METHODS = ("dense", "eadp", "prunesid", "mmtok", "old_mlp", "visual_selector",
                    "image_context_selector", "question_context_selector", "protected_selector", "importance_fps", "importance_fps_pool")
 DEFAULT_TASKS = ("gqa", "okvqa", "scienceqa_img", "ai2d", "mmstar", "mmmu", "pope", "hallusionbench",
-                 "textvqa", "docvqa", "ocrbench", "chartqa", "refcoco_bbox_rec_testA", "refcoco_bbox_rec_testB",
+                 "textvqa", "docvqa", "ocrbench", "refcoco_bbox_rec_testA", "refcoco_bbox_rec_testB",
                  "refcoco+_bbox_rec_testA", "refcoco+_bbox_rec_testB", "refcocog_bbox_rec_test")
 CATEGORIES = {category: tuple(name for name, spec in load_tasks().items()
                              if spec["category"] == category and spec.get("default", True))
@@ -256,6 +256,13 @@ def cell_lock(cell: Path, worker_index: int):
     return lock
 
 
+def prioritize_tasks(tasks, preferred):
+    """Soft worker affinity: fall back to all other tasks rather than idling."""
+    if len(set(preferred)) != len(preferred) or set(preferred) - set(tasks):
+        raise ValueError('Preferred tasks must be unique members of the selected experiment')
+    return list(preferred) + [task for task in tasks if task not in preferred]
+
+
 def claim_next_work(output, methods, tasks, chunk_size, limit, worker_index, preferred_method=None, reference_only=False, requested_cells=None):
     """Share chunks, including long test-dev runs, rather than pinning datasets to GPUs."""
     ordered_methods = ([preferred_method] if preferred_method in methods else []) + [m for m in methods if m != preferred_method]
@@ -470,6 +477,8 @@ def main():
     parser.add_argument("--method-catalog", type=Path, default=DEFAULT_CATALOG)
     parser.add_argument("--methods", nargs="+")
     parser.add_argument("--tasks", nargs="+", choices=[row[0] for row in specifications()])
+    parser.add_argument('--preferred-tasks', nargs='+', default=[],
+                        help='Worker-local task preferences; other tasks remain available for work stealing')
     parser.add_argument("--limit", type=int, help="Samples per full-source task; omit for full evaluation")
     parser.add_argument("--chunk-size", type=int, default=1024, help="Requests per checkpoint; resident models are not reloaded at boundaries")
     parser.add_argument("--mmmu-single-image-only", dest="mmmu_single_image_only", action="store_true", default=True,
@@ -491,6 +500,7 @@ def main():
     try:
         catalog = load_catalog(args.method_catalog)
         args.methods, args.tasks, requested_cells = select_experiment(args.experiment, args.methods, args.tasks, args.method_catalog)
+        worker_tasks = prioritize_tasks(args.tasks, args.preferred_tasks)
         if set(args.methods) - catalog.keys():
             raise ValueError("Unknown method in selected catalog")
     except (ValueError, OSError) as exc:
@@ -612,7 +622,7 @@ def main():
         import atexit
         atexit.register(resident.close)
     while True:
-        claimed = claim_next_work(args.output, scheduled_methods, args.tasks, args.chunk_size,
+        claimed = claim_next_work(args.output, scheduled_methods, worker_tasks, args.chunk_size,
                                   args.limit, args.worker_index, preferred_method=preferred_method,
                                   reference_only=args.reference_only, requested_cells=scheduled_cells)
         if claimed is None:

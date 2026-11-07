@@ -51,6 +51,12 @@ class ResidentEvaluator:
             self.close()
             import numpy as np
             import torch
+            from mllm_comp.analysis.common.learned_topk_experiment import shared_policy
+            policy = shared_policy()
+            if policy is not None and torch.cuda.is_available():
+                # Apply before constructing the model, not just before the
+                # first generation, so loading also obeys the allocator cap.
+                torch.cuda.set_per_process_memory_fraction(policy['allocator_fraction'], 0)
             from mllm_comp.integrations.lmms_eval.plugin import MLLMCompLMM
             for seed, setter in zip(seeds, (random.seed, np.random.seed, torch.manual_seed)):
                 if seed is not None:

@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "run_id": "qwen25_keep15_local4_fallback_v1",
+  "reference_only": true,
+  "chunk_size": 512,
+  "method_tasks": {
+    "importance_fps_balanced_local4_gap01_r15": [
+      "refcoco_bbox_rec_testB", "refcoco+_bbox_rec_testB", "refcoco_bbox_rec_testA",
+      "refcoco+_bbox_rec_testA", "refcocog_bbox_rec_test",
+      "ocrbench", "docvqa", "textvqa",
+      "mmstar", "ai2d", "pope", "gqa", "scienceqa_img", "okvqa", "mmmu", "hallusionbench"
+    ],
+    "importance_fps_balanced_r15": [
+      "refcoco_bbox_rec_testB", "refcoco+_bbox_rec_testB", "refcoco_bbox_rec_testA",
+      "refcoco+_bbox_rec_testA", "refcocog_bbox_rec_test",
+      "ocrbench", "docvqa", "textvqa",
+      "mmstar", "ai2d", "pope", "gqa", "scienceqa_img", "okvqa", "mmmu", "hallusionbench"
+    ],
+    "importance_fps_balanced_local4_r15": [
+      "refcoco_bbox_rec_testB", "refcoco+_bbox_rec_testB", "refcoco_bbox_rec_testA",
+      "refcoco+_bbox_rec_testA", "refcocog_bbox_rec_test",
+      "ocrbench", "docvqa", "textvqa",
+      "mmstar", "ai2d", "pope", "gqa", "scienceqa_img", "okvqa", "mmmu", "hallusionbench"
+    ]
+  }
+}

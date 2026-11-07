@@ -6,11 +6,20 @@ import math
 import torch
 
 
-def spatial_anchor_merge(features, height, width, count=128, beta=0., importance=None):
+def spatial_anchor_merge(features, height, width, count=128, beta=0., importance=None, *,
+                         assignment_neighbors=0, assignment_max_regret=None):
     if features.ndim != 2 or height * width != len(features) or not len(features):
         raise ValueError("Expected one nonempty rectangular feature grid")
     if not math.isfinite(beta) or beta < 0 or count < 1 or not torch.isfinite(features).all():
         raise ValueError("Invalid spatial partition input")
+    if isinstance(assignment_neighbors, bool) or not isinstance(assignment_neighbors, int) or assignment_neighbors < 0:
+        raise ValueError('assignment_neighbors must be a nonnegative integer; zero disables locality')
+    if assignment_max_regret is not None:
+        if (isinstance(assignment_max_regret, bool) or not isinstance(assignment_max_regret, (int, float))
+                or not math.isfinite(assignment_max_regret) or not 0 <= assignment_max_regret <= 2):
+            raise ValueError('assignment_max_regret must be a finite cosine gap in [0, 2]')
+        if not assignment_neighbors or beta != 0:
+            raise ValueError('assignment_max_regret requires local assignment and spatial beta=0')
     count = min(count, len(features))
     if importance is not None:
         importance = importance.detach().to(device=features.device, dtype=torch.float32)
@@ -45,6 +54,43 @@ def spatial_anchor_merge(features, height, width, count=128, beta=0., importance
     else:
         distances = 1 - similarities + beta * (coords[:, None] - coords[anchor_ids][None]).square().sum(-1)
         assignment = distances.argmin(-1)
+    locality = {}
+    if assignment_neighbors:
+        unrestricted = assignment.clone()
+        unrestricted[anchor_ids] = torch.arange(count, device=features.device)
+        # Only membership changes. FPS above never reads this option. Distance
+        # is in native post-merger grid units; equal distances use source order.
+        spatial = (pixels[:, None] - pixels[anchor_ids][None]).square().sum(-1)
+        neighbor_count = min(assignment_neighbors, count)
+        if neighbor_count < count:
+            source_order = anchor_ids.argsort()
+            nearest = spatial[:, source_order].argsort(dim=-1, stable=True)[:, :neighbor_count]
+            candidates = source_order[nearest]
+            allowed = torch.zeros_like(similarities, dtype=torch.bool).scatter_(1, candidates, True)
+            if beta == 0:
+                assignment = similarities.masked_fill(~allowed, -float('inf')).argmax(-1)
+            else:
+                assignment = distances.masked_fill(~allowed, float('inf')).argmin(-1)
+        assignment[anchor_ids] = torch.arange(count, device=features.device)
+        if assignment_max_regret is not None:
+            # Compare matching quality, not an assumed absolute semantic cosine
+            # threshold. Only membership changes; FPS and the budget stay fixed.
+            regret = (similarities[ids, unrestricted] - similarities[ids, assignment]).clamp_min(0)
+            fallback = (regret > assignment_max_regret) & ~selected
+            assignment = torch.where(fallback, unrestricted, assignment)
+            eligible = int((~selected).sum())
+            locality.update(assignment_max_regret=float(assignment_max_regret),
+                global_fallback_count=int(fallback.sum()),
+                global_fallback_fraction=float(fallback.sum()) / max(1, eligible),
+                global_fallback_indices=fallback.nonzero(as_tuple=True)[0].tolist(),
+                assignment_cosine_regret_mean=float(regret.mean()),
+                assignment_cosine_regret_max=float(regret.max()))
+        locality.update({'assignment_neighbors': assignment_neighbors,
+            'assignment_effective_neighbors': neighbor_count,
+            'assignment_changed_count': int((assignment != unrestricted).sum()),
+            'assigned_anchor_grid_distance_mean': float(spatial[ids, assignment].sqrt().mean()),
+            'unrestricted_anchor_grid_distance_mean': float(spatial[ids, unrestricted].sqrt().mean()),
+            'fps_selection_order': anchors.copy()})
     assignment[anchor_ids] = torch.arange(count, device=features.device)
     records = []
     for cluster, anchor in enumerate(anchors):
@@ -69,7 +115,8 @@ def spatial_anchor_merge(features, height, width, count=128, beta=0., importance
     return {"tokens": torch.stack([r[3] for r in records]),
             "indices": [r[0] for r in records], "members": groups,
             "anchors": [r[2] for r in records], "cluster_statistics": [r[4] for r in records],
-            "partition_hash": hashlib.sha256(json.dumps(groups, separators=(',', ':')).encode()).hexdigest()}
+            "partition_hash": hashlib.sha256(json.dumps(groups, separators=(',', ':')).encode()).hexdigest(),
+            **locality}
 
 
 def merge_positions(source, members, anchors, policy):

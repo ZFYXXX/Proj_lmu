@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "methods": {
+    "dense": {"description": "Uncompressed Qwen2.5-VL"},
+    "importance_fps_balanced_r15": {
+      "description": "Importance FPS + ordinary mean + balanced2560 step320 MLP, keep 15%; same frozen scorer as R1",
+      "algorithm": "importance_anchor_adapter", "checkpoint": "r1_balanced2560_step320", "scorer": "image_context_selector",
+      "options": {"identity_path": "${identity_path}", "adapter_path": "${method_checkpoint}", "retention_ratio": 0.15, "scorer_path": "${scorer_checkpoint}", "importance_gamma": 1.0, "singleton_bypass": false, "spatial_beta": 0.0, "pooling": "mean"}
+    },
+    "importance_fps_balanced_local4_gap01_r15": {
+      "description": "Frozen importance FPS/MLP, local4 assignment with global cosine fallback when matching regret exceeds 0.10, keep 15%",
+      "algorithm": "importance_anchor_adapter", "checkpoint": "r1_balanced2560_step320", "scorer": "image_context_selector",
+      "options": {"identity_path": "${identity_path}", "adapter_path": "${method_checkpoint}", "retention_ratio": 0.15, "scorer_path": "${scorer_checkpoint}", "importance_gamma": 1.0, "singleton_bypass": false, "spatial_beta": 0.0, "pooling": "mean", "assignment_neighbors": 4, "assignment_max_regret": 0.1}
+    },
+    "importance_fps_balanced_local4_r15": {
+      "description": "Same frozen R1 anchors and weights; assign only among four spatially nearest anchors; keep 15%",
+      "algorithm": "importance_anchor_adapter", "checkpoint": "r1_balanced2560_step320", "scorer": "image_context_selector",
+      "options": {"identity_path": "${identity_path}", "adapter_path": "${method_checkpoint}", "retention_ratio": 0.15, "scorer_path": "${scorer_checkpoint}", "importance_gamma": 1.0, "singleton_bypass": false, "spatial_beta": 0.0, "pooling": "mean", "assignment_neighbors": 4}
+    }
+  }
+}

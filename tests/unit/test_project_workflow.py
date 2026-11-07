@@ -155,3 +155,36 @@ for position,(method,task) in enumerate(cells):
 def test_old_queue_outputs_can_be_inspected_without_workflow_metadata(tmp_path):
     (tmp_path / "plan.json").write_text(json.dumps({"requested_cells": [["old_mlp", "ai2d"]]}))
     assert runner.inspect_run(tmp_path)["pending_cells"] == [["old_mlp", "ai2d"]]
+
+
+def test_profile_worker_preferences_are_passed_separately_from_shared_plan(tmp_path):
+    profile, experiment = settings(tmp_path)
+    config = runner.configuration(profile, experiment)
+    config['profile']['worker_task_preferences'] = {'0': ['ai2d'], '1': ['mmstar']}
+    saved = {'config': config, 'source_root': '/frozen', 'limit': None}
+    for index, task in [(0, 'ai2d'), (1, 'mmstar')]:
+        cmd = runner.queue_command(saved, tmp_path, index, 2)
+        assert cmd[cmd.index('--preferred-tasks') + 1] == task
+    assert config['requested_cells'] == [['importance_fps', 'ai2d'], ['importance_fps_pool', 'mmstar']]
+
+
+def test_authorized_local_sharing_keeps_memory_guard_and_default_exclusivity(monkeypatch):
+    free = ['70000', '65000']
+    def query(command, **kwargs):
+        if '--query-gpu=uuid' in command:
+            return 'GPU-a\nGPU-b\n'
+        if '--query-compute-apps=gpu_uuid,pid' in command:
+            return 'GPU-a, 999\nGPU-b, 998\n'
+        return '\n'.join(free)
+    monkeypatch.setattr(runner.subprocess, 'check_output', query)
+    with pytest.raises(ValueError, match='active compute'):
+        runner.check_local_gpu_access({}, ['0', '1'])
+    profile = {'allow_gpu_sharing': True, 'environment': {'MLLM_TOPK_SHARED_GPU': '1',
+        'MLLM_TOPK_NORMAL_GPU': '0', 'MLLM_TOPK_MEMORY_FRACTION': '.35', 'MLLM_TOPK_DUTY_CYCLE': '.5'}}
+    runner.check_local_gpu_access(profile, ['0', '1'])
+    free[0] = '40000'
+    with pytest.raises(ValueError, match='48 GiB'):
+        runner.check_local_gpu_access(profile, ['0', '1'])
+    profile['environment']['MLLM_TOPK_MEMORY_FRACTION'] = '.8'
+    with pytest.raises(ValueError, match='capped allocator'):
+        runner.check_local_gpu_access(profile, ['0', '1'])

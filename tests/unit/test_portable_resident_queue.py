@@ -102,6 +102,25 @@ def test_reference_only_never_schedules_dense_or_waits_for_missing_baseline(tmp_
     work[3].close()
 
 
+def test_worker_task_preferences_fall_back_without_duplicate_claims(tmp_path):
+    from scripts.eval.lmms_eval.qwen25_portable_queue import prioritize_tasks
+    tasks = ['gqa', 'refcoco+_bbox_rec_testB', 'refcocog_bbox_rec_test']
+    ref_tasks = prioritize_tasks(tasks, tasks[1:])
+    general_tasks = prioritize_tasks(tasks, ['gqa'])
+    first = claim_next_work(tmp_path, ['importance_fps'], ref_tasks, 512, None, 0, reference_only=True)
+    second = claim_next_work(tmp_path, ['importance_fps'], general_tasks, 512, None, 1, reference_only=True)
+    try:
+        assert first[1] == tasks[1] and second[1] == 'gqa'
+        fallback = claim_next_work(tmp_path, ['importance_fps'], general_tasks, 512, None, 1, reference_only=True)
+        assert fallback[1] == 'refcocog_bbox_rec_test'
+        fallback[3].close()
+    finally:
+        first[3].close()
+        second[3].close()
+    with pytest.raises(ValueError, match='unique members'):
+        prioritize_tasks(tasks, ['missing'])
+
+
 def test_resident_identity_ignores_output_tasks_but_not_method():
     spec={'checkpoint_path':'/model','effective_config':{'backbone':{'name':'qwen25_vl'},'pipeline':{'stages':[]}}}
     changed={**spec,'compression_manifest_path':'/next/file.json','effective_config':{

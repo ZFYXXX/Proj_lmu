@@ -56,6 +56,15 @@ class QwenImportanceAnchorAdapter(QwenAnchorAdapterComparison):
         self.pool_scorer_path = config.pop('pool_scorer_path', None)
         self.spatial_beta = float(config.pop('spatial_beta', 0.))
         self.pooling = config.pop('pooling', 'mean')
+        self.assignment_neighbors = config.pop('assignment_neighbors', 0)
+        self.assignment_max_regret = config.pop('assignment_max_regret', None)
+        if isinstance(self.assignment_neighbors, bool) or not isinstance(self.assignment_neighbors, int) or self.assignment_neighbors < 0:
+            raise ValueError('assignment_neighbors must be a nonnegative integer')
+        if self.assignment_max_regret is not None:
+            if (isinstance(self.assignment_max_regret, bool) or not isinstance(self.assignment_max_regret, (int, float))
+                    or not math.isfinite(self.assignment_max_regret) or not 0 <= self.assignment_max_regret <= 2
+                    or not self.assignment_neighbors or self.spatial_beta != 0):
+                raise ValueError('assignment_max_regret requires a finite gap in [0, 2], local candidates and beta=0')
         if self.gamma not in {0., 1.} or not isinstance(self.singleton_bypass, bool):
             raise ValueError('Round two fixes importance gamma to 0/1 and bypass to a boolean')
         if self.pooling not in {'mean', 'importance'} or not math.isfinite(self.spatial_beta) or self.spatial_beta < 0:
@@ -100,7 +109,9 @@ class QwenImportanceAnchorAdapter(QwenAnchorAdapterComparison):
                            'selector_probabilities': scored['soft_weights'].tolist(),
                            'selector_soft_mass': float(scored['soft_weights'].sum())}
         base = spatial_anchor_merge(features, height, width, self.token_budget(len(features)),
-                                    beta=self.spatial_beta, importance=importance)
+                                    beta=self.spatial_beta, importance=importance,
+                                    assignment_neighbors=self.assignment_neighbors,
+                                    assignment_max_regret=self.assignment_max_regret)
         pool_stats = []
         if self.pooling == 'importance':
             if self.pool_selector is not None:
@@ -122,6 +133,12 @@ class QwenImportanceAnchorAdapter(QwenAnchorAdapterComparison):
              'singleton_count': len(singletons), 'bypassed_cluster_indices': singletons if self.singleton_bypass else [],
              'cluster_members': base['members'], 'fps_anchor_indices': base['anchors'],
              'cluster_statistics': base['cluster_statistics'], 'partition_hash': base['partition_hash'],
+             **{key: base[key] for key in ('assignment_neighbors', 'assignment_effective_neighbors',
+                'assignment_changed_count', 'assigned_anchor_grid_distance_mean',
+                'unrestricted_anchor_grid_distance_mean', 'fps_selection_order',
+                'assignment_max_regret', 'global_fallback_count', 'global_fallback_fraction',
+                'global_fallback_indices', 'assignment_cosine_regret_mean',
+                'assignment_cosine_regret_max') if key in base},
              'position_policy': 'centroid', 'spatial_beta': self.spatial_beta,
              'pooling': self.pooling, 'pooling_statistics': pool_stats, **score_trace})
         destinations = self.incoming.get().vision[0].nonzero(as_tuple=True)[0]
@@ -143,6 +160,8 @@ class QwenImportanceAnchorAdapter(QwenAnchorAdapterComparison):
         return {**super().runtime_metadata(), 'config': self.intervention_config,
                 'importance_gamma': self.gamma, 'singleton_bypass': self.singleton_bypass,
                 'spatial_beta': self.spatial_beta, 'pooling': self.pooling,
+                'assignment_neighbors': self.assignment_neighbors,
+                'assignment_max_regret': self.assignment_max_regret,
                 'position_policy': 'centroid', 'new_training': False}
 
 
